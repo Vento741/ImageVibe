@@ -6,6 +6,7 @@ import { GalleryPage } from './modules/gallery/components/GalleryPage';
 import { CommandPalette } from './modules/command-palette/components/CommandPalette';
 import { useKeyboardShortcuts } from './shared/hooks/useKeyboardShortcuts';
 import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
+import { ImageViewer } from './modules/gallery/components/ImageViewer';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
@@ -51,6 +52,7 @@ export function App() {
           )}
         </div>
       </main>
+      <ImageViewer />
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
