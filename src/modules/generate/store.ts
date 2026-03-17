@@ -85,8 +85,8 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
     const { promptHistory } = get();
     if (promptHistory[promptHistory.length - 1] === prompt) return;
     set({
-      promptHistory: [...promptHistory, prompt],
-      promptHistoryIndex: promptHistory.length,
+      promptHistory: [...promptHistory, prompt].slice(-100),
+      promptHistoryIndex: Math.min(promptHistory.length, 99),
     });
   },
 

@@ -66,14 +66,6 @@ export function estimateCost(
   };
 }
 
-/** Format cost as display string */
-export function formatCost(costUsd: number): string {
-  if (costUsd === 0) return '$0.00';
-  if (costUsd < 0.001) return `$${costUsd.toFixed(4)}`;
-  if (costUsd < 0.01) return `$${costUsd.toFixed(3)}`;
-  return `$${costUsd.toFixed(2)}`;
-}
-
 /** Estimate batch cost (N images) */
 export function estimateBatchCost(
   modelId: string,

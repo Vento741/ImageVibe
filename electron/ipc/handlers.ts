@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
 import { getConfig, updateConfig } from '../services/configManager';
 import { getDatabase } from '../services/database';
 import {
@@ -13,10 +13,24 @@ import {
 import { estimateCost } from '../services/costEstimator';
 import { saveImage, deleteImage, getFileSize } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
-import { recordCost, getSpendingSummary, checkBudget, setBudget } from '../services/costTracker';
+import {
+  recordCost,
+  getSpendingSummary,
+  checkBudget,
+  setBudget,
+  TRANSLATE_ESTIMATED_COST_USD,
+  PROMPT_ASSIST_ESTIMATED_COST_USD,
+} from '../services/costTracker';
 import type { GenerationRequest } from '../../src/shared/types/api';
 import type { GalleryQuery } from '../../src/shared/types/ipc';
 import type { DBBudgetConfig, DBImage } from '../../src/shared/types/database';
+
+/** Allowed sort columns to prevent SQL injection */
+const ALLOWED_SORT_COLUMNS: Record<string, boolean> = {
+  created_at: true,
+  cost_usd: true,
+  file_size: true,
+};
 
 export function registerIpcHandlers(): void {
   // ═══ Config ═══
@@ -33,19 +47,17 @@ export function registerIpcHandlers(): void {
       try {
         request.translatedPrompt = await translatePrompt(request.prompt);
 
-        // Track translation cost
         recordCost({
           imageId: null,
           generationId: null,
           modelId: config.promptAssistant.model,
-          costUsd: 0.0001, // Approximate cost of translation
+          costUsd: TRANSLATE_ESTIMATED_COST_USD,
           costType: 'translate',
           tokensInput: request.prompt.length,
           tokensOutput: request.translatedPrompt.length,
           costSource: 'estimated',
         });
       } catch {
-        // If translation fails, use original prompt
         request.translatedPrompt = request.prompt;
       }
     }
@@ -62,7 +74,7 @@ export function registerIpcHandlers(): void {
       aspect_ratio: request.aspectRatio,
       image_size: request.imageSize,
       style_tags: request.styleTags?.join(',') ?? '',
-      app_version: '1.0.0',
+      app_version: app.getVersion(),
       created_at: new Date().toISOString(),
     };
     if (result.translatedPrompt) metadata.translated_prompt = result.translatedPrompt;
@@ -90,20 +102,18 @@ export function registerIpcHandlers(): void {
       fileSize,
       result.generationId,
       result.generationTimeMs,
-      0, // Cost will be updated
+      0,
     );
-    const imageId = insertResult.lastInsertRowid as number;
+    const imageId = Number(insertResult.lastInsertRowid);
 
     // Fetch actual cost in background
     if (result.generationId) {
       fetchGenerationCostWithRetry(result.generationId).then((actualCost) => {
         const cost = actualCost || estimateCost(result.modelId, request.imageSize).estimatedCost;
-        const costSource = actualCost > 0 ? 'actual' : 'estimated';
+        const costSource: 'actual' | 'estimated' = actualCost > 0 ? 'actual' : 'estimated';
 
-        // Update image cost
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
 
-        // Record cost
         recordCost({
           imageId,
           generationId: result.generationId,
@@ -117,11 +127,10 @@ export function registerIpcHandlers(): void {
 
         // Notify renderer
         const win = BrowserWindow.getAllWindows()[0];
-        if (win) {
+        if (win && !win.isDestroyed()) {
           win.webContents.send('cost:updated', { cost, generationId: result.generationId });
         }
       }).catch(() => {
-        // Fallback: record estimated cost
         const estimated = estimateCost(result.modelId, request.imageSize).estimatedCost;
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(estimated, imageId);
         recordCost({
@@ -150,7 +159,7 @@ export function registerIpcHandlers(): void {
     recordCost({
       imageId: null, generationId: null,
       modelId: config.promptAssistant.model,
-      costUsd: 0.0002,
+      costUsd: PROMPT_ASSIST_ESTIMATED_COST_USD,
       costType: 'prompt_ai',
       tokensInput: input.length, tokensOutput: result.length,
       costSource: 'estimated',
@@ -176,8 +185,9 @@ export function registerIpcHandlers(): void {
     if (query.mode) { where += ` AND mode = ?`; params.push(query.mode); }
     if (query.isFavorite) { where += ` AND is_favorite = 1`; }
 
-    const sortBy = query.sortBy || 'created_at';
-    const sortDir = query.sortDir || 'desc';
+    // Whitelist sort columns to prevent SQL injection
+    const sortBy = ALLOWED_SORT_COLUMNS[query.sortBy ?? ''] ? query.sortBy! : 'created_at';
+    const sortDir = query.sortDir === 'asc' ? 'asc' : 'desc';
 
     const total = (db.prepare(`SELECT COUNT(*) as count FROM images ${where}`).get(...params) as { count: number }).count;
     const images = db.prepare(
@@ -237,12 +247,6 @@ export function registerIpcHandlers(): void {
   });
 
   // ═══ App ═══
-  ipcMain.handle('app:get-version', () => {
-    const { app } = require('electron');
-    return app.getVersion();
-  });
-  ipcMain.handle('app:open-external', (_, url: string) => {
-    const { shell } = require('electron');
-    shell.openExternal(url);
-  });
+  ipcMain.handle('app:get-version', () => app.getVersion());
+  ipcMain.handle('app:open-external', (_, url: string) => shell.openExternal(url));
 }

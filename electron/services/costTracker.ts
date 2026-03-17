@@ -1,6 +1,11 @@
+import Database from 'better-sqlite3';
 import { getDatabase } from './database';
 import type { BudgetStatus, SpendingSummary, CostPeriod } from '../../src/shared/types/ipc';
 import type { DBBudgetConfig } from '../../src/shared/types/database';
+
+/** Estimated costs for auxiliary API calls */
+export const TRANSLATE_ESTIMATED_COST_USD = 0.0001;
+export const PROMPT_ASSIST_ESTIMATED_COST_USD = 0.0002;
 
 /** Record a generation cost */
 export function recordCost(params: {
@@ -29,25 +34,29 @@ export function recordCost(params: {
   );
 }
 
-/** Get spending summary */
-export function getSpendingSummary(_period?: CostPeriod): SpendingSummary {
-  const db = getDatabase();
-
+/** Date boundaries for cost queries */
+function getDateBoundaries() {
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
   const monthStart = `${today.slice(0, 7)}-01`;
+  return { today, weekAgo, monthStart };
+}
 
-  const todaySum = db.prepare(
+/** Sum costs since a given date */
+function sumCostsSince(db: Database.Database, since: string): number {
+  return (db.prepare(
     `SELECT COALESCE(SUM(cost_usd), 0) as total FROM generation_costs WHERE created_at >= ?`
-  ).get(today) as { total: number };
+  ).get(since) as { total: number }).total;
+}
 
-  const weekSum = db.prepare(
-    `SELECT COALESCE(SUM(cost_usd), 0) as total FROM generation_costs WHERE created_at >= ?`
-  ).get(weekAgo) as { total: number };
+/** Get spending summary */
+export function getSpendingSummary(_period?: CostPeriod): SpendingSummary {
+  const db = getDatabase();
+  const { today, weekAgo, monthStart } = getDateBoundaries();
 
-  const monthSum = db.prepare(
-    `SELECT COALESCE(SUM(cost_usd), 0) as total FROM generation_costs WHERE created_at >= ?`
-  ).get(monthStart) as { total: number };
+  const todayTotal = sumCostsSince(db, today);
+  const weekTotal = sumCostsSince(db, weekAgo);
+  const monthTotal = sumCostsSince(db, monthStart);
 
   const allTimeSum = db.prepare(
     `SELECT COALESCE(SUM(cost_usd), 0) as total, COUNT(*) as count FROM generation_costs`
@@ -68,9 +77,9 @@ export function getSpendingSummary(_period?: CostPeriod): SpendingSummary {
   `).all() as Array<{ type: string; cost: number; count: number }>;
 
   return {
-    today: todaySum.total,
-    thisWeek: weekSum.total,
-    thisMonth: monthSum.total,
+    today: todayTotal,
+    thisWeek: weekTotal,
+    thisMonth: monthTotal,
     allTime: allTimeSum.total,
     generationCount: allTimeSum.count,
     averageCost: allTimeSum.count > 0 ? allTimeSum.total / allTimeSum.count : 0,
@@ -82,24 +91,12 @@ export function getSpendingSummary(_period?: CostPeriod): SpendingSummary {
 /** Check budget status */
 export function checkBudget(): BudgetStatus {
   const db = getDatabase();
-
   const config = db.prepare('SELECT * FROM budget_config WHERE id = 1').get() as DBBudgetConfig | undefined;
+  const { today, weekAgo, monthStart } = getDateBoundaries();
 
-  const today = new Date().toISOString().split('T')[0];
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-  const monthStart = `${today.slice(0, 7)}-01`;
-
-  const dailyUsed = (db.prepare(
-    `SELECT COALESCE(SUM(cost_usd), 0) as total FROM generation_costs WHERE created_at >= ?`
-  ).get(today) as { total: number }).total;
-
-  const weeklyUsed = (db.prepare(
-    `SELECT COALESCE(SUM(cost_usd), 0) as total FROM generation_costs WHERE created_at >= ?`
-  ).get(weekAgo) as { total: number }).total;
-
-  const monthlyUsed = (db.prepare(
-    `SELECT COALESCE(SUM(cost_usd), 0) as total FROM generation_costs WHERE created_at >= ?`
-  ).get(monthStart) as { total: number }).total;
+  const dailyUsed = sumCostsSince(db, today);
+  const weeklyUsed = sumCostsSince(db, weekAgo);
+  const monthlyUsed = sumCostsSince(db, monthStart);
 
   const warnings: string[] = [];
   let isOverBudget = false;

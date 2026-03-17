@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGenerateStore } from '../store';
 import { useCostStore } from '@/modules/cost/store';
@@ -8,6 +8,7 @@ import { formatCostDisplay } from '@/shared/lib/utils';
 export function GenerateButton() {
   const prompt = useGenerateStore((s) => s.prompt);
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
+  const mode = useGenerateStore((s) => s.mode);
   const aspectRatio = useGenerateStore((s) => s.aspectRatio);
   const imageSize = useGenerateStore((s) => s.imageSize);
   const seed = useGenerateStore((s) => s.seed);
@@ -38,7 +39,7 @@ export function GenerateButton() {
         prompt,
         negativePrompt: negativePrompt || undefined,
         modelId: selectedModelId,
-        mode: 'text2img',
+        mode,
         aspectRatio,
         imageSize,
         seed: seed ?? undefined,
@@ -54,30 +55,33 @@ export function GenerateButton() {
       }
     } catch (err) {
       console.error('Generation failed:', err);
-      // TODO: show toast
     } finally {
       setIsGenerating(false);
     }
-  }, [prompt, negativePrompt, selectedModelId, aspectRatio, imageSize, seed, styleTags, isGenerating, setIsGenerating, pushPromptHistory, setCurrentResult, setTranslatedPrompt, addSessionCost]);
+  }, [prompt, negativePrompt, selectedModelId, mode, aspectRatio, imageSize, seed, styleTags, isGenerating, setIsGenerating, pushPromptHistory, setCurrentResult, setTranslatedPrompt, addSessionCost]);
 
-  // Listen for Ctrl+Enter from PromptInput
+  // Use ref to avoid re-registering listeners on every state change
+  const handleGenerateRef = useRef(handleGenerate);
+  handleGenerateRef.current = handleGenerate;
+
+  // Listen for Ctrl+Enter from PromptInput — register once
   useEffect(() => {
-    const handler = () => handleGenerate();
+    const handler = () => handleGenerateRef.current();
     document.addEventListener('imagevibe:generate', handler);
     return () => document.removeEventListener('imagevibe:generate', handler);
-  }, [handleGenerate]);
+  }, []);
 
-  // Global keyboard shortcut
+  // Global keyboard shortcut — register once
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
         e.preventDefault();
-        handleGenerate();
+        handleGenerateRef.current();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleGenerate]);
+  }, []);
 
   const canGenerate = prompt.trim().length > 0 && !isGenerating;
 

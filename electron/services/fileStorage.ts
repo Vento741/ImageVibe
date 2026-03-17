@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { shell } from 'electron';
 import { getConfig } from './configManager';
 import { embedMetadata } from './pngMetadata';
 
@@ -95,7 +96,6 @@ export function exportImage(
  * Open a folder in the system file manager.
  */
 export function openFolder(folderPath: string): void {
-  const { shell } = require('electron');
   shell.openPath(folderPath);
 }
 
