@@ -1,4 +1,4 @@
-import type { ImageModel, ModelCategory, ModelId } from '../../src/shared/types/models';
+import type { ImageModel, ModelCategory } from '../../src/shared/types/models';
 
 /** All 13 supported image generation models */
 const MODELS: ImageModel[] = [

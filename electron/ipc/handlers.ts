@@ -13,10 +13,9 @@ import {
 import { estimateCost } from '../services/costEstimator';
 import { saveImage, deleteImage, getFileSize } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
-import { getModelById } from '../services/modelRegistry';
 import { recordCost, getSpendingSummary, checkBudget, setBudget } from '../services/costTracker';
 import type { GenerationRequest } from '../../src/shared/types/api';
-import type { GalleryQuery, ExportOptions } from '../../src/shared/types/ipc';
+import type { GalleryQuery } from '../../src/shared/types/ipc';
 import type { DBBudgetConfig, DBImage } from '../../src/shared/types/database';
 
 export function registerIpcHandlers(): void {
@@ -26,7 +25,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('config:get-images-path', () => getConfig().storage.imagesPath);
 
   // ═══ Generation ═══
-  ipcMain.handle('generate:image', async (event, request: GenerationRequest) => {
+  ipcMain.handle('generate:image', async (_event, request: GenerationRequest) => {
     const config = getConfig();
 
     // Auto-translate if Russian

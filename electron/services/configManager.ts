@@ -28,11 +28,11 @@ export function loadConfig(): AppConfig {
   }
 
   // Ensure images directory exists
-  if (config.storage.imagesPath && !fs.existsSync(config.storage.imagesPath)) {
-    fs.mkdirSync(config.storage.imagesPath, { recursive: true });
+  if (config!.storage.imagesPath && !fs.existsSync(config!.storage.imagesPath)) {
+    fs.mkdirSync(config!.storage.imagesPath, { recursive: true });
   }
 
-  return config;
+  return config!;
 }
 
 export function getConfig(): AppConfig {
@@ -43,10 +43,10 @@ export function getConfig(): AppConfig {
 }
 
 export function updateConfig(partial: Partial<AppConfig>): AppConfig {
-  config = deepMerge(getConfig(), partial);
+  config = deepMerge(getConfig(), partial) as AppConfig;
   const configPath = getConfigPath();
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-  return config;
+  return config!;
 }
 
 export function getActiveApiKey(): string | null {
@@ -55,9 +55,10 @@ export function getActiveApiKey(): string | null {
   return active?.key ?? null;
 }
 
-function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deepMerge(target: any, source: any): any {
   const result = { ...target };
-  for (const key of Object.keys(source) as Array<keyof T>) {
+  for (const key of Object.keys(source)) {
     const sourceVal = source[key];
     const targetVal = target[key];
     if (
@@ -68,12 +69,9 @@ function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial
       typeof targetVal === 'object' &&
       !Array.isArray(targetVal)
     ) {
-      result[key] = deepMerge(
-        targetVal as Record<string, unknown>,
-        sourceVal as Record<string, unknown>
-      ) as T[keyof T];
+      result[key] = deepMerge(targetVal, sourceVal);
     } else if (sourceVal !== undefined) {
-      result[key] = sourceVal as T[keyof T];
+      result[key] = sourceVal;
     }
   }
   return result;

@@ -3,7 +3,6 @@ import type { AppConfig } from './config';
 import type {
   DBBudgetConfig,
   DBCollection,
-  DBGenerationCost,
   DBImage,
   DBPreset,
   DBQueueItem,
