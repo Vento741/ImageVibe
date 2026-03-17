@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay } from '@/shared/lib/utils';
+import { GalleryFilters } from './GalleryFilters';
 
 export function GalleryPage() {
   const images = useGalleryStore((s) => s.images);
@@ -80,6 +81,9 @@ export function GalleryPage() {
           />
         </div>
       </div>
+
+      {/* Filters */}
+      <GalleryFilters />
 
       {/* Image grid */}
       <div className="flex-1 overflow-y-auto">
