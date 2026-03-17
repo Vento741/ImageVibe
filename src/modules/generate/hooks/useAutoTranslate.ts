@@ -15,8 +15,8 @@ function isRussianText(text: string): boolean {
 export function useAutoTranslate(debounceMs = 800) {
   const prompt = useGenerateStore((s) => s.prompt);
   const setTranslatedPrompt = useGenerateStore((s) => s.setTranslatedPrompt);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const abortRef = useRef<AbortController>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const abortRef = useRef<AbortController>(undefined);
   const lastPromptRef = useRef('');
 
   useEffect(() => {
