@@ -275,5 +275,36 @@ function getMigrations(): Migration[] {
         INSERT INTO budget_config (id, warning_threshold, hard_stop) VALUES (1, 0.8, 0);
       `,
     },
+    {
+      version: 2,
+      sql: `
+        -- Builtin presets
+        INSERT INTO presets (name, icon, model_id, params, style_tags, negative_prompt, is_builtin, sort_order) VALUES
+        ('Быстрый черновик', '⚡', 'black-forest-labs/flux.2-klein-4b', '{"aspectRatio":"1:1","imageSize":"1K"}', '[]', '', 1, 0),
+        ('Фотопортрет', '📸', 'black-forest-labs/flux.2-pro', '{"aspectRatio":"1:1","imageSize":"1K"}', '["photorealistic","sharp focus"]', 'blurry, cartoon, deformed', 1, 1),
+        ('Аниме персонаж', '🎌', 'bytedance-seed/seedream-4.5', '{"aspectRatio":"1:1","imageSize":"1K"}', '["anime","vibrant"]', 'photorealistic, 3d render', 1, 2),
+        ('Концепт-арт', '🎨', 'black-forest-labs/flux.2-max', '{"aspectRatio":"16:9","imageSize":"1K"}', '["concept art","highly detailed"]', 'photo, realistic', 1, 3),
+        ('Типографика', '🔤', 'black-forest-labs/flux.2-flex', '{"aspectRatio":"1:1","imageSize":"1K"}', '["clean text"]', 'blurry text, illegible', 1, 4),
+        ('Продуктовое фото', '🛍', 'google/gemini-3-pro-image-preview', '{"aspectRatio":"1:1","imageSize":"1K"}', '["professional"]', 'cluttered background', 1, 5),
+        ('Умная генерация', '🧠', 'openai/gpt-5-image-mini', '{"aspectRatio":"1:1","imageSize":"1K"}', '[]', '', 1, 6),
+        ('Бюджетный', '💰', 'google/gemini-3.1-flash-image-preview', '{"aspectRatio":"1:1","imageSize":"1K"}', '[]', '', 1, 7);
+
+        -- Builtin negative prompt templates
+        INSERT INTO negative_prompt_templates (name, prompt, category, is_builtin, sort_order) VALUES
+        ('Базовый', 'blurry, low quality, deformed, watermark, text, logo', 'base', 1, 0),
+        ('Портреты', 'blurry, low quality, deformed, watermark, bad anatomy, extra fingers, mutated hands, poorly drawn face', 'portrait', 1, 1),
+        ('Пейзажи', 'blurry, low quality, people, buildings, urban, text, watermark', 'landscape', 1, 2),
+        ('Аниме', 'photorealistic, 3d, western, blurry, low quality, deformed', 'anime', 1, 3),
+        ('Фото', 'cartoon, anime, illustration, painting, drawing, low quality, blurry', 'photo', 1, 4),
+        ('Максимум', 'blurry, low quality, deformed, watermark, text, logo, bad anatomy, extra fingers, mutated hands, poorly drawn face, duplicate, morbid, out of frame, cropped, worst quality, low resolution, jpeg artifacts', 'all', 1, 5);
+
+        -- Builtin smart folders
+        INSERT INTO smart_folders (name, icon, filter_config, is_builtin, sort_order) VALUES
+        ('Избранное', '⭐', '{"isFavorite":true}', 1, 0),
+        ('Портреты', '👤', '{"tags":["портрет"]}', 1, 1),
+        ('Пейзажи', '🏔', '{"tags":["пейзаж"]}', 1, 2),
+        ('Аниме', '🎌', '{"tags":["аниме"]}', 1, 3);
+      `,
+    },
   ];
 }
