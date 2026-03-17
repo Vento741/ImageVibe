@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 import { VariationsGrid } from '@/modules/compare/components/VariationsGrid';
 
 export function Canvas() {
@@ -73,7 +73,7 @@ export function Canvas() {
                   {currentResult.costUsd > 0 && ` • ${formatCostDisplay(currentResult.costUsd)}`}
                 </div>
                 <div className="glass-panel px-3 py-1.5 text-xs text-text-secondary">
-                  {currentResult.modelId.split('/')[1]}
+                  {getModelShortName(currentResult.modelId)}
                 </div>
               </div>
             )}

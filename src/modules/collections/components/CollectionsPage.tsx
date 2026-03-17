@@ -86,11 +86,13 @@ export function CollectionsPage() {
         {/* Collections */}
         <div className="flex flex-col gap-1 overflow-y-auto">
           {collections.map((col) => (
-            <motion.button
+            <motion.div
               key={col.id}
               onClick={() => setSelectedId(col.id)}
               whileHover={{ x: 2 }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer flex items-center justify-between ${
+              role="button"
+              tabIndex={0}
+              className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer flex items-center justify-between ${
                 selectedId === col.id
                   ? 'bg-aurora-blue/10 text-aurora-blue'
                   : 'text-text-secondary hover:bg-glass-hover'
@@ -103,7 +105,7 @@ export function CollectionsPage() {
               >
                 ✕
               </button>
-            </motion.button>
+            </motion.div>
           ))}
 
           {collections.length === 0 && !isCreating && (

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName, formatDate } from '@/shared/lib/utils';
 import type { DBImage } from '@/shared/types/database';
 
 export function ImageViewer() {
@@ -196,7 +196,7 @@ export function ImageViewer() {
                 <div>
                   <div className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">Параметры</div>
                   <div className="flex flex-col gap-1 text-xs">
-                    <MetadataRow label="Модель" value={image.model_id.split('/')[1]} />
+                    <MetadataRow label="Модель" value={getModelShortName(image.model_id)} />
                     <MetadataRow label="Режим" value={image.mode} />
                     <MetadataRow label="Размер" value={`${image.width}×${image.height}`} />
                     {params.aspectRatio && <MetadataRow label="Пропорции" value={params.aspectRatio} />}
@@ -204,7 +204,7 @@ export function ImageViewer() {
                     {image.cost_usd ? <MetadataRow label="Стоимость" value={formatCostDisplay(image.cost_usd)} /> : null}
                     {image.generation_time_ms ? <MetadataRow label="Время" value={`${image.generation_time_ms}мс`} /> : null}
                     <MetadataRow label="Файл" value={image.file_path.split(/[/\\]/).pop() ?? ''} />
-                    <MetadataRow label="Дата" value={new Date(image.created_at).toLocaleString('ru-RU')} />
+                    <MetadataRow label="Дата" value={formatDate(image.created_at)} />
                   </div>
                 </div>
 

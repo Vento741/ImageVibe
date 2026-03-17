@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 
 const STATUS_ICONS: Record<string, string> = {
   pending: '⏸',
@@ -97,7 +97,7 @@ export function QueuePanel() {
                     {item.prompt.slice(0, 50)}
                   </span>
                   <span className="text-text-tertiary shrink-0">
-                    {item.model_id.split('/')[1]}
+                    {getModelShortName(item.model_id)}
                   </span>
                   {item.estimated_cost && (
                     <span className="text-text-tertiary shrink-0">

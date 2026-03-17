@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import type { GenerationResult } from '@/shared/types/api';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 
 interface VariationsGridProps {
   results: Array<GenerationResult & { filePath?: string; imageId?: number }>;
@@ -10,11 +10,10 @@ interface VariationsGridProps {
 export function VariationsGrid({ results, onSelect }: VariationsGridProps) {
   if (results.length === 0) return null;
 
-  const gridCols = results.length <= 2 ? 'grid-cols-2' : 'grid-cols-2';
   const gridRows = results.length <= 2 ? 'grid-rows-1' : 'grid-rows-2';
 
   return (
-    <div className={`grid ${gridCols} ${gridRows} gap-2 w-full h-full`}>
+    <div className={`grid grid-cols-2 ${gridRows} gap-2 w-full h-full`}>
       {results.slice(0, 4).map((result, idx) => (
         <motion.div
           key={`${result.generationId}-${idx}`}
@@ -34,7 +33,7 @@ export function VariationsGrid({ results, onSelect }: VariationsGridProps) {
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
             <div className="w-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="glass-panel px-2 py-1 text-[10px] text-text-secondary flex justify-between">
-                <span>{result.modelId.split('/')[1]}</span>
+                <span>{getModelShortName(result.modelId)}</span>
                 <span>
                   {result.seed && `#${result.seed}`}
                   {result.costUsd > 0 && ` • ${formatCostDisplay(result.costUsd)}`}

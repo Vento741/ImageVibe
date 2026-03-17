@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 import { GalleryFilters } from './GalleryFilters';
 
 export function GalleryPage() {
@@ -140,7 +140,7 @@ export function GalleryPage() {
                   <div className="text-[10px] text-white/80">
                     <div className="truncate">{image.prompt.slice(0, 60)}</div>
                     <div className="flex justify-between mt-0.5">
-                      <span>{image.model_id.split('/')[1]}</span>
+                      <span>{getModelShortName(image.model_id)}</span>
                       {image.cost_usd ? (
                         <span>{formatCostDisplay(image.cost_usd)}</span>
                       ) : null}

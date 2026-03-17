@@ -29,6 +29,21 @@ export function isTypingInInput(target: EventTarget | null): boolean {
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 }
 
+/** Get short display name from model ID (e.g., "black-forest-labs/flux.2-pro" → "flux.2-pro") */
+export function getModelShortName(modelId: string): string {
+  return modelId.split('/')[1] ?? modelId;
+}
+
+/** Generate a random seed (0 to INT32_MAX) */
+export function randomSeed(): number {
+  return Math.floor(Math.random() * 2147483647);
+}
+
+/** Format date string for Russian locale */
+export function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleString('ru-RU');
+}
+
 /** Clamp a number between min and max */
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);

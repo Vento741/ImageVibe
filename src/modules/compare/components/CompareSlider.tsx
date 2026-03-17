@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { clamp } from '@/shared/lib/utils';
 
 interface CompareSliderProps {
   imageA: string; // base64 or URL
@@ -24,7 +25,7 @@ export function CompareSlider({ imageA, imageB, labelA, labelB }: CompareSliderP
     if (!isDragging.current || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
-    setPosition(Math.max(0, Math.min(100, x)));
+    setPosition(clamp(x, 0, 100));
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -32,7 +33,7 @@ export function CompareSlider({ imageA, imageB, labelA, labelB }: CompareSliderP
     const rect = containerRef.current.getBoundingClientRect();
     const touch = e.touches[0];
     const x = ((touch.clientX - rect.left) / rect.width) * 100;
-    setPosition(Math.max(0, Math.min(100, x)));
+    setPosition(clamp(x, 0, 100));
   }, []);
 
   return (

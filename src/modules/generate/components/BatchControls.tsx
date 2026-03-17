@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useGenerateStore } from '../store';
 import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, randomSeed } from '@/shared/lib/utils';
 
 export function BatchControls() {
   const prompt = useGenerateStore((s) => s.prompt);
@@ -38,7 +38,7 @@ export function BatchControls() {
           mode,
           aspectRatio,
           imageSize,
-          seed: Math.floor(Math.random() * 2147483647),
+          seed: randomSeed(),
           styleTags: styleTags.length > 0 ? styleTags : undefined,
         });
 
