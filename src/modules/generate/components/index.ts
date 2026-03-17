@@ -7,3 +7,5 @@ export { ParamsPanel } from './ParamsPanel';
 export { Canvas } from './Canvas';
 export { GenerateButton } from './GenerateButton';
 export { TranslationPreview } from './TranslationPreview';
+export { ModeSelector } from './ModeSelector';
+export { SourceImage } from './SourceImage';

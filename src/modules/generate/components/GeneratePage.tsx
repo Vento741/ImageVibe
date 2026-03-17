@@ -3,6 +3,8 @@ import { StyleTags } from './StyleTags';
 import { ParamsPanel } from './ParamsPanel';
 import { Canvas } from './Canvas';
 import { GenerateButton } from './GenerateButton';
+import { ModeSelector } from './ModeSelector';
+import { SourceImage } from './SourceImage';
 import { useGenerateStore } from '../store';
 
 export function GeneratePage() {
@@ -12,8 +14,10 @@ export function GeneratePage() {
     <div className="flex h-full gap-4">
       {/* Left Panel — Prompt & Params */}
       <div className="w-80 flex flex-col gap-3 overflow-y-auto pr-1 shrink-0">
+        {uiMode === 'advanced' && <ModeSelector />}
         <PromptInput />
         <StyleTags />
+        {uiMode === 'advanced' && <SourceImage />}
         {uiMode === 'advanced' && <ParamsPanel />}
         <GenerateButton />
       </div>
