@@ -1,37 +1,34 @@
 import type { IpcChannels, IpcEvents } from '../types/ipc';
 
-/**
- * Type-safe IPC invoke wrapper.
- * Usage: const config = await ipc.invoke('config:get');
- */
+const api = window.electronAPI;
+
 function invoke<K extends keyof IpcChannels>(
   channel: K,
   ...args: IpcChannels[K]['args']
 ): Promise<IpcChannels[K]['result']> {
-  return window.electronAPI.invoke(channel, ...args) as Promise<IpcChannels[K]['result']>;
+  if (!api) {
+    console.warn(`[IPC] electronAPI not available, skipping: ${channel}`);
+    return Promise.resolve(undefined as IpcChannels[K]['result']);
+  }
+  return api.invoke(channel, ...args) as Promise<IpcChannels[K]['result']>;
 }
 
-/**
- * Listen for events from main process.
- * Returns cleanup function.
- */
 function on<K extends keyof IpcEvents>(
   channel: K,
   callback: (data: IpcEvents[K]) => void
 ): () => void {
-  return window.electronAPI.on(channel, (data: unknown) => {
+  if (!api) return () => {};
+  return api.on(channel, (data: unknown) => {
     callback(data as IpcEvents[K]);
   });
 }
 
-/**
- * Listen for a single event from main process.
- */
 function once<K extends keyof IpcEvents>(
   channel: K,
   callback: (data: IpcEvents[K]) => void
 ): void {
-  window.electronAPI.once(channel, (data: unknown) => {
+  if (!api) return;
+  api.once(channel, (data: unknown) => {
     callback(data as IpcEvents[K]);
   });
 }
