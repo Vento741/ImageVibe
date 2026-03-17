@@ -5,7 +5,7 @@ console.log('Waiting 3s for Vite...');
 await new Promise(r => setTimeout(r, 3000));
 console.log('Starting Electron...');
 
-const env = { ...process.env, VITE_DEV_SERVER_URL: 'http://localhost:5173' };
+const env = { ...process.env, VITE_DEV_SERVER_URL: 'http://127.0.0.1:5173' };
 delete env.ELECTRON_RUN_AS_NODE;
 
 const electron = spawn(
