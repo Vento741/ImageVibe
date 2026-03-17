@@ -1,4 +1,5 @@
 import { PromptInput } from './PromptInput';
+import { StyleTags } from './StyleTags';
 import { ParamsPanel } from './ParamsPanel';
 import { Canvas } from './Canvas';
 import { GenerateButton } from './GenerateButton';
@@ -12,6 +13,7 @@ export function GeneratePage() {
       {/* Left Panel — Prompt & Params */}
       <div className="w-80 flex flex-col gap-3 overflow-y-auto pr-1 shrink-0">
         <PromptInput />
+        <StyleTags />
         {uiMode === 'advanced' && <ParamsPanel />}
         <GenerateButton />
       </div>
