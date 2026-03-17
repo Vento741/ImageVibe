@@ -1,0 +1,23 @@
+node_modules/
+dist/
+dist-electron/
+dist-build/
+*.db
+*.db-journal
+*.db-wal
+.env
+config.json
+
+# Local docs, specs, plans — not for public repo
+docs/
+.claude/
+ImageVibe-plan.md
+CLAUDE.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
