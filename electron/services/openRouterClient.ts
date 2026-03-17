@@ -123,21 +123,12 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
   const data = (await response.json()) as OpenRouterResponse;
   const generationId = data.id;
 
-  // Log response structure for debugging
-  console.log('[OpenRouter] Response id:', generationId, 'choices:', data.choices?.length);
-  if (data.choices?.[0]) {
-    const msg = data.choices[0].message;
-    const c = msg.content;
-    const imgs = msg.images;
-    console.log('[OpenRouter] Content type:', typeof c, Array.isArray(c) ? `array[${c.length}]` : '');
-    console.log('[OpenRouter] Images field:', imgs ? `array[${imgs.length}]` : 'absent');
-    if (imgs && Array.isArray(imgs)) {
-      imgs.forEach((img, i) => console.log(`[OpenRouter]   image[${i}]:`, img.type, 'image_url' in img ? img.image_url?.url?.substring(0, 80) + '...' : ''));
-    }
-    if (typeof c === 'string') {
-      console.log('[OpenRouter] Content preview:', c.substring(0, 120));
-    }
-  }
+  // Log full response structure for debugging
+  console.log('[OpenRouter] FULL MESSAGE:', JSON.stringify(data.choices?.[0]?.message, (_, v) => {
+    // Truncate long base64 strings in logs
+    if (typeof v === 'string' && v.length > 200) return v.substring(0, 200) + `...[${v.length} chars]`;
+    return v;
+  }, 2));
 
   // Extract image from response
   const imageBase64 = await extractImageFromResponse(data);

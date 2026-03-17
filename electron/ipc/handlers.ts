@@ -359,6 +359,10 @@ export function registerIpcHandlers(): void {
     return result.filePaths[0] || null;
   });
 
+  ipcMain.handle('file:open-folder', (_, folderPath: string) => {
+    shell.openPath(folderPath);
+  });
+
   // ═══ App ═══
   ipcMain.handle('app:get-version', () => app.getVersion());
   ipcMain.handle('app:open-external', (_, url: string) => shell.openExternal(url));
