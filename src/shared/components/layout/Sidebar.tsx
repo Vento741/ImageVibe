@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import type { Page } from '../../../App';
+import { CostCounter } from '@/modules/cost/components/CostCounter';
 
 interface SidebarProps {
   currentPage: Page;
@@ -43,7 +44,8 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       </nav>
 
       {/* Bottom items */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1 w-full">
+        <CostCounter />
         {bottomItems.map((item) => (
           <SidebarButton
             key={item.id}
