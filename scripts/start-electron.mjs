@@ -1,29 +1,22 @@
 import { spawn } from 'child_process';
-import { createConnection } from 'net';
 
-// Wait for Vite dev server to be ready
-function waitForPort(port, timeout = 30000) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    const check = () => {
-      const socket = createConnection({ port, host: '127.0.0.1' }, () => {
-        socket.destroy();
-        resolve();
-      });
-      socket.on('error', () => {
-        if (Date.now() - start > timeout) {
-          reject(new Error(`Timeout waiting for port ${port}`));
-        } else {
-          setTimeout(check, 300);
-        }
-      });
-    };
-    check();
-  });
+// Wait for Vite dev server via HTTP
+async function waitForVite(url, timeout = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return;
+    } catch {
+      // not ready yet
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  throw new Error(`Timeout waiting for ${url}`);
 }
 
-console.log('Waiting for Vite on port 5173...');
-await waitForPort(5173);
+console.log('Waiting for Vite...');
+await waitForVite('http://localhost:5173');
 console.log('Vite ready, starting Electron...');
 
 // Start Electron without ELECTRON_RUN_AS_NODE
