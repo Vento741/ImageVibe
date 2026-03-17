@@ -36,18 +36,23 @@ export function App() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      <AuroraBackground />
-      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-      <main className="flex-1 relative z-10 overflow-hidden">
-        <div className="h-full p-4">
-          {currentPage === 'generate' && <GeneratePage />}
-          {currentPage === 'gallery' && <GalleryPage />}
-          {currentPage === 'collections' && <CollectionsPage />}
-          {currentPage === 'analytics' && <AnalyticsPage />}
-          {currentPage === 'settings' && <SettingsPage />}
-        </div>
-      </main>
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
+      {/* Titlebar drag region */}
+      <div className="titlebar-drag h-9 w-full shrink-0 relative z-20" />
+
+      <div className="flex flex-1 overflow-hidden">
+        <AuroraBackground />
+        <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+        <main className="flex-1 relative z-10 overflow-hidden">
+          <div className="h-full p-4">
+            {currentPage === 'generate' && <GeneratePage />}
+            {currentPage === 'gallery' && <GalleryPage />}
+            {currentPage === 'collections' && <CollectionsPage />}
+            {currentPage === 'analytics' && <AnalyticsPage />}
+            {currentPage === 'settings' && <SettingsPage />}
+          </div>
+        </main>
+      </div>
       <ImageViewer />
       <CommandPalette
         isOpen={isCommandPaletteOpen}

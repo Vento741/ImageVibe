@@ -89,6 +89,7 @@ export interface IpcChannels {
   };
   'file:open-folder': { args: [string]; result: void };
   'file:select-image': { args: []; result: string | null };
+  'file:select-folder': { args: []; result: string | null };
   'file:export': {
     args: [number, ExportOptions];
     result: string;

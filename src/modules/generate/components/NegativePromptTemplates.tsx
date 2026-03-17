@@ -58,7 +58,7 @@ export function NegativePromptTemplates() {
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 z-40"
+              className="fixed inset-0 z-[99]"
               onClick={() => setIsOpen(false)}
             />
 
@@ -66,7 +66,7 @@ export function NegativePromptTemplates() {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="absolute top-6 left-0 z-50 w-72 glass-panel p-2 flex flex-col gap-1"
+              className="absolute top-6 left-0 z-[100] w-72 glass-panel p-2 flex flex-col gap-1"
             >
               {TEMPLATES.map((t) => (
                 <button

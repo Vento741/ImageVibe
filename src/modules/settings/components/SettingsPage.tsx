@@ -206,9 +206,22 @@ export function SettingsPage() {
             <span>Версия</span>
             <AppVersion />
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-start">
             <span>Хранилище</span>
-            <span className="text-text-tertiary truncate max-w-[60%] text-right">{config.storage.imagesPath}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-text-tertiary truncate max-w-[40%] text-right text-[10px]">{config.storage.imagesPath}</span>
+              <button
+                onClick={async () => {
+                  const folder = await ipc.invoke('file:select-folder' as any);
+                  if (folder) {
+                    await saveConfig({ storage: { ...config.storage, imagesPath: folder } });
+                  }
+                }}
+                className="text-[10px] text-aurora-blue hover:text-aurora-purple cursor-pointer shrink-0"
+              >
+                Изменить
+              </button>
+            </div>
           </div>
         </div>
       </GlassPanel>

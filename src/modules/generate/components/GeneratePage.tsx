@@ -16,7 +16,7 @@ export function GeneratePage() {
   return (
     <div className="flex h-full gap-4">
       {/* Left Panel — Prompt & Params */}
-      <div className="w-80 flex flex-col gap-3 overflow-y-auto pr-1 shrink-0">
+      <div className="w-80 min-w-0 flex flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1 shrink-0">
         {uiMode === 'advanced' && <PresetSelector />}
         {uiMode === 'advanced' && <ModeSelector />}
         <PromptInput />

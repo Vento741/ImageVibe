@@ -251,6 +251,114 @@ export function registerIpcHandlers(): void {
     return result.filePaths[0] || null;
   });
 
+  // ═══ Collections ═══
+  ipcMain.handle('collections:list', () => {
+    const db = getDatabase();
+    return db.prepare('SELECT * FROM collections ORDER BY updated_at DESC').all();
+  });
+
+  ipcMain.handle('collections:create', (_, name: string, description?: string) => {
+    const db = getDatabase();
+    const result = db.prepare(
+      'INSERT INTO collections (name, description) VALUES (?, ?)'
+    ).run(name, description || null);
+    return db.prepare('SELECT * FROM collections WHERE id = ?').get(result.lastInsertRowid);
+  });
+
+  ipcMain.handle('collections:delete', (_, id: number) => {
+    const db = getDatabase();
+    db.prepare('DELETE FROM collection_images WHERE collection_id = ?').run(id);
+    db.prepare('DELETE FROM collections WHERE id = ?').run(id);
+  });
+
+  ipcMain.handle('collections:add-image', (_, collectionId: number, imageId: number) => {
+    const db = getDatabase();
+    db.prepare('INSERT OR IGNORE INTO collection_images (collection_id, image_id) VALUES (?, ?)').run(collectionId, imageId);
+  });
+
+  ipcMain.handle('collections:remove-image', (_, collectionId: number, imageId: number) => {
+    const db = getDatabase();
+    db.prepare('DELETE FROM collection_images WHERE collection_id = ? AND image_id = ?').run(collectionId, imageId);
+  });
+
+  ipcMain.handle('collections:images', (_, collectionId: number) => {
+    const db = getDatabase();
+    return db.prepare(
+      'SELECT i.* FROM images i JOIN collection_images ci ON i.id = ci.image_id WHERE ci.collection_id = ? ORDER BY ci.added_at DESC'
+    ).all(collectionId);
+  });
+
+  // ═══ Presets ═══
+  ipcMain.handle('presets:list', () => {
+    const db = getDatabase();
+    return db.prepare('SELECT * FROM presets ORDER BY sort_order ASC').all();
+  });
+
+  ipcMain.handle('presets:create', (_, preset: any) => {
+    const db = getDatabase();
+    const result = db.prepare(
+      'INSERT INTO presets (name, icon, model_id, params, style_tags, negative_prompt, is_builtin, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(preset.name, preset.icon, preset.model_id, preset.params, preset.style_tags, preset.negative_prompt, preset.is_builtin || 0, preset.sort_order || 0);
+    return db.prepare('SELECT * FROM presets WHERE id = ?').get(result.lastInsertRowid);
+  });
+
+  ipcMain.handle('presets:update', (_, id: number, updates: any) => {
+    const db = getDatabase();
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    for (const [key, value] of Object.entries(updates)) {
+      if (key !== 'id' && key !== 'created_at') {
+        fields.push(`${key} = ?`);
+        values.push(value);
+      }
+    }
+    if (fields.length > 0) {
+      db.prepare(`UPDATE presets SET ${fields.join(', ')} WHERE id = ?`).run(...values, id);
+    }
+  });
+
+  ipcMain.handle('presets:delete', (_, id: number) => {
+    const db = getDatabase();
+    db.prepare('DELETE FROM presets WHERE id = ?').run(id);
+  });
+
+  // ═══ Queue ═══
+  ipcMain.handle('queue:list', () => {
+    const db = getDatabase();
+    return db.prepare('SELECT * FROM generation_queue ORDER BY created_at ASC').all();
+  });
+
+  ipcMain.handle('queue:add', (_, item: any) => {
+    const db = getDatabase();
+    const result = db.prepare(
+      'INSERT INTO generation_queue (prompt, translated_prompt, model_id, params, negative_prompt, batch_group_id, estimated_cost, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(item.prompt, item.translated_prompt, item.model_id, item.params, item.negative_prompt, item.batch_group_id, item.estimated_cost, item.priority || 0);
+    return db.prepare('SELECT * FROM generation_queue WHERE id = ?').get(result.lastInsertRowid);
+  });
+
+  ipcMain.handle('queue:cancel', (_, id: number) => {
+    const db = getDatabase();
+    db.prepare("UPDATE generation_queue SET status = 'cancelled' WHERE id = ? AND status = 'pending'").run(id);
+  });
+
+  ipcMain.handle('queue:clear', () => {
+    const db = getDatabase();
+    db.prepare("DELETE FROM generation_queue WHERE status IN ('completed', 'failed', 'cancelled')").run();
+  });
+
+  ipcMain.handle('queue:retry', (_, id: number) => {
+    const db = getDatabase();
+    db.prepare("UPDATE generation_queue SET status = 'pending', error_message = NULL WHERE id = ?").run(id);
+  });
+
+  // ═══ File: select folder ═══
+  ipcMain.handle('file:select-folder', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+    });
+    return result.filePaths[0] || null;
+  });
+
   // ═══ App ═══
   ipcMain.handle('app:get-version', () => app.getVersion());
   ipcMain.handle('app:open-external', (_, url: string) => shell.openExternal(url));

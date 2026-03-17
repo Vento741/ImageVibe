@@ -32,9 +32,6 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 
   return (
     <aside className="w-16 h-full flex flex-col items-center py-3 gap-1 bg-bg-secondary/50 border-r border-glass-border relative z-10">
-      {/* Drag region for frameless window */}
-      <div className="titlebar-drag h-8 w-full" />
-
       {/* Main navigation */}
       <nav className="flex flex-col items-center gap-1 flex-1">
         {navItems.map((item) => (
