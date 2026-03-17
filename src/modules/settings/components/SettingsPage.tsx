@@ -17,7 +17,8 @@ export function SettingsPage() {
   const saveConfig = useCallback(async (partial: Partial<AppConfig>) => {
     setIsSaving(true);
     try {
-      const updated = await ipc.invoke('config:set', partial);
+      await ipc.invoke('config:set', partial);
+      const updated = await ipc.invoke('config:get');
       setConfig(updated);
     } catch (err) {
       console.error('Failed to save config:', err);
