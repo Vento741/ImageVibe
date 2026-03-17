@@ -3,6 +3,7 @@ import { AuroraBackground } from './shared/components/ui/AuroraBackground';
 import { Sidebar } from './shared/components/layout/Sidebar';
 import { GeneratePage } from './modules/generate/components/GeneratePage';
 import { GalleryPage } from './modules/gallery/components/GalleryPage';
+import { CollectionsPage } from './modules/collections/components/CollectionsPage';
 import { CommandPalette } from './modules/command-palette/components/CommandPalette';
 import { useKeyboardShortcuts } from './shared/hooks/useKeyboardShortcuts';
 import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
@@ -35,11 +36,7 @@ export function App() {
         <div className="h-full p-4">
           {currentPage === 'generate' && <GeneratePage />}
           {currentPage === 'gallery' && <GalleryPage />}
-          {currentPage === 'collections' && (
-            <div className="text-text-secondary flex items-center justify-center h-full">
-              Коллекции — скоро будет
-            </div>
-          )}
+          {currentPage === 'collections' && <CollectionsPage />}
           {currentPage === 'analytics' && (
             <div className="text-text-secondary flex items-center justify-center h-full">
               Аналитика — скоро будет
