@@ -62,9 +62,9 @@ function createWindow() {
 app.whenReady().then(() => {
   // Register protocol handler to serve local files
   protocol.handle('local-file', (request) => {
-    // URL format: local-file:///C:/path/to/file.png
-    const filePath = decodeURIComponent(request.url.replace('local-file://', ''));
-    return net.fetch('file://' + filePath);
+    // URL: local-file:///C:/path/to/file.png → file:///C:/path/to/file.png
+    const fileUrl = request.url.replace('local-file://', 'file://');
+    return net.fetch(fileUrl);
   });
 
   loadConfig();

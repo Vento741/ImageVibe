@@ -10,8 +10,8 @@ const SIZE_MEGAPIXELS: Record<ImageSize, number> = {
 };
 
 /** Estimated output tokens for image generation by LLM models */
-const ESTIMATED_IMAGE_OUTPUT_TOKENS = 1600;
-const ESTIMATED_PROMPT_TOKENS = 200;
+const ESTIMATED_IMAGE_OUTPUT_TOKENS = 1120;
+const ESTIMATED_PROMPT_TOKENS = 150;
 
 /**
  * Estimate the cost of a generation before it happens.

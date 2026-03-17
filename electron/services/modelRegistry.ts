@@ -53,7 +53,7 @@ const MODELS: ImageModel[] = [
     provider: 'Google',
     category: 'fast',
     description: 'Pro-качество на Flash скорости. Поддерживает редактирование и мультимодальность.',
-    pricing: { type: 'per_token', perPromptToken: 0.0000005, perCompletionToken: 0.000003 },
+    pricing: { type: 'per_token', perPromptToken: 0.0000005, perCompletionToken: 0.000003, perImageOutputToken: 0.00006 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: true, aspectRatio: true, imageSize: false,
@@ -74,7 +74,7 @@ const MODELS: ImageModel[] = [
     provider: 'Google',
     category: 'fast',
     description: 'Оригинальный Nano Banana. Бюджетный вариант Gemini.',
-    pricing: { type: 'per_token', perPromptToken: 0.0000003, perCompletionToken: 0.0000025 },
+    pricing: { type: 'per_token', perPromptToken: 0.0000003, perCompletionToken: 0.0000025, perImageOutputToken: 0.000035 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: true, aspectRatio: true, imageSize: false,

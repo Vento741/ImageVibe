@@ -46,9 +46,10 @@ export function formatDate(dateStr: string): string {
 
 /** Convert a local file path to a URL loadable in the renderer */
 export function localFileUrl(filePath: string): string {
-  // Use custom protocol to bypass file:// restrictions
   const normalized = filePath.replace(/\\/g, '/');
-  return `local-file://${normalized}`;
+  // Ensure triple slash: local-file:///C:/Users/...
+  const prefix = normalized.startsWith('/') ? 'local-file://' : 'local-file:///';
+  return `${prefix}${normalized}`;
 }
 
 /** Clamp a number between min and max */
