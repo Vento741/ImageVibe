@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "rootDir": ".",
     "outDir": "dist-electron"
   },
-  "include": ["electron/**/*", "vite.config.ts"]
+  "include": ["electron/**/*"]
 }
