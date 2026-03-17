@@ -6,7 +6,7 @@ function waitForPort(port, timeout = 30000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
-      const socket = createConnection({ port }, () => {
+      const socket = createConnection({ port, host: '127.0.0.1' }, () => {
         socket.destroy();
         resolve();
       });
