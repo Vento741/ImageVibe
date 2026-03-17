@@ -34,6 +34,23 @@ const MODELS_BY_CATEGORY: Record<ModelCategory, Array<{ id: string; name: string
   ],
 };
 
+// Supports map derived from modelRegistry — embedded here to avoid synchronous IPC calls
+const MODEL_SUPPORTS: Record<string, { seed: boolean; negativePrompt: boolean; imageSize: boolean; fontInputs: boolean; superResolution: boolean }> = {
+  'black-forest-labs/flux.2-klein-4b': { seed: true, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+  'black-forest-labs/flux.2-pro': { seed: true, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+  'black-forest-labs/flux.2-max': { seed: true, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+  'black-forest-labs/flux.2-flex': { seed: true, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+  'bytedance-seed/seedream-4.5': { seed: true, negativePrompt: true, imageSize: true, fontInputs: false, superResolution: false },
+  'sourceful/riverflow-v2-pro': { seed: true, negativePrompt: true, imageSize: true, fontInputs: true, superResolution: true },
+  'sourceful/riverflow-v2-fast': { seed: true, negativePrompt: true, imageSize: true, fontInputs: true, superResolution: false },
+  'sourceful/riverflow-v2-max-preview': { seed: true, negativePrompt: true, imageSize: true, fontInputs: true, superResolution: true },
+  'google/gemini-3-pro-image-preview': { seed: true, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+  'google/gemini-3.1-flash-image-preview': { seed: true, negativePrompt: false, imageSize: false, fontInputs: false, superResolution: false },
+  'google/gemini-2.5-flash-image': { seed: true, negativePrompt: false, imageSize: false, fontInputs: false, superResolution: false },
+  'openai/gpt-5-image': { seed: false, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+  'openai/gpt-5-image-mini': { seed: false, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false },
+};
+
 export function ParamsPanel() {
   const selectedCategory = useGenerateStore((s) => s.selectedCategory);
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
@@ -48,6 +65,8 @@ export function ParamsPanel() {
   const randomizeSeed = useGenerateStore((s) => s.randomizeSeed);
 
   const models = MODELS_BY_CATEGORY[selectedCategory] || [];
+
+  const supports = MODEL_SUPPORTS[selectedModelId] ?? { seed: true, negativePrompt: false, imageSize: true, fontInputs: false, superResolution: false };
 
   return (
     <GlassPanel className="flex flex-col gap-3">
@@ -117,50 +136,82 @@ export function ParamsPanel() {
         </div>
       </div>
 
-      {/* Image Size */}
-      <div>
-        <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
-          Размер
-        </label>
-        <div className="flex gap-1">
-          {IMAGE_SIZES.map((size) => (
-            <button
-              key={size}
-              onClick={() => setImageSize(size)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                imageSize === size
-                  ? 'bg-aurora-blue/20 text-aurora-blue border border-aurora-blue/30'
-                  : 'text-text-secondary hover:bg-glass-hover border border-transparent'
-              }`}
-            >
-              {size}
-            </button>
-          ))}
+      {/* Image Size — only for models that support it */}
+      {supports.imageSize && (
+        <div>
+          <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
+            Размер
+          </label>
+          <div className="flex gap-1">
+            {IMAGE_SIZES.map((size) => (
+              <button
+                key={size}
+                onClick={() => setImageSize(size)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  imageSize === size
+                    ? 'bg-aurora-blue/20 text-aurora-blue border border-aurora-blue/30'
+                    : 'text-text-secondary hover:bg-glass-hover border border-transparent'
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Seed */}
-      <div>
-        <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
-          Seed
-        </label>
-        <div className="flex gap-2">
+      {/* Seed — only for models that support it */}
+      {supports.seed && (
+        <div>
+          <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
+            Seed
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={seed ?? ''}
+              onChange={(e) => setSeed(e.target.value ? Number(e.target.value) : null)}
+              placeholder="Случайный"
+              className="flex-1 bg-bg-tertiary text-text-primary text-sm rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50"
+            />
+            <button
+              onClick={randomizeSeed}
+              className="px-3 py-2 rounded-lg bg-glass-hover text-text-secondary hover:text-text-primary transition-colors text-sm cursor-pointer"
+              title="Случайный seed"
+            >
+              🎲
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Font Inputs — Riverflow only */}
+      {supports.fontInputs && (
+        <div>
+          <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
+            Шрифт
+          </label>
           <input
-            type="number"
-            value={seed ?? ''}
-            onChange={(e) => setSeed(e.target.value ? Number(e.target.value) : null)}
-            placeholder="Случайный"
-            className="flex-1 bg-bg-tertiary text-text-primary text-sm rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50"
+            type="text"
+            placeholder="Arial, Roboto..."
+            className="w-full bg-bg-tertiary text-text-primary text-sm rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50"
           />
+        </div>
+      )}
+
+      {/* Super Resolution — Riverflow only */}
+      {supports.superResolution && (
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider">
+            Super Resolution
+          </label>
           <button
-            onClick={randomizeSeed}
-            className="px-3 py-2 rounded-lg bg-glass-hover text-text-secondary hover:text-text-primary transition-colors text-sm cursor-pointer"
-            title="Случайный seed"
+            className="w-9 h-5 rounded-full bg-glass-active transition-colors cursor-pointer relative"
           >
-            🎲
+            <div className="w-4 h-4 rounded-full bg-text-primary absolute top-0.5 left-0.5 transition-transform" />
           </button>
         </div>
-      </div>
+      )}
     </GlassPanel>
   );
 }
