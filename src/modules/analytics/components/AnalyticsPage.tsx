@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import {
+  Calendar,
+  CalendarDays,
+  CalendarRange,
+  Coins,
+  Paintbrush,
+  BarChart3,
+  CreditCard,
+  Palette,
+  Sparkles,
+  Globe,
+} from 'lucide-react';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import type { SpendingSummary, CreditBalance, BudgetStatus } from '@/shared/types/ipc';
 
-const TYPE_LABELS: Record<string, string> = {
-  image: '🎨 Генерация',
-  prompt_ai: '✨ Промпт-AI',
-  translate: '🌐 Перевод',
+const TYPE_LABELS: Record<string, { icon: ReactNode; text: string }> = {
+  image: { icon: <Palette size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Генерация' },
+  prompt_ai: { icon: <Sparkles size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Промпт-AI' },
+  translate: { icon: <Globe size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Перевод' },
 };
 
 export function AnalyticsPage() {
@@ -47,25 +60,25 @@ export function AnalyticsPage() {
         <StatCard
           label="Сегодня"
           value={formatCostDisplay(summary?.today ?? 0)}
-          icon="📅"
+          icon={<Calendar size={16} />}
           delay={0}
         />
         <StatCard
           label="Эта неделя"
           value={formatCostDisplay(summary?.thisWeek ?? 0)}
-          icon="📆"
+          icon={<CalendarDays size={16} />}
           delay={0.05}
         />
         <StatCard
           label="Этот месяц"
           value={formatCostDisplay(summary?.thisMonth ?? 0)}
-          icon="🗓"
+          icon={<CalendarRange size={16} />}
           delay={0.1}
         />
         <StatCard
           label="Всё время"
           value={formatCostDisplay(summary?.allTime ?? 0)}
-          icon="💰"
+          icon={<Coins size={16} />}
           delay={0.15}
         />
       </div>
@@ -75,19 +88,19 @@ export function AnalyticsPage() {
         <StatCard
           label="Генераций"
           value={String(summary?.generationCount ?? 0)}
-          icon="🎨"
+          icon={<Paintbrush size={16} />}
           delay={0.2}
         />
         <StatCard
           label="Средняя стоимость"
           value={formatCostDisplay(summary?.averageCost ?? 0)}
-          icon="📊"
+          icon={<BarChart3 size={16} />}
           delay={0.25}
         />
         <StatCard
           label="Баланс"
           value={balance ? formatCostDisplay(balance.balance) : '—'}
-          icon="💳"
+          icon={<CreditCard size={16} />}
           delay={0.3}
         />
       </div>
@@ -142,7 +155,9 @@ export function AnalyticsPage() {
             {summary.costByType.map((type) => (
                 <div key={type.type} className="flex flex-col items-center gap-1">
                   <span className="text-xs text-text-secondary">
-                    {TYPE_LABELS[type.type] ?? type.type}
+                    {TYPE_LABELS[type.type] ? (
+                      <>{TYPE_LABELS[type.type].icon}{TYPE_LABELS[type.type].text}</>
+                    ) : type.type}
                   </span>
                   <span className="text-sm font-medium text-text-primary">
                     {formatCostDisplay(type.cost)}
@@ -189,7 +204,7 @@ export function AnalyticsPage() {
       {/* Empty state */}
       {summary && summary.generationCount === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 text-text-tertiary gap-2">
-          <span className="text-4xl">📊</span>
+          <BarChart3 size={40} className="text-text-tertiary" />
           <span className="text-sm">Пока нет данных</span>
           <span className="text-xs">Статистика появится после первой генерации</span>
         </div>
@@ -206,7 +221,7 @@ function StatCard({
 }: {
   label: string;
   value: string;
-  icon: string;
+  icon: ReactNode;
   delay: number;
 }) {
   return (
@@ -216,7 +231,7 @@ function StatCard({
       transition={{ delay }}
     >
       <GlassPanel padding="sm" className="flex flex-col items-center gap-1">
-        <span className="text-lg">{icon}</span>
+        <span className="text-text-secondary">{icon}</span>
         <span className="text-sm font-medium text-text-primary">{value}</span>
         <span className="text-[10px] text-text-tertiary">{label}</span>
       </GlassPanel>

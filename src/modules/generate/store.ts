@@ -60,8 +60,8 @@ const initialState = {
   negativePrompt: '',
   promptHistory: [] as string[],
   promptHistoryIndex: -1,
-  selectedCategory: 'quality' as ModelCategory,
-  selectedModelId: 'black-forest-labs/flux.2-pro',
+  selectedCategory: 'fast' as ModelCategory,
+  selectedModelId: 'google/gemini-2.5-flash-image',
   mode: 'text2img' as GenerationMode,
   aspectRatio: '1:1' as AspectRatio,
   imageSize: '1K' as ImageSize,
@@ -131,10 +131,18 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
 
   setCurrentResult: (result) => {
     if (result) {
-      set((s) => ({
-        currentResult: result,
-        resultHistory: [result, ...s.resultHistory].slice(0, 50),
-      }));
+      set((s) => {
+        // Don't duplicate if already in history
+        const alreadyInHistory = s.resultHistory.some(
+          (r) => r.generationId === result.generationId
+        );
+        return {
+          currentResult: result,
+          resultHistory: alreadyInHistory
+            ? s.resultHistory
+            : [result, ...s.resultHistory].slice(0, 50),
+        };
+      });
     } else {
       set({ currentResult: result });
     }

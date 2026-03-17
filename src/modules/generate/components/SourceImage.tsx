@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Upload } from 'lucide-react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
@@ -94,7 +95,7 @@ export function SourceImage() {
                 : 'border-glass-border hover:border-text-tertiary'
             }`}
           >
-            <span className="text-2xl">📁</span>
+            <Upload size={16} className="text-text-tertiary" />
             <span className="text-xs text-text-tertiary">
               Перетащите или нажмите
             </span>

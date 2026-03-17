@@ -4,6 +4,7 @@ import { getDatabase } from '../services/database';
 import {
   generateImage,
   translatePrompt,
+  translateToRussian,
   promptAssist,
   promptFromImage,
   fetchCredits,
@@ -158,6 +159,10 @@ export function registerIpcHandlers(): void {
     return translatePrompt(text);
   });
 
+  ipcMain.handle('generate:translate-to-ru', async (_, text: string) => {
+    return translateToRussian(text);
+  });
+
   ipcMain.handle('generate:prompt-assist', async (_, input: string, action: 'generate' | 'enhance' | 'rephrase') => {
     const result = await promptAssist(input, action);
     const config = getConfig();
@@ -237,7 +242,7 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('cost:get-summary', (_, period) => getSpendingSummary(period));
-  ipcMain.handle('cost:estimate', (_, modelId, _params) => estimateCost(modelId));
+  ipcMain.handle('cost:estimate', (_, modelId, imageSize) => estimateCost(modelId, imageSize));
   ipcMain.handle('cost:check-budget', () => checkBudget());
   ipcMain.handle('cost:set-budget', (_, limits: Partial<DBBudgetConfig>) => setBudget(limits));
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Folder, FolderOpen } from 'lucide-react';
 import { ipc } from '@/shared/lib/ipc';
 import { localFileUrl } from '@/shared/lib/utils';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
@@ -90,7 +91,6 @@ export function CollectionsPage() {
             <motion.div
               key={col.id}
               onClick={() => setSelectedId(col.id)}
-              whileHover={{ x: 2 }}
               role="button"
               tabIndex={0}
               className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer flex items-center justify-between ${
@@ -99,7 +99,7 @@ export function CollectionsPage() {
                   : 'text-text-secondary hover:bg-glass-hover'
               }`}
             >
-              <span className="truncate">📁 {col.name}</span>
+              <span className="truncate flex items-center gap-1.5"><Folder size={14} /> {col.name}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(col.id); }}
                 className="text-text-tertiary hover:text-status-error text-xs opacity-0 group-hover:opacity-100 cursor-pointer"
@@ -146,14 +146,14 @@ export function CollectionsPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-text-tertiary gap-2">
-              <span className="text-3xl">📂</span>
+              <FolderOpen size={32} className="text-text-tertiary" />
               <span className="text-sm">Коллекция пуста</span>
               <span className="text-xs">Перетащите изображения из галереи</span>
             </div>
           )
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-text-tertiary gap-2">
-            <span className="text-3xl">📁</span>
+            <Folder size={32} className="text-text-tertiary" />
             <span className="text-sm">Выберите коллекцию</span>
           </div>
         )}

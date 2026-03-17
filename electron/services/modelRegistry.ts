@@ -143,7 +143,7 @@ const MODELS: ImageModel[] = [
     provider: 'Black Forest Labs',
     category: 'quality',
     description: 'Лучший текст/типографика. Мульти-референс изображения.',
-    pricing: { type: 'per_megapixel', perMegapixel: 0.06 },
+    pricing: { type: 'per_image', perImage: 0.1 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -165,8 +165,8 @@ const MODELS: ImageModel[] = [
     name: 'Seedream 4.5',
     provider: 'ByteDance',
     category: 'quality',
-    description: 'Портреты, мелкий текст, мульти-композиция. Отличное качество за $0.04.',
-    pricing: { type: 'per_image', perImage: 0.04 },
+    description: 'Портреты, мелкий текст, мульти-композиция. Отличное качество.',
+    pricing: { type: 'per_image', perImage: 0.4 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -280,7 +280,7 @@ const MODELS: ImageModel[] = [
     provider: 'OpenAI',
     category: 'smart',
     description: 'Быстрее и дешевле GPT-5 Image. Отличный баланс ум/скорость.',
-    pricing: { type: 'per_token', perPromptToken: 0.0000025, perImageOutputToken: 0.000008 },
+    pricing: { type: 'per_image', perImage: 0.05 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: false, aspectRatio: true, imageSize: true,
@@ -340,5 +340,5 @@ export function getGroupedModels(): Array<{
 
 /** Get the default model */
 export function getDefaultModel(): ImageModel {
-  return MODELS.find((m) => m.id === 'black-forest-labs/flux.2-pro')!;
+  return MODELS.find((m) => m.id === 'google/gemini-2.5-flash-image')!;
 }

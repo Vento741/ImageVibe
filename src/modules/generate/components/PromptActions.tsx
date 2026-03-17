@@ -1,27 +1,36 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, Wand2, RotateCw, Camera, Check, X } from 'lucide-react';
 import { useGenerateStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
+import { Tooltip } from '@/shared/components/ui/Tooltip';
+
+/** Check if text contains Cyrillic characters */
+function hasCyrillic(text: string): boolean {
+  return /[а-яА-ЯёЁ]/.test(text);
+}
 
 type ActionState = 'idle' | 'loading' | 'success' | 'error';
 
 interface ActionButton {
   id: string;
-  icon: string;
+  icon: ReactNode;
   label: string;
   tooltip: string;
 }
 
 const actions: ActionButton[] = [
-  { id: 'generate', icon: '✨', label: 'Генерировать', tooltip: 'AI сгенерирует промпт по описанию' },
-  { id: 'enhance', icon: '🔧', label: 'Улучшить', tooltip: 'AI улучшит текущий промпт' },
-  { id: 'rephrase', icon: '🔄', label: 'Перефразировать', tooltip: 'AI перефразирует промпт' },
-  { id: 'from_image', icon: '📸', label: 'Из фото', tooltip: 'Получить промпт из изображения' },
+  { id: 'generate', icon: <Sparkles size={14} />, label: 'Генерировать', tooltip: 'AI сгенерирует промпт по описанию' },
+  { id: 'enhance', icon: <Wand2 size={14} />, label: 'Улучшить', tooltip: 'AI улучшит текущий промпт' },
+  { id: 'rephrase', icon: <RotateCw size={14} />, label: 'Перефразировать', tooltip: 'AI перефразирует промпт' },
+  { id: 'from_image', icon: <Camera size={14} />, label: 'Из фото', tooltip: 'Получить промпт из изображения' },
 ];
 
 export function PromptActions() {
   const prompt = useGenerateStore((s) => s.prompt);
   const setPrompt = useGenerateStore((s) => s.setPrompt);
+  const setTranslatedPrompt = useGenerateStore((s) => s.setTranslatedPrompt);
   const pushPromptHistory = useGenerateStore((s) => s.pushPromptHistory);
   const [actionState, setActionState] = useState<Record<string, ActionState>>({});
 
@@ -57,6 +66,14 @@ export function PromptActions() {
       if (result) {
         pushPromptHistory(prompt);
         setPrompt(result);
+        // Translate the English result to Russian so user always sees both languages
+        if (!hasCyrillic(result)) {
+          ipc.invoke('generate:translate-to-ru', result).then((ruText) => {
+            if (useGenerateStore.getState().prompt === result) {
+              setTranslatedPrompt(ruText);
+            }
+          }).catch(() => {});
+        }
       }
 
       setActionState((s) => ({ ...s, [actionId]: 'success' }));
@@ -80,13 +97,11 @@ export function PromptActions() {
           (action.id !== 'from_image' && action.id !== 'generate' && !prompt.trim());
 
         return (
+          <Tooltip key={action.id} text={action.tooltip}>
           <motion.button
-            key={action.id}
             onClick={() => handleAction(action.id)}
             disabled={isDisabled}
-            whileHover={!isDisabled ? { scale: 1.05 } : {}}
             whileTap={!isDisabled ? { scale: 0.95 } : {}}
-            title={action.tooltip}
             className={`px-2 py-1 rounded-md text-xs transition-all cursor-pointer flex items-center gap-1 ${
               state === 'loading'
                 ? 'bg-aurora-blue/10 text-aurora-blue'
@@ -115,12 +130,13 @@ export function PromptActions() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                 >
-                  {state === 'success' ? '✅' : state === 'error' ? '❌' : action.icon}
+                  {state === 'success' ? <Check size={14} /> : state === 'error' ? <X size={14} /> : action.icon}
                 </motion.span>
               )}
             </AnimatePresence>
             <span>{action.label}</span>
           </motion.button>
+          </Tooltip>
         );
       })}
     </div>

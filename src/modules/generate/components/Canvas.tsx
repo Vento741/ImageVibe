@@ -1,11 +1,14 @@
 import { useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Copy, MessageSquare, Star, RotateCw, FolderOpen, Paintbrush } from 'lucide-react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 import { ipc } from '@/shared/lib/ipc';
 import { VariationsGrid } from '@/modules/compare/components/VariationsGrid';
 import { useToastStore } from '@/shared/stores/toastStore';
+import { Tooltip } from '@/shared/components/ui/Tooltip';
 
 export function Canvas() {
   const currentResult = useGenerateStore((s) => s.currentResult);
@@ -131,11 +134,11 @@ export function Canvas() {
 
                 {/* Action buttons */}
                 <div className="flex gap-1">
-                  <ActionButton icon="📋" label="Копировать" onClick={handleCopyImage} />
-                  <ActionButton icon="💬" label="Промпт" onClick={handleCopyPrompt} />
-                  <ActionButton icon="⭐" label="Избранное" onClick={handleToggleFavorite} />
-                  <ActionButton icon="🔄" label="Повторить" onClick={handleRepeat} />
-                  <ActionButton icon="📂" label="Папка" onClick={handleSaveAs} />
+                  <ActionButton icon={<Copy size={14} />} label="Копировать" onClick={handleCopyImage} />
+                  <ActionButton icon={<MessageSquare size={14} />} label="Промпт" onClick={handleCopyPrompt} />
+                  <ActionButton icon={<Star size={14} />} label="Избранное" onClick={handleToggleFavorite} />
+                  <ActionButton icon={<RotateCw size={14} />} label="Повторить" onClick={handleRepeat} />
+                  <ActionButton icon={<FolderOpen size={14} />} label="Папка" onClick={handleSaveAs} />
                 </div>
 
                 {/* Model name */}
@@ -152,7 +155,7 @@ export function Canvas() {
             animate={{ opacity: 1 }}
             className="flex flex-col items-center gap-3 text-text-tertiary"
           >
-            <span className="text-5xl">🎨</span>
+            <Paintbrush size={48} className="text-text-tertiary" />
             <span className="text-sm">Введите промпт и нажмите Ctrl+Enter</span>
           </motion.div>
         )}
@@ -161,16 +164,17 @@ export function Canvas() {
   );
 }
 
-function ActionButton({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
+function ActionButton({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      className="glass-panel px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary cursor-pointer flex items-center gap-1 transition-colors"
-      title={label}
-    >
-      <span>{icon}</span>
-    </motion.button>
+    <Tooltip text={label}>
+      <motion.button
+        onClick={onClick}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="glass-panel px-2 py-1.5 text-xs text-text-secondary hover:text-text-primary cursor-pointer flex items-center gap-1 transition-colors"
+      >
+        {icon}
+      </motion.button>
+    </Tooltip>
   );
 }

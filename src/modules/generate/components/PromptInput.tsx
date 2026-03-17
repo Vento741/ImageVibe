@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import { PromptActions } from './PromptActions';
@@ -16,6 +16,14 @@ export function PromptInput() {
 
   const charCount = prompt.length;
   const estimatedTokens = Math.ceil(charCount / 4);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
+  }, [prompt]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -39,8 +47,8 @@ export function PromptInput() {
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Опишите изображение..."
-        className="w-full bg-transparent text-text-primary placeholder-text-tertiary resize-none outline-none text-sm leading-relaxed min-h-[80px] max-h-[200px]"
-        rows={3}
+        className="w-full bg-transparent text-text-primary placeholder-text-tertiary resize-none outline-none text-sm leading-relaxed min-h-[60px]"
+        rows={2}
       />
 
       <TranslationPreview />

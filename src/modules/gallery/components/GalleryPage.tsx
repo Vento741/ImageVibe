@@ -1,9 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { ImageIcon, Star, Trash2 } from 'lucide-react';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName, localFileUrl } from '@/shared/lib/utils';
 import { GalleryFilters } from './GalleryFilters';
+import { AddToCollectionMenu } from '@/modules/collections/components/AddToCollectionMenu';
 
 export function GalleryPage() {
   const images = useGalleryStore((s) => s.images);
@@ -93,7 +95,7 @@ export function GalleryPage() {
           </div>
         ) : images.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text-tertiary gap-2">
-            <span className="text-4xl">🖼</span>
+            <ImageIcon size={40} className="text-text-tertiary" />
             <span className="text-sm">Пока нет изображений</span>
           </div>
         ) : (
@@ -122,17 +124,18 @@ export function GalleryPage() {
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex flex-col justify-between p-2 opacity-0 group-hover:opacity-100">
                   {/* Top actions */}
                   <div className="flex justify-end gap-1">
+                    <AddToCollectionMenu imageId={image.id} compact />
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggleFavorite(image.id); }}
                       className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-sm cursor-pointer hover:bg-black/70"
                     >
-                      {image.is_favorite ? '⭐' : '☆'}
+                      {image.is_favorite ? <Star size={14} fill="currentColor" /> : <Star size={14} />}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(image.id); }}
                       className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-sm cursor-pointer hover:bg-status-error/50"
                     >
-                      🗑
+                      <Trash2 size={14} />
                     </button>
                   </div>
 

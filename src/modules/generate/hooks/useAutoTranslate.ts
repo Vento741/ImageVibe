@@ -9,49 +9,36 @@ function isRussianText(text: string): boolean {
 }
 
 /**
- * Auto-translate prompt from Russian to English with debounce.
- * Shows the translated text in the UI as a preview.
+ * Auto-translate prompt bidirectionally with debounce.
+ * RU prompt → shows EN translation
+ * EN prompt → shows RU translation
  */
 export function useAutoTranslate(debounceMs = 800) {
   const prompt = useGenerateStore((s) => s.prompt);
   const setTranslatedPrompt = useGenerateStore((s) => s.setTranslatedPrompt);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const abortRef = useRef<AbortController>(undefined);
   const lastPromptRef = useRef('');
 
   useEffect(() => {
-    // Clear previous timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
 
-    // Clear translation if prompt is empty
     if (!prompt.trim()) {
       setTranslatedPrompt('');
       return;
     }
 
-    // Skip if not Russian
-    if (!isRussianText(prompt)) {
-      setTranslatedPrompt('');
-      return;
-    }
-
-    // Skip if same prompt (avoid duplicate calls)
+    // Skip if same prompt
     if (prompt === lastPromptRef.current) return;
 
-    // Debounce the translation
-    timerRef.current = setTimeout(async () => {
-      // Cancel previous in-flight request
-      if (abortRef.current) {
-        abortRef.current.abort();
-      }
-      abortRef.current = new AbortController();
+    const isRu = isRussianText(prompt);
+    const channel = isRu ? 'generate:translate' : 'generate:translate-to-ru';
 
+    timerRef.current = setTimeout(async () => {
       try {
         lastPromptRef.current = prompt;
-        const translated = await ipc.invoke('generate:translate', prompt);
-        // Only update if the prompt hasn't changed since we started
+        const translated = await ipc.invoke(channel, prompt);
         if (useGenerateStore.getState().prompt === prompt) {
           setTranslatedPrompt(translated);
         }

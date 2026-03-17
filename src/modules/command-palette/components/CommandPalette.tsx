@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Fuse from 'fuse.js';
+import {
+  Paintbrush,
+  ImageIcon,
+  Folder,
+  BarChart3,
+  Settings,
+  Zap,
+  Brain,
+  Sparkles,
+  Search,
+} from 'lucide-react';
 import type { Page } from '../../../App';
 import { useGenerateStore } from '@/modules/generate/store';
 
 interface CommandItem {
   id: string;
-  icon: string;
+  icon: ReactNode;
   label: string;
   category: string;
   shortcut?: string;
@@ -33,35 +45,35 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
   // Build command list
   const commands = useMemo<CommandItem[]>(() => [
     // Navigation
-    { id: 'nav-generate', icon: '🎨', label: 'Генерация', category: 'Навигация', shortcut: 'Ctrl+G', action: () => { onNavigate('generate'); onClose(); } },
-    { id: 'nav-gallery', icon: '🖼', label: 'Галерея', category: 'Навигация', shortcut: 'Ctrl+L', action: () => { onNavigate('gallery'); onClose(); } },
-    { id: 'nav-collections', icon: '📁', label: 'Коллекции', category: 'Навигация', action: () => { onNavigate('collections'); onClose(); } },
-    { id: 'nav-analytics', icon: '📊', label: 'Аналитика', category: 'Навигация', action: () => { onNavigate('analytics'); onClose(); } },
-    { id: 'nav-settings', icon: '⚙️', label: 'Настройки', category: 'Навигация', shortcut: 'Ctrl+,', action: () => { onNavigate('settings'); onClose(); } },
+    { id: 'nav-generate', icon: <Paintbrush size={16} />, label: 'Генерация', category: 'Навигация', shortcut: 'Ctrl+G', action: () => { onNavigate('generate'); onClose(); } },
+    { id: 'nav-gallery', icon: <ImageIcon size={16} />, label: 'Галерея', category: 'Навигация', shortcut: 'Ctrl+L', action: () => { onNavigate('gallery'); onClose(); } },
+    { id: 'nav-collections', icon: <Folder size={16} />, label: 'Коллекции', category: 'Навигация', action: () => { onNavigate('collections'); onClose(); } },
+    { id: 'nav-analytics', icon: <BarChart3 size={16} />, label: 'Аналитика', category: 'Навигация', action: () => { onNavigate('analytics'); onClose(); } },
+    { id: 'nav-settings', icon: <Settings size={16} />, label: 'Настройки', category: 'Навигация', shortcut: 'Ctrl+,', action: () => { onNavigate('settings'); onClose(); } },
 
     // Models — Fast
-    { id: 'model-klein', icon: '⚡', label: 'FLUX.2 Klein', category: 'Быстрые', action: () => { applyModel('black-forest-labs/flux.2-klein-4b'); } },
-    { id: 'model-rv-fast', icon: '⚡', label: 'Riverflow V2 Fast', category: 'Быстрые', action: () => { applyModel('sourceful/riverflow-v2-fast'); } },
-    { id: 'model-gemini-flash', icon: '⚡', label: 'Gemini 3.1 Flash', category: 'Быстрые', action: () => { applyModel('google/gemini-3.1-flash-image-preview'); } },
-    { id: 'model-gemini-25', icon: '⚡', label: 'Gemini 2.5 Flash', category: 'Быстрые', action: () => { applyModel('google/gemini-2.5-flash-image'); } },
+    { id: 'model-klein', icon: <Zap size={16} />, label: 'FLUX.2 Klein', category: 'Быстрые', action: () => { applyModel('black-forest-labs/flux.2-klein-4b'); } },
+    { id: 'model-rv-fast', icon: <Zap size={16} />, label: 'Riverflow V2 Fast', category: 'Быстрые', action: () => { applyModel('sourceful/riverflow-v2-fast'); } },
+    { id: 'model-gemini-flash', icon: <Zap size={16} />, label: 'Gemini 3.1 Flash', category: 'Быстрые', action: () => { applyModel('google/gemini-3.1-flash-image-preview'); } },
+    { id: 'model-gemini-25', icon: <Zap size={16} />, label: 'Gemini 2.5 Flash', category: 'Быстрые', action: () => { applyModel('google/gemini-2.5-flash-image'); } },
 
     // Models — Quality
-    { id: 'model-flux-pro', icon: '🎨', label: 'FLUX.2 Pro', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-pro'); } },
-    { id: 'model-flux-max', icon: '🎨', label: 'FLUX.2 Max', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-max'); } },
-    { id: 'model-flux-flex', icon: '🎨', label: 'FLUX.2 Flex', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-flex'); } },
-    { id: 'model-seedream', icon: '🎨', label: 'Seedream 4.5', category: 'Качественные', action: () => { applyModel('bytedance-seed/seedream-4.5'); } },
-    { id: 'model-rv-pro', icon: '🎨', label: 'Riverflow V2 Pro', category: 'Качественные', action: () => { applyModel('sourceful/riverflow-v2-pro'); } },
-    { id: 'model-rv-max', icon: '🎨', label: 'Riverflow V2 Max', category: 'Качественные', action: () => { applyModel('sourceful/riverflow-v2-max-preview'); } },
+    { id: 'model-flux-pro', icon: <Paintbrush size={16} />, label: 'FLUX.2 Pro', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-pro'); } },
+    { id: 'model-flux-max', icon: <Paintbrush size={16} />, label: 'FLUX.2 Max', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-max'); } },
+    { id: 'model-flux-flex', icon: <Paintbrush size={16} />, label: 'FLUX.2 Flex', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-flex'); } },
+    { id: 'model-seedream', icon: <Paintbrush size={16} />, label: 'Seedream 4.5', category: 'Качественные', action: () => { applyModel('bytedance-seed/seedream-4.5'); } },
+    { id: 'model-rv-pro', icon: <Paintbrush size={16} />, label: 'Riverflow V2 Pro', category: 'Качественные', action: () => { applyModel('sourceful/riverflow-v2-pro'); } },
+    { id: 'model-rv-max', icon: <Paintbrush size={16} />, label: 'Riverflow V2 Max', category: 'Качественные', action: () => { applyModel('sourceful/riverflow-v2-max-preview'); } },
 
     // Models — Smart
-    { id: 'model-gemini-pro', icon: '🧠', label: 'Gemini 3 Pro', category: 'Умные', action: () => { applyModel('google/gemini-3-pro-image-preview'); } },
-    { id: 'model-gpt5', icon: '🧠', label: 'GPT-5 Image', category: 'Умные', action: () => { applyModel('openai/gpt-5-image'); } },
-    { id: 'model-gpt5-mini', icon: '🧠', label: 'GPT-5 Image Mini', category: 'Умные', action: () => { applyModel('openai/gpt-5-image-mini'); } },
+    { id: 'model-gemini-pro', icon: <Brain size={16} />, label: 'Gemini 3 Pro', category: 'Умные', action: () => { applyModel('google/gemini-3-pro-image-preview'); } },
+    { id: 'model-gpt5', icon: <Brain size={16} />, label: 'GPT-5 Image', category: 'Умные', action: () => { applyModel('openai/gpt-5-image'); } },
+    { id: 'model-gpt5-mini', icon: <Brain size={16} />, label: 'GPT-5 Image Mini', category: 'Умные', action: () => { applyModel('openai/gpt-5-image-mini'); } },
 
     // Actions
-    { id: 'act-generate', icon: '🎲', label: 'Генерировать', category: 'Действия', shortcut: 'Ctrl+Enter', action: () => { document.dispatchEvent(new CustomEvent('imagevibe:generate')); onClose(); } },
-    { id: 'act-random-seed', icon: '🎲', label: 'Случайный seed', category: 'Действия', shortcut: 'Ctrl+R', action: () => { useGenerateStore.getState().randomizeSeed(); onClose(); } },
-    { id: 'act-toggle-mode', icon: '⚡', label: 'Переключить режим', category: 'Действия', shortcut: 'Ctrl+Shift+M', action: () => { useGenerateStore.getState().toggleUiMode(); onClose(); } },
+    { id: 'act-generate', icon: <Sparkles size={16} />, label: 'Генерировать', category: 'Действия', shortcut: 'Ctrl+Enter', action: () => { document.dispatchEvent(new CustomEvent('imagevibe:generate')); onClose(); } },
+    { id: 'act-random-seed', icon: <Sparkles size={16} />, label: 'Случайный seed', category: 'Действия', shortcut: 'Ctrl+R', action: () => { useGenerateStore.getState().randomizeSeed(); onClose(); } },
+    { id: 'act-toggle-mode', icon: <Zap size={16} />, label: 'Переключить режим', category: 'Действия', shortcut: 'Ctrl+Shift+M', action: () => { useGenerateStore.getState().toggleUiMode(); onClose(); } },
   ], [onNavigate, onClose]);
 
   // Fuzzy search
@@ -139,7 +151,7 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
         >
           {/* Search input */}
           <div className="flex items-center px-4 py-3 border-b border-glass-border">
-            <span className="text-text-tertiary mr-2">🔍</span>
+            <Search size={14} className="text-text-tertiary mr-2 shrink-0" />
             <input
               ref={inputRef}
               value={query}

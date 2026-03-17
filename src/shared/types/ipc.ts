@@ -18,6 +18,7 @@ export interface IpcChannels {
   // ═══ Generation ═══
   'generate:image': { args: [GenerationRequest]; result: GenerationResult };
   'generate:translate': { args: [string]; result: string };
+  'generate:translate-to-ru': { args: [string]; result: string };
   'generate:prompt-assist': {
     args: [string, 'generate' | 'enhance' | 'rephrase'];
     result: string;
@@ -52,7 +53,7 @@ export interface IpcChannels {
   'cost:get-balance': { args: []; result: CreditBalance };
   'cost:get-summary': { args: [CostPeriod?]; result: SpendingSummary };
   'cost:estimate': {
-    args: [string, Record<string, unknown>?];
+    args: [string, string?];
     result: CostEstimate;
   };
   'cost:check-budget': { args: []; result: BudgetStatus };

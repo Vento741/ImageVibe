@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Info, Copy, X } from 'lucide-react';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName, formatDate, localFileUrl } from '@/shared/lib/utils';
 import type { DBImage } from '@/shared/types/database';
+import { AddToCollectionMenu } from '@/modules/collections/components/AddToCollectionMenu';
 
 export function ImageViewer() {
   const selectedImageId = useGalleryStore((s) => s.selectedImageId);
@@ -66,8 +68,9 @@ export function ImageViewer() {
         case 'f':
         case 'F':
           if (image) {
-            ipc.invoke('gallery:toggle-favorite', image.id).then(() => {
+            ipc.invoke('gallery:toggle-favorite', image.id).then((isFav) => {
               toggleFavorite(image.id);
+              setImage((prev) => prev ? { ...prev, is_favorite: isFav ? 1 : 0 } : prev);
             });
           }
           break;
@@ -120,23 +123,27 @@ export function ImageViewer() {
               className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm cursor-pointer"
               title="Закрыть (Esc)"
             >
-              ✕ Закрыть
+              <X size={16} className="inline -mt-0.5" /> Закрыть
             </button>
             <button
               onClick={() => {
-                ipc.invoke('gallery:toggle-favorite', image.id).then(() => toggleFavorite(image.id));
+                ipc.invoke('gallery:toggle-favorite', image.id).then((isFav) => {
+                  toggleFavorite(image.id);
+                  setImage((prev) => prev ? { ...prev, is_favorite: isFav ? 1 : 0 } : prev);
+                });
               }}
               className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm cursor-pointer"
             >
-              {image.is_favorite ? '⭐ Избранное' : '☆ В избранное'}
+              {image.is_favorite ? <><Star size={16} fill="currentColor" className="inline -mt-0.5" /> Избранное</> : <><Star size={16} className="inline -mt-0.5" /> В избранное</>}
             </button>
+            <AddToCollectionMenu imageId={image.id} />
             <button
               onClick={() => setShowMetadata(!showMetadata)}
               className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer ${
                 showMetadata ? 'bg-aurora-blue/30 text-aurora-blue' : 'bg-white/10 hover:bg-white/20 text-white'
               }`}
             >
-              ℹ️ Инфо
+              <Info size={16} className="inline -mt-0.5" /> Инфо
             </button>
           </div>
 
@@ -228,7 +235,7 @@ export function ImageViewer() {
                     }}
                     className="w-full py-2 rounded-lg bg-glass-hover text-text-secondary text-xs hover:bg-glass-active transition-colors cursor-pointer"
                   >
-                    📋 Копировать промпт
+                    <Copy size={14} className="inline -mt-0.5" /> Копировать промпт
                   </button>
                 </div>
               </div>

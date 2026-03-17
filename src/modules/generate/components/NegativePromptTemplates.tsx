@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGenerateStore } from '../store';
+import { createPortal } from 'react-dom';
 
 const TEMPLATES = [
   {
@@ -31,11 +32,19 @@ const TEMPLATES = [
 
 export function NegativePromptTemplates() {
   const [isOpen, setIsOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
   const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const setNegativePrompt = useGenerateStore((s) => s.setNegativePrompt);
 
+  useEffect(() => {
+    if (isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - 256) });
+    }
+  }, [isOpen]);
+
   const applyTemplate = (template: string) => {
-    // If there's existing text, append; otherwise replace
     if (negativePrompt.trim()) {
       setNegativePrompt(`${negativePrompt}, ${template}`);
     } else {
@@ -45,28 +54,25 @@ export function NegativePromptTemplates() {
   };
 
   return (
-    <div className="relative">
+    <>
       <button
+        ref={btnRef}
         onClick={() => setIsOpen(!isOpen)}
         className="text-[10px] text-aurora-blue hover:text-aurora-purple transition-colors cursor-pointer"
       >
         Шаблоны ▾
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-[99]"
-              onClick={() => setIsOpen(false)}
-            />
-
+      {isOpen && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)}>
             <motion.div
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="absolute top-6 left-0 z-[100] w-72 glass-panel p-2 flex flex-col gap-1"
+              className="fixed z-[1000] w-64 glass-panel p-2 flex flex-col gap-1"
+              style={{ top: pos.top, left: pos.left }}
+              onClick={(e) => e.stopPropagation()}
             >
               {TEMPLATES.map((t) => (
                 <button
@@ -90,9 +96,10 @@ export function NegativePromptTemplates() {
                 </button>
               )}
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+          </div>
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   );
 }

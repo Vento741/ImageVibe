@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react';
 import { useGalleryStore } from '../store';
 
 const SORT_OPTIONS = [
@@ -75,7 +76,7 @@ export function GalleryFilters() {
             : 'bg-bg-tertiary text-text-secondary border-glass-border hover:bg-glass-hover'
         }`}
       >
-        ⭐ Избранное
+        <Star size={14} className="inline -mt-0.5" /> Избранное
       </button>
     </div>
   );

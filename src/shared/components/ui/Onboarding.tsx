@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Paintbrush } from 'lucide-react';
 import { ipc } from '@/shared/lib/ipc';
 import type { AppConfig } from '@/shared/types/config';
 
@@ -50,7 +51,9 @@ export function Onboarding() {
           className="glass-panel p-8 w-96 flex flex-col items-center gap-6"
         >
           {/* Logo */}
-          <div className="text-5xl">🎨</div>
+          <div className="text-aurora-blue">
+            <Paintbrush size={48} />
+          </div>
           <div>
             <h2 className="text-xl font-bold text-text-primary text-center">
               Добро пожаловать в ImageVibe

@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 import { useGenerateStore } from '../store';
 import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
@@ -25,7 +26,7 @@ export function GenerateButton() {
 
   // Fetch cost estimate when model/size changes
   useEffect(() => {
-    ipc.invoke('cost:estimate', selectedModelId).then(setCurrentEstimate).catch(() => {});
+    ipc.invoke('cost:estimate', selectedModelId, imageSize).then(setCurrentEstimate).catch(() => {});
   }, [selectedModelId, imageSize, setCurrentEstimate]);
 
   const handleGenerate = useCallback(async () => {
@@ -104,7 +105,10 @@ export function GenerateButton() {
             Генерация...
           </span>
         ) : (
-          <span>🎲 Генерировать</span>
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles size={16} />
+            Генерировать
+          </span>
         )}
       </motion.button>
 

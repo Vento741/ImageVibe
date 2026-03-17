@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Pause, Loader, Check, X, Ban } from 'lucide-react';
 import { useQueueStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 
-const STATUS_ICONS: Record<string, string> = {
-  pending: '⏸',
-  running: '⏳',
-  completed: '✅',
-  failed: '❌',
-  cancelled: '🚫',
+const STATUS_ICONS: Record<string, ReactNode> = {
+  pending: <Pause size={12} />,
+  running: <Loader size={12} className="animate-spin" />,
+  completed: <Check size={12} />,
+  failed: <X size={12} />,
+  cancelled: <Ban size={12} />,
 };
 
 export function QueuePanel() {
@@ -92,7 +94,7 @@ export function QueuePanel() {
                   key={item.id}
                   className="px-3 py-1.5 flex items-center gap-2 text-xs border-b border-glass-border/50 last:border-0"
                 >
-                  <span>{STATUS_ICONS[item.status] ?? '⏸'}</span>
+                  <span>{STATUS_ICONS[item.status] ?? <Pause size={12} />}</span>
                   <span className="flex-1 truncate text-text-secondary">
                     {item.prompt.slice(0, 50)}
                   </span>

@@ -123,13 +123,6 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
   const data = (await response.json()) as OpenRouterResponse;
   const generationId = data.id;
 
-  // Log full response structure for debugging
-  console.log('[OpenRouter] FULL MESSAGE:', JSON.stringify(data.choices?.[0]?.message, (_, v) => {
-    // Truncate long base64 strings in logs
-    if (typeof v === 'string' && v.length > 200) return v.substring(0, 200) + `...[${v.length} chars]`;
-    return v;
-  }, 2));
-
   // Extract image from response
   const imageBase64 = await extractImageFromResponse(data);
   if (!imageBase64) {
@@ -245,7 +238,6 @@ async function extractImageFromResponse(response: OpenRouterResponse): Promise<s
 /** Fetch an image URL and convert to base64 */
 async function fetchImageAsBase64(url: string): Promise<string | null> {
   try {
-    console.log('[OpenRouter] Fetching image URL:', url.substring(0, 100));
     const response = await fetch(url);
     if (!response.ok) return null;
     const buffer = Buffer.from(await response.arrayBuffer());
@@ -268,6 +260,31 @@ export async function translatePrompt(text: string): Promise<string> {
         {
           role: 'system',
           content: 'You are a translator. Translate the following text from Russian to English. Return ONLY the translation, nothing else. If the text is already in English, return it as-is.',
+        },
+        { role: 'user', content: text },
+      ],
+      max_tokens: 1024,
+      temperature: 0.1,
+    }),
+  });
+
+  if (!response.ok) throw new Error('Ошибка перевода');
+  const data = (await response.json()) as OpenRouterResponse;
+  return (data.choices[0]?.message.content as string)?.trim() || text;
+}
+
+/** Translate text EN→RU using Gemini Flash Lite */
+export async function translateToRussian(text: string): Promise<string> {
+  const config = getConfig();
+  const response = await fetch(`${BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      model: config.promptAssistant.model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a translator. Translate the following text from English to Russian. Return ONLY the translation, nothing else. If the text is already in Russian, return it as-is.',
         },
         { role: 'user', content: text },
       ],

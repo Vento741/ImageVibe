@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
+import { Check, X, AlertTriangle, Info } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export interface ToastData {
   id: string;
@@ -13,11 +15,11 @@ interface ToastProps {
   onDismiss: (id: string) => void;
 }
 
-const iconMap = {
-  success: '✅',
-  error: '❌',
-  warning: '⚠️',
-  info: 'ℹ️',
+const iconMap: Record<string, ReactNode> = {
+  success: <Check size={16} />,
+  error: <X size={16} />,
+  warning: <AlertTriangle size={16} />,
+  info: <Info size={16} />,
 };
 
 const colorMap = {

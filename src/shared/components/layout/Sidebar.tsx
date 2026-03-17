@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
+import { Paintbrush, Image, FolderOpen, BarChart3, Settings } from 'lucide-react';
+import type { ComponentType } from 'react';
 import type { Page } from '../../../App';
 import { CostCounter } from '@/modules/cost/components/CostCounter';
-import { useGenerateStore } from '@/modules/generate/store';
 
 interface SidebarProps {
   currentPage: Page;
@@ -10,26 +11,23 @@ interface SidebarProps {
 
 interface NavItem {
   id: Page;
-  icon: string;
+  icon: ComponentType<{ size?: number }>;
   label: string;
   shortcut?: string;
 }
 
 const navItems: NavItem[] = [
-  { id: 'generate', icon: '🎨', label: 'Генерация', shortcut: 'Ctrl+G' },
-  { id: 'gallery', icon: '🖼', label: 'Галерея', shortcut: 'Ctrl+L' },
-  { id: 'collections', icon: '📁', label: 'Коллекции' },
-  { id: 'analytics', icon: '📊', label: 'Аналитика' },
+  { id: 'generate', icon: Paintbrush, label: 'Генерация', shortcut: 'Ctrl+G' },
+  { id: 'gallery', icon: Image, label: 'Галерея', shortcut: 'Ctrl+L' },
+  { id: 'collections', icon: FolderOpen, label: 'Коллекции' },
+  { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
 ];
 
 const bottomItems: NavItem[] = [
-  { id: 'settings', icon: '⚙️', label: 'Настройки', shortcut: 'Ctrl+,' },
+  { id: 'settings', icon: Settings, label: 'Настройки', shortcut: 'Ctrl+,' },
 ];
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
-  const uiMode = useGenerateStore((s) => s.uiMode);
-  const toggleUiMode = useGenerateStore((s) => s.toggleUiMode);
-
   return (
     <aside className="w-16 h-full flex flex-col items-center py-3 gap-1 bg-bg-secondary/50 border-r border-glass-border relative z-10">
       {/* Main navigation */}
@@ -46,17 +44,6 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 
       {/* Bottom items */}
       <div className="flex flex-col items-center gap-1 w-full">
-        <motion.button
-          onClick={toggleUiMode}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg transition-colors cursor-pointer titlebar-no-drag ${
-            uiMode === 'advanced' ? 'bg-aurora-purple/20 text-aurora-purple' : 'text-text-tertiary hover:text-text-secondary hover:bg-glass-hover'
-          }`}
-          title={`${uiMode === 'simple' ? 'Расширенный' : 'Простой'} режим (Ctrl+Shift+M)`}
-        >
-          ⚡
-        </motion.button>
         <CostCounter />
         {bottomItems.map((item) => (
           <SidebarButton
@@ -92,7 +79,7 @@ function SidebarButton({
       whileTap={{ scale: 0.95 }}
       title={`${item.label}${item.shortcut ? ` (${item.shortcut})` : ''}`}
     >
-      <span>{item.icon}</span>
+      <item.icon size={20} />
       {isActive && (
         <motion.div
           layoutId="sidebar-indicator"

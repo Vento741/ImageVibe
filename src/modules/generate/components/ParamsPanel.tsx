@@ -1,11 +1,13 @@
+import { Zap, Paintbrush, Brain, Shuffle } from 'lucide-react';
+import type { ComponentType } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import type { ModelCategory, AspectRatio, ImageSize } from '@/shared/types/models';
 
-const CATEGORIES: Array<{ id: ModelCategory; name: string; icon: string }> = [
-  { id: 'fast', name: 'Быстрые', icon: '⚡' },
-  { id: 'quality', name: 'Качественные', icon: '🎨' },
-  { id: 'smart', name: 'Умные', icon: '🧠' },
+const CATEGORIES: Array<{ id: ModelCategory; name: string; icon: ComponentType<{ size?: number; className?: string }> }> = [
+  { id: 'fast', name: 'Быстрые', icon: Zap },
+  { id: 'quality', name: 'Качественные', icon: Paintbrush },
+  { id: 'smart', name: 'Умные', icon: Brain },
 ];
 
 const ASPECT_RATIOS: AspectRatio[] = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'];
@@ -90,7 +92,7 @@ export function ParamsPanel() {
                   : 'text-text-secondary hover:bg-glass-hover border border-transparent'
               }`}
             >
-              {cat.icon} {cat.name}
+              <cat.icon size={14} className="inline-block" /> {cat.name}
             </button>
           ))}
         </div>
@@ -179,7 +181,7 @@ export function ParamsPanel() {
               className="px-3 py-2 rounded-lg bg-glass-hover text-text-secondary hover:text-text-primary transition-colors text-sm cursor-pointer"
               title="Случайный seed"
             >
-              🎲
+              <Shuffle size={14} />
             </button>
           </div>
         </div>
