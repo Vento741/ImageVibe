@@ -1,10 +1,12 @@
 import { useRef, useCallback } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
+import { PromptActions } from './PromptActions';
+import { PromptVersions } from './PromptVersions';
+import { TranslationPreview } from './TranslationPreview';
 
 export function PromptInput() {
   const prompt = useGenerateStore((s) => s.prompt);
-  const translatedPrompt = useGenerateStore((s) => s.translatedPrompt);
   const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const uiMode = useGenerateStore((s) => s.uiMode);
   const setPrompt = useGenerateStore((s) => s.setPrompt);
@@ -40,14 +42,7 @@ export function PromptInput() {
         rows={3}
       />
 
-      {/* Translation preview */}
-      {translatedPrompt && (
-        <div className="text-xs text-text-tertiary border-t border-glass-border pt-2 mt-1">
-          <span className="text-aurora-blue font-medium">EN:</span>{' '}
-          {translatedPrompt.slice(0, 100)}
-          {translatedPrompt.length > 100 && '...'}
-        </div>
-      )}
+      <TranslationPreview />
 
       {/* Negative prompt — advanced mode only */}
       {uiMode === 'advanced' && (
@@ -70,6 +65,14 @@ export function PromptInput() {
         <span>{charCount} символов</span>
         <span>~{estimatedTokens} токенов</span>
       </div>
+
+      {/* Prompt assistant actions and version history — advanced mode only */}
+      {uiMode === 'advanced' && (
+        <div className="flex items-center justify-between border-t border-glass-border pt-2 mt-1">
+          <PromptActions />
+          <PromptVersions />
+        </div>
+      )}
     </GlassPanel>
   );
 }
