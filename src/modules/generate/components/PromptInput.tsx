@@ -4,6 +4,7 @@ import { useGenerateStore } from '../store';
 import { PromptActions } from './PromptActions';
 import { PromptVersions } from './PromptVersions';
 import { TranslationPreview } from './TranslationPreview';
+import { NegativePromptTemplates } from './NegativePromptTemplates';
 
 export function PromptInput() {
   const prompt = useGenerateStore((s) => s.prompt);
@@ -47,9 +48,12 @@ export function PromptInput() {
       {/* Negative prompt — advanced mode only */}
       {uiMode === 'advanced' && (
         <div className="border-t border-glass-border pt-2 mt-1">
-          <label className="text-xs text-text-tertiary font-medium">
-            Не включать (negative)
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-text-tertiary font-medium">
+              Не включать (negative)
+            </label>
+            <NegativePromptTemplates />
+          </div>
           <textarea
             value={negativePrompt}
             onChange={(e) => setNegativePrompt(e.target.value)}
