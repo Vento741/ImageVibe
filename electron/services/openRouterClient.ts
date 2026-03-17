@@ -126,11 +126,15 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
   // Log response structure for debugging
   console.log('[OpenRouter] Response id:', generationId, 'choices:', data.choices?.length);
   if (data.choices?.[0]) {
-    const c = data.choices[0].message.content;
+    const msg = data.choices[0].message;
+    const c = msg.content;
+    const imgs = msg.images;
     console.log('[OpenRouter] Content type:', typeof c, Array.isArray(c) ? `array[${c.length}]` : '');
-    if (Array.isArray(c)) {
-      c.forEach((part, i) => console.log(`[OpenRouter]   part[${i}]:`, part.type, part.type === 'image_url' ? part.image_url?.url?.substring(0, 80) + '...' : ''));
-    } else if (typeof c === 'string') {
+    console.log('[OpenRouter] Images field:', imgs ? `array[${imgs.length}]` : 'absent');
+    if (imgs && Array.isArray(imgs)) {
+      imgs.forEach((img, i) => console.log(`[OpenRouter]   image[${i}]:`, img.type, 'image_url' in img ? img.image_url?.url?.substring(0, 80) + '...' : ''));
+    }
+    if (typeof c === 'string') {
       console.log('[OpenRouter] Content preview:', c.substring(0, 120));
     }
   }
@@ -166,6 +170,27 @@ async function extractImageFromResponse(response: OpenRouterResponse): Promise<s
   const choice = response.choices?.[0];
   if (!choice) return null;
 
+  // Check message.images array FIRST (OpenRouter image generation format)
+  const images = choice.message.images;
+  if (images && Array.isArray(images) && images.length > 0) {
+    for (const img of images) {
+      if (img.type === 'image_url' && 'image_url' in img) {
+        const url = img.image_url.url;
+        if (url.startsWith('data:image/')) {
+          const base64 = url.split(',')[1];
+          if (base64) return base64.replace(/\s/g, '');
+        }
+        if (url.startsWith('http')) {
+          return await fetchImageAsBase64(url);
+        }
+        if (/^[A-Za-z0-9+/=]{100,}$/.test(url)) {
+          return url;
+        }
+      }
+    }
+  }
+
+  // Fallback: check content field
   const content = choice.message.content;
 
   // String content

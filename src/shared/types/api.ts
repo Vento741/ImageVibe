@@ -70,6 +70,8 @@ export interface OpenRouterResponse {
     message: {
       role: string;
       content: string | OpenRouterContentPart[];
+      /** Image generation results — separate from content */
+      images?: OpenRouterContentPart[];
     };
     finish_reason: string;
   }>;
