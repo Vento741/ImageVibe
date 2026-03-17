@@ -3,12 +3,16 @@ import { AuroraBackground } from './shared/components/ui/AuroraBackground';
 import { Sidebar } from './shared/components/layout/Sidebar';
 import { GeneratePage } from './modules/generate/components/GeneratePage';
 import { CommandPalette } from './modules/command-palette/components/CommandPalette';
+import { useKeyboardShortcuts } from './shared/hooks/useKeyboardShortcuts';
+import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>('generate');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useKeyboardShortcuts({ onNavigate: setCurrentPage });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -55,6 +59,7 @@ export function App() {
         onClose={() => setIsCommandPaletteOpen(false)}
         onNavigate={(page) => { setCurrentPage(page); setIsCommandPaletteOpen(false); }}
       />
+      <ShortcutsHelp />
     </div>
   );
 }
