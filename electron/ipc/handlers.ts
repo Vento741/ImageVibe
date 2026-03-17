@@ -11,6 +11,7 @@ import {
   isRussianText,
 } from '../services/openRouterClient';
 import { estimateCost } from '../services/costEstimator';
+import { saveImageTags } from '../services/autoTagger';
 import { saveImage, deleteImage, getFileSize } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
 import {
@@ -105,6 +106,10 @@ export function registerIpcHandlers(): void {
       0,
     );
     const imageId = Number(insertResult.lastInsertRowid);
+
+    // Auto-tag the image
+    const promptForTags = result.translatedPrompt || request.prompt;
+    saveImageTags(imageId, promptForTags, request.styleTags, request.mode);
 
     // Fetch actual cost in background
     if (result.generationId) {
