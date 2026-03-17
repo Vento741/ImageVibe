@@ -123,8 +123,20 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
   const data = (await response.json()) as OpenRouterResponse;
   const generationId = data.id;
 
+  // Log response structure for debugging
+  console.log('[OpenRouter] Response id:', generationId, 'choices:', data.choices?.length);
+  if (data.choices?.[0]) {
+    const c = data.choices[0].message.content;
+    console.log('[OpenRouter] Content type:', typeof c, Array.isArray(c) ? `array[${c.length}]` : '');
+    if (Array.isArray(c)) {
+      c.forEach((part, i) => console.log(`[OpenRouter]   part[${i}]:`, part.type, part.type === 'image_url' ? part.image_url?.url?.substring(0, 80) + '...' : ''));
+    } else if (typeof c === 'string') {
+      console.log('[OpenRouter] Content preview:', c.substring(0, 120));
+    }
+  }
+
   // Extract image from response
-  const imageBase64 = extractImageFromResponse(data);
+  const imageBase64 = await extractImageFromResponse(data);
   if (!imageBase64) {
     throw new Error('Не удалось извлечь изображение из ответа API');
   }
@@ -150,41 +162,82 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
 }
 
 /** Extract base64 image data from OpenRouter response */
-function extractImageFromResponse(response: OpenRouterResponse): string | null {
+async function extractImageFromResponse(response: OpenRouterResponse): Promise<string | null> {
   const choice = response.choices?.[0];
   if (!choice) return null;
 
   const content = choice.message.content;
 
-  // String content — might be a base64 data URI
+  // String content
   if (typeof content === 'string') {
-    const dataUriMatch = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
-    if (dataUriMatch) return dataUriMatch[1];
+    // data URI
+    const dataUriMatch = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=\s]+)/);
+    if (dataUriMatch) return dataUriMatch[1].replace(/\s/g, '');
 
-    // Could be raw base64
-    if (/^[A-Za-z0-9+/=]{100,}$/.test(content.trim())) {
-      return content.trim();
+    // Raw base64 (long string of base64 chars)
+    const trimmed = content.trim();
+    if (/^[A-Za-z0-9+/=\s]{100,}$/.test(trimmed)) {
+      return trimmed.replace(/\s/g, '');
     }
+
+    // URL to an image
+    if (trimmed.startsWith('http') && /\.(png|jpg|jpeg|webp)/i.test(trimmed)) {
+      return await fetchImageAsBase64(trimmed);
+    }
+
+    // Might contain a URL embedded in text
+    const urlMatch = trimmed.match(/https?:\/\/[^\s"']+\.(png|jpg|jpeg|webp)[^\s"']*/i);
+    if (urlMatch) {
+      return await fetchImageAsBase64(urlMatch[0]);
+    }
+
     return null;
   }
 
-  // Array content — look for image_url parts
+  // Array content — look for image_url or image parts
   if (Array.isArray(content)) {
     for (const part of content) {
+      // Standard image_url format
       if (part.type === 'image_url' && 'image_url' in part) {
         const url = part.image_url.url;
         if (url.startsWith('data:image/')) {
           const base64 = url.split(',')[1];
-          if (base64) return base64;
+          if (base64) return base64.replace(/\s/g, '');
         }
-        // URL-based image — we'd need to fetch it
-        // For now, return the URL and handle in file storage
-        return url;
+        if (url.startsWith('http')) {
+          return await fetchImageAsBase64(url);
+        }
+        // Might be raw base64 without data: prefix
+        if (/^[A-Za-z0-9+/=]{100,}$/.test(url)) {
+          return url;
+        }
+      }
+
+      // Some models use type: "image" with base64 directly
+      if (part.type === 'image' && 'source' in part) {
+        const src = (part as Record<string, unknown>).source as Record<string, unknown>;
+        if (src?.type === 'base64' && typeof src.data === 'string') {
+          return src.data as string;
+        }
       }
     }
   }
 
   return null;
+}
+
+/** Fetch an image URL and convert to base64 */
+async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    console.log('[OpenRouter] Fetching image URL:', url.substring(0, 100));
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return buffer.toString('base64');
+  } catch (err) {
+    console.error('[OpenRouter] Failed to fetch image:', err);
+    return null;
+  }
 }
 
 /** Translate text RU→EN using Gemini Flash Lite */
