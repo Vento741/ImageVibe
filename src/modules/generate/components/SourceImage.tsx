@@ -9,13 +9,9 @@ export function SourceImage() {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Only show for img2img and inpaint modes
-  if (mode === 'text2img' || mode === 'upscale') return null;
-
   const handleSelectFile = useCallback(async () => {
     const filePath = await ipc.invoke('file:select-image');
     if (filePath) {
-      // For now, store the path. In production, read as base64.
       setSourceImage(filePath);
     }
   }, []);
@@ -27,7 +23,12 @@ export function SourceImage() {
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => {
-        setSourceImage(reader.result as string);
+        if (typeof reader.result === 'string') {
+          setSourceImage(reader.result);
+        }
+      };
+      reader.onerror = () => {
+        console.error('Failed to read dropped image');
       };
       reader.readAsDataURL(file);
     }
@@ -45,6 +46,9 @@ export function SourceImage() {
   const handleRemove = useCallback(() => {
     setSourceImage(null);
   }, []);
+
+  // Only show for img2img and inpaint modes
+  if (mode === 'text2img' || mode === 'upscale') return null;
 
   return (
     <GlassPanel padding="sm" className="flex flex-col gap-2">

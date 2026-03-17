@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { Page } from '../../App';
 import { useGenerateStore } from '@/modules/generate/store';
+import { isTypingInInput } from '@/shared/lib/utils';
 
 interface ShortcutConfig {
   onNavigate: (page: Page) => void;
@@ -13,9 +14,7 @@ interface ShortcutConfig {
 export function useKeyboardShortcuts({ onNavigate }: ShortcutConfig) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Ignore if typing in input/textarea
-      const target = e.target as HTMLElement;
-      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      const isTyping = isTypingInInput(e.target);
 
       // Ctrl/Cmd + key shortcuts
       if (e.ctrlKey || e.metaKey) {

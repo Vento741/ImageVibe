@@ -25,27 +25,8 @@ export function PresetSelector() {
 
   // Load presets on mount
   useEffect(() => {
-    ipc.invoke('presets:list').then((loaded) => {
-      if (loaded.length === 0) {
-        // Use builtins as display-only
-        setPresets(BUILTIN_PRESETS.map((p, i) => ({
-          id: -(i + 1), // negative IDs for builtins
-          name: p.name,
-          icon: p.icon,
-          model_id: p.modelId,
-          params: JSON.stringify({ aspectRatio: '1:1', imageSize: '1K' }),
-          style_tags: JSON.stringify(p.styleTags),
-          negative_prompt: p.negativePrompt,
-          is_builtin: 1,
-          sort_order: i,
-          created_at: new Date().toISOString(),
-        })));
-      } else {
-        setPresets(loaded);
-      }
-    }).catch(() => {
-      // Fallback to builtins
-      setPresets(BUILTIN_PRESETS.map((p, i) => ({
+    const builtinFallback = () =>
+      BUILTIN_PRESETS.map((p, i) => ({
         id: -(i + 1),
         name: p.name,
         icon: p.icon,
@@ -56,7 +37,12 @@ export function PresetSelector() {
         is_builtin: 1,
         sort_order: i,
         created_at: new Date().toISOString(),
-      })));
+      }));
+
+    ipc.invoke('presets:list').then((loaded) => {
+      setPresets(loaded.length > 0 ? loaded : builtinFallback());
+    }).catch(() => {
+      setPresets(builtinFallback());
     });
   }, [setPresets]);
 

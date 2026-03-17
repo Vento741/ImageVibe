@@ -70,9 +70,10 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
     [commands]
   );
 
-  const results = query.trim()
-    ? fuse.search(query).map((r) => r.item)
-    : commands;
+  const results = useMemo(
+    () => query.trim() ? fuse.search(query).map((r) => r.item) : commands,
+    [query, fuse, commands]
+  );
 
   // Reset selection when query changes
   useEffect(() => setSelectedIndex(0), [query]);
@@ -107,15 +108,14 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
 
   if (!isOpen) return null;
 
-  // Group results by category
-  const grouped = new Map<string, CommandItem[]>();
+  // Group results by category and build flat index map
+  const grouped = new Map<string, Array<CommandItem & { flatIdx: number }>>();
+  let idx = 0;
   for (const item of results) {
     const group = grouped.get(item.category) || [];
-    group.push(item);
+    group.push({ ...item, flatIdx: idx++ });
     grouped.set(item.category, group);
   }
-
-  let flatIndex = 0;
 
   return (
     <AnimatePresence>
@@ -163,14 +163,12 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
                   <div className="px-4 py-1 text-[10px] text-text-tertiary uppercase tracking-wider">
                     {category}
                   </div>
-                  {items.map((item) => {
-                    const currentIndex = flatIndex++;
-                    return (
+                  {items.map((item) => (
                       <button
                         key={item.id}
                         onClick={item.action}
                         className={`w-full px-4 py-2 flex items-center gap-3 text-left text-sm transition-colors cursor-pointer ${
-                          currentIndex === selectedIndex
+                          item.flatIdx === selectedIndex
                             ? 'bg-aurora-blue/10 text-text-primary'
                             : 'text-text-secondary hover:bg-glass-hover'
                         }`}
@@ -183,8 +181,7 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
                           </kbd>
                         )}
                       </button>
-                    );
-                  })}
+                  ))}
                 </div>
               ))
             )}

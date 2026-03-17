@@ -23,6 +23,12 @@ export function debounce<T extends (...args: unknown[]) => void>(
   };
 }
 
+/** Check if user is typing in an input element */
+export function isTypingInInput(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+}
+
 /** Clamp a number between min and max */
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);

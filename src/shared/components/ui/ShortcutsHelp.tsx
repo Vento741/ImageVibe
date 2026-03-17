@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isTypingInInput } from '@/shared/lib/utils';
 
 const SHORTCUTS = [
   { keys: 'Ctrl+Enter', action: 'Генерировать' },
@@ -18,8 +19,7 @@ export function ShortcutsHelp() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      if (isTypingInInput(e.target)) return;
 
       if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
