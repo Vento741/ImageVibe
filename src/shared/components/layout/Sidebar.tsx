@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { Page } from '../../../App';
 import { CostCounter } from '@/modules/cost/components/CostCounter';
+import { useGenerateStore } from '@/modules/generate/store';
 
 interface SidebarProps {
   currentPage: Page;
@@ -26,6 +27,9 @@ const bottomItems: NavItem[] = [
 ];
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+  const uiMode = useGenerateStore((s) => s.uiMode);
+  const toggleUiMode = useGenerateStore((s) => s.toggleUiMode);
+
   return (
     <aside className="w-16 h-full flex flex-col items-center py-3 gap-1 bg-bg-secondary/50 border-r border-glass-border relative z-10">
       {/* Drag region for frameless window */}
@@ -45,6 +49,17 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 
       {/* Bottom items */}
       <div className="flex flex-col items-center gap-1 w-full">
+        <motion.button
+          onClick={toggleUiMode}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg transition-colors cursor-pointer titlebar-no-drag ${
+            uiMode === 'advanced' ? 'bg-aurora-purple/20 text-aurora-purple' : 'text-text-tertiary hover:text-text-secondary hover:bg-glass-hover'
+          }`}
+          title={`${uiMode === 'simple' ? 'Расширенный' : 'Простой'} режим (Ctrl+Shift+M)`}
+        >
+          ⚡
+        </motion.button>
         <CostCounter />
         {bottomItems.map((item) => (
           <SidebarButton

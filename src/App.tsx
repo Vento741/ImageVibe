@@ -10,12 +10,17 @@ import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
 import { ImageViewer } from './modules/gallery/components/ImageViewer';
 import { AnalyticsPage } from './modules/analytics/components/AnalyticsPage';
 import { SettingsPage } from './modules/settings/components/SettingsPage';
+import { ToastContainer } from './shared/components/ui/Toast';
+import { useToastStore } from './shared/stores/toastStore';
+import { Onboarding } from './shared/components/ui/Onboarding';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>('generate');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const toasts = useToastStore((s) => s.toasts);
+  const removeToast = useToastStore((s) => s.removeToast);
 
   useKeyboardShortcuts({ onNavigate: setCurrentPage });
 
@@ -50,6 +55,8 @@ export function App() {
         onNavigate={(page) => { setCurrentPage(page); setIsCommandPaletteOpen(false); }}
       />
       <ShortcutsHelp />
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
+      <Onboarding />
     </div>
   );
 }
