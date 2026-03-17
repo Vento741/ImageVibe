@@ -10,7 +10,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"electron/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "repository": {
     "type": "git",
