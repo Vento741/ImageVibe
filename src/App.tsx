@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AuroraBackground } from './shared/components/ui/AuroraBackground';
 import { Sidebar } from './shared/components/layout/Sidebar';
 import { GeneratePage } from './modules/generate/components/GeneratePage';
+import { GalleryPage } from './modules/gallery/components/GalleryPage';
 import { CommandPalette } from './modules/command-palette/components/CommandPalette';
 import { useKeyboardShortcuts } from './shared/hooks/useKeyboardShortcuts';
 import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
@@ -32,11 +33,7 @@ export function App() {
       <main className="flex-1 relative z-10 overflow-hidden">
         <div className="h-full p-4">
           {currentPage === 'generate' && <GeneratePage />}
-          {currentPage === 'gallery' && (
-            <div className="text-text-secondary flex items-center justify-center h-full">
-              Галерея — скоро будет
-            </div>
-          )}
+          {currentPage === 'gallery' && <GalleryPage />}
           {currentPage === 'collections' && (
             <div className="text-text-secondary flex items-center justify-center h-full">
               Коллекции — скоро будет
