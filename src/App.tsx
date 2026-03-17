@@ -9,6 +9,7 @@ import { useKeyboardShortcuts } from './shared/hooks/useKeyboardShortcuts';
 import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
 import { ImageViewer } from './modules/gallery/components/ImageViewer';
 import { AnalyticsPage } from './modules/analytics/components/AnalyticsPage';
+import { SettingsPage } from './modules/settings/components/SettingsPage';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
@@ -39,11 +40,7 @@ export function App() {
           {currentPage === 'gallery' && <GalleryPage />}
           {currentPage === 'collections' && <CollectionsPage />}
           {currentPage === 'analytics' && <AnalyticsPage />}
-          {currentPage === 'settings' && (
-            <div className="text-text-secondary flex items-center justify-center h-full">
-              Настройки — скоро будет
-            </div>
-          )}
+          {currentPage === 'settings' && <SettingsPage />}
         </div>
       </main>
       <ImageViewer />
