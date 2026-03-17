@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+/* ═══ Aurora Theme ═══ */
+
+@theme {
+  /* Background layers */
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #12121a;
+  --color-bg-tertiary: #1a1a25;
+  --color-bg-elevated: #1e1e2a;
+
+  /* Glass panels */
+  --color-glass: rgba(255, 255, 255, 0.03);
+  --color-glass-hover: rgba(255, 255, 255, 0.06);
+  --color-glass-active: rgba(255, 255, 255, 0.09);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Aurora accent colors */
+  --color-aurora-blue: #4f8ef7;
+  --color-aurora-purple: #a855f7;
+  --color-aurora-pink: #ec4899;
+  --color-aurora-cyan: #22d3ee;
+  --color-aurora-green: #10b981;
+
+  /* Text */
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #9ca3af;
+  --color-text-tertiary: #6b7280;
+  --color-text-accent: #4f8ef7;
+
+  /* Status */
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+
+  /* Cost tracking colors */
+  --color-cost-low: #10b981;
+  --color-cost-medium: #f59e0b;
+  --color-cost-high: #ef4444;
+
+  /* Sidebar */
+  --sidebar-width: 64px;
+  --sidebar-expanded-width: 240px;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Font */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* ═══ Base styles ═══ */
+
+body {
+  @apply bg-bg-primary text-text-primary font-sans antialiased;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ═══ Glass morphism utility ═══ */
+
+.glass-panel {
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+}
+
+.glass-panel-hover {
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  transition: background 150ms ease;
+}
+
+.glass-panel-hover:hover {
+  background: var(--color-glass-hover);
+}
+
+/* ═══ Aurora gradient backgrounds ═══ */
+
+.aurora-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aurora-blob-blue {
+  background: var(--color-aurora-blue);
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -100px;
+}
+
+.aurora-blob-purple {
+  background: var(--color-aurora-purple);
+  width: 500px;
+  height: 500px;
+  bottom: -150px;
+  left: -100px;
+}
+
+.aurora-blob-pink {
+  background: var(--color-aurora-pink);
+  width: 400px;
+  height: 400px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ═══ Budget progress bar ═══ */
+
+.budget-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.budget-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 300ms ease, background-color 300ms ease;
+}
+
+/* ═══ Electron: remove drag region ═══ */
+
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ═══ Selection ═══ */
+
+::selection {
+  background: rgba(79, 142, 247, 0.3);
+}
