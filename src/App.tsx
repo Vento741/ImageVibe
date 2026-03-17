@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuroraBackground } from './shared/components/ui/AuroraBackground';
 import { Sidebar } from './shared/components/layout/Sidebar';
+import { GeneratePage } from './modules/generate/components/GeneratePage';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
@@ -13,11 +14,7 @@ export function App() {
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
       <main className="flex-1 relative z-10 overflow-hidden">
         <div className="h-full p-4">
-          {currentPage === 'generate' && (
-            <div className="text-text-secondary flex items-center justify-center h-full">
-              Генерация — скоро будет
-            </div>
-          )}
+          {currentPage === 'generate' && <GeneratePage />}
           {currentPage === 'gallery' && (
             <div className="text-text-secondary flex items-center justify-center h-full">
               Галерея — скоро будет
