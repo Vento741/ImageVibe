@@ -3,6 +3,7 @@ import { StyleTags } from './StyleTags';
 import { ParamsPanel } from './ParamsPanel';
 import { Canvas } from './Canvas';
 import { GenerateButton } from './GenerateButton';
+import { BatchControls } from './BatchControls';
 import { ModeSelector } from './ModeSelector';
 import { SourceImage } from './SourceImage';
 import { useGenerateStore } from '../store';
@@ -22,7 +23,10 @@ export function GeneratePage() {
         <StyleTags />
         {uiMode === 'advanced' && <SourceImage />}
         {uiMode === 'advanced' && <ParamsPanel />}
-        <GenerateButton />
+        <div className="flex flex-col gap-2">
+          <GenerateButton />
+          {uiMode === 'advanced' && <BatchControls />}
+        </div>
         {uiMode === 'advanced' && <QueuePanel />}
       </div>
 
