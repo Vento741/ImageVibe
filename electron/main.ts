@@ -1,8 +1,8 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
-
-// IPC handlers will be registered here once ./ipc/handlers is created
-// import { registerHandlers } from './ipc/handlers';
+import { initDatabase, closeDatabase } from './services/database';
+import { loadConfig } from './services/configManager';
+import { registerIpcHandlers } from './ipc/handlers';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -44,6 +44,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  loadConfig();
+  initDatabase();
+  registerIpcHandlers();
   createWindow();
 
   app.on('activate', () => {
@@ -54,6 +57,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  closeDatabase();
   if (process.platform !== 'darwin') {
     app.quit();
   }
