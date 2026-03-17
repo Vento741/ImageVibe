@@ -1,12 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuroraBackground } from './shared/components/ui/AuroraBackground';
 import { Sidebar } from './shared/components/layout/Sidebar';
 import { GeneratePage } from './modules/generate/components/GeneratePage';
+import { CommandPalette } from './modules/command-palette/components/CommandPalette';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>('generate');
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -37,6 +50,11 @@ export function App() {
           )}
         </div>
       </main>
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(page) => { setCurrentPage(page); setIsCommandPaletteOpen(false); }}
+      />
     </div>
   );
 }
