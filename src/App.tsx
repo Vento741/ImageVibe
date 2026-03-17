@@ -8,6 +8,7 @@ import { CommandPalette } from './modules/command-palette/components/CommandPale
 import { useKeyboardShortcuts } from './shared/hooks/useKeyboardShortcuts';
 import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
 import { ImageViewer } from './modules/gallery/components/ImageViewer';
+import { AnalyticsPage } from './modules/analytics/components/AnalyticsPage';
 
 export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
 
@@ -37,11 +38,7 @@ export function App() {
           {currentPage === 'generate' && <GeneratePage />}
           {currentPage === 'gallery' && <GalleryPage />}
           {currentPage === 'collections' && <CollectionsPage />}
-          {currentPage === 'analytics' && (
-            <div className="text-text-secondary flex items-center justify-center h-full">
-              Аналитика — скоро будет
-            </div>
-          )}
+          {currentPage === 'analytics' && <AnalyticsPage />}
           {currentPage === 'settings' && (
             <div className="text-text-secondary flex items-center justify-center h-full">
               Настройки — скоро будет
