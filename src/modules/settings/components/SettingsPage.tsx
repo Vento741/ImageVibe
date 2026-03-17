@@ -142,7 +142,6 @@ export function SettingsPage() {
         <div className="grid grid-cols-3 gap-3">
           <BudgetInput
             label="Дневной ($)"
-            value={config.costTracking.enabled ? undefined : undefined}
             onChange={(val) => ipc.invoke('cost:set-budget', { daily_limit: val })}
           />
           <BudgetInput
@@ -255,7 +254,7 @@ function BudgetInput({ label, value, onChange }: { label: string; value?: number
         type="number"
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={() => onChange(localValue ? Number(localValue) : null)}
+        onBlur={() => { const n = parseFloat(localValue); onChange(!isNaN(n) && n >= 0 ? n : null); }}
         placeholder="Без лимита"
         className="w-full bg-bg-tertiary text-text-primary text-xs rounded-lg px-2 py-1.5 outline-none border border-glass-border focus:border-aurora-blue/50"
       />

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ToastData } from '../components/ui/Toast';
+import { generateId } from '../lib/utils';
 
 interface ToastState {
   toasts: ToastData[];
@@ -13,7 +14,7 @@ export const useToastStore = create<ToastState>((set) => ({
     set((s) => ({
       toasts: [
         ...s.toasts,
-        { ...toast, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+        { ...toast, id: generateId() },
       ].slice(-5), // Max 5 toasts
     })),
   removeToast: (id) =>

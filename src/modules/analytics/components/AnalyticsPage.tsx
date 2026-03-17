@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import type { SpendingSummary, CreditBalance, BudgetStatus } from '@/shared/types/ipc';
+
+const TYPE_LABELS: Record<string, string> = {
+  image: '🎨 Генерация',
+  prompt_ai: '✨ Промпт-AI',
+  translate: '🌐 Перевод',
+};
 
 export function AnalyticsPage() {
   const [summary, setSummary] = useState<SpendingSummary | null>(null);
@@ -91,8 +97,9 @@ export function AnalyticsPage() {
         <GlassPanel>
           <h3 className="text-sm font-medium text-text-primary mb-3">По моделям</h3>
           <div className="flex flex-col gap-2">
-            {summary.costByModel.map((model, idx) => {
+            {(() => {
               const maxCost = summary.costByModel[0]?.cost ?? 1;
+              return summary.costByModel.map((model, idx) => {
               const percent = maxCost > 0 ? (model.cost / maxCost) * 100 : 0;
               return (
                 <motion.div
@@ -103,7 +110,7 @@ export function AnalyticsPage() {
                   className="flex items-center gap-3"
                 >
                   <span className="text-xs text-text-secondary w-32 truncate">
-                    {model.modelId.split('/')[1] ?? model.modelId}
+                    {getModelShortName(model.modelId)}
                   </span>
                   <div className="flex-1 h-5 bg-glass rounded-md overflow-hidden">
                     <motion.div
@@ -121,7 +128,8 @@ export function AnalyticsPage() {
                   </span>
                 </motion.div>
               );
-            })}
+            });
+            })()}
           </div>
         </GlassPanel>
       )}
@@ -131,16 +139,10 @@ export function AnalyticsPage() {
         <GlassPanel>
           <h3 className="text-sm font-medium text-text-primary mb-3">По типу</h3>
           <div className="flex gap-4">
-            {summary.costByType.map((type) => {
-              const typeLabels: Record<string, string> = {
-                image: '🎨 Генерация',
-                prompt_ai: '✨ Промпт-AI',
-                translate: '🌐 Перевод',
-              };
-              return (
+            {summary.costByType.map((type) => (
                 <div key={type.type} className="flex flex-col items-center gap-1">
                   <span className="text-xs text-text-secondary">
-                    {typeLabels[type.type] ?? type.type}
+                    {TYPE_LABELS[type.type] ?? type.type}
                   </span>
                   <span className="text-sm font-medium text-text-primary">
                     {formatCostDisplay(type.cost)}
@@ -149,8 +151,7 @@ export function AnalyticsPage() {
                     {type.count} запросов
                   </span>
                 </div>
-              );
-            })}
+            ))}
           </div>
         </GlassPanel>
       )}
