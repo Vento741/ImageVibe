@@ -1,10 +1,15 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, protocol, net } from 'electron';
 import path from 'path';
 import { initDatabase, closeDatabase } from './services/database';
 import { loadConfig } from './services/configManager';
 import { registerIpcHandlers } from './ipc/handlers';
 
 let mainWindow: BrowserWindow | null = null;
+
+// Register custom protocol for serving local images
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'local-file', privileges: { bypassCSP: true, stream: true, supportFetchAPI: true } },
+]);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -36,13 +41,12 @@ function createWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // Set CSP for production only
     mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
       callback({
         responseHeaders: {
           ...details.responseHeaders,
           'Content-Security-Policy': [
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: file:; connect-src 'self' https://openrouter.ai",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: local-file:; connect-src 'self' https://openrouter.ai",
           ],
         },
       });
@@ -56,6 +60,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Register protocol handler to serve local files
+  protocol.handle('local-file', (request) => {
+    // URL format: local-file:///C:/path/to/file.png
+    const filePath = decodeURIComponent(request.url.replace('local-file://', ''));
+    return net.fetch('file://' + filePath);
+  });
+
   loadConfig();
   initDatabase();
   registerIpcHandlers();

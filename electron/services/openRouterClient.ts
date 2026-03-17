@@ -230,7 +230,7 @@ async function extractImageFromResponse(response: OpenRouterResponse): Promise<s
       }
 
       // Some models use type: "image" with base64 directly
-      if (part.type === 'image' && 'source' in part) {
+      if ((part as Record<string, unknown>).type === 'image' && 'source' in part) {
         const src = (part as Record<string, unknown>).source as Record<string, unknown>;
         if (src?.type === 'base64' && typeof src.data === 'string') {
           return src.data as string;

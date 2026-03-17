@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay, getModelShortName, formatDate } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName, formatDate, localFileUrl } from '@/shared/lib/utils';
 import type { DBImage } from '@/shared/types/database';
 
 export function ImageViewer() {
@@ -113,16 +113,15 @@ export function ImageViewer() {
             </button>
           )}
 
-          {/* Close button */}
-          <button
-            onClick={() => setSelectedImageId(null)}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer z-10"
-          >
-            ✕
-          </button>
-
-          {/* Toolbar */}
-          <div className="absolute top-4 left-4 flex gap-2 z-10">
+          {/* Toolbar — top left with close button */}
+          <div className="absolute top-12 left-4 flex gap-2 z-10">
+            <button
+              onClick={() => setSelectedImageId(null)}
+              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm cursor-pointer"
+              title="Закрыть (Esc)"
+            >
+              ✕ Закрыть
+            </button>
             <button
               onClick={() => {
                 ipc.invoke('gallery:toggle-favorite', image.id).then(() => toggleFavorite(image.id));
@@ -146,7 +145,7 @@ export function ImageViewer() {
             key={image.id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            src={`file://${image.file_path}`}
+            src={localFileUrl(image.file_path)}
             alt={image.prompt}
             className="max-w-[80%] max-h-[85%] object-contain rounded-lg shadow-2xl"
           />

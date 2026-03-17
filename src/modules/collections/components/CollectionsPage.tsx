@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ipc } from '@/shared/lib/ipc';
+import { localFileUrl } from '@/shared/lib/utils';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import type { DBCollection, DBImage } from '@/shared/types/database';
 
@@ -129,7 +130,7 @@ export function CollectionsPage() {
                   className="relative group rounded-lg overflow-hidden"
                 >
                   <img
-                    src={`file://${image.file_path}`}
+                    src={localFileUrl(image.file_path)}
                     alt={image.prompt}
                     className="w-full aspect-square object-cover"
                     loading="lazy"

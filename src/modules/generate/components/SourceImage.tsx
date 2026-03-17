@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
+import { localFileUrl } from '@/shared/lib/utils';
 
 export function SourceImage() {
   const mode = useGenerateStore((s) => s.mode);
@@ -66,7 +67,7 @@ export function SourceImage() {
             className="relative"
           >
             <img
-              src={sourceImage.startsWith('data:') ? sourceImage : `file://${sourceImage}`}
+              src={sourceImage.startsWith('data:') ? sourceImage : localFileUrl(sourceImage)}
               alt="Source"
               className="w-full h-32 object-cover rounded-lg"
             />

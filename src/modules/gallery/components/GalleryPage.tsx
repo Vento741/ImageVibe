@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName, localFileUrl } from '@/shared/lib/utils';
 import { GalleryFilters } from './GalleryFilters';
 
 export function GalleryPage() {
@@ -112,7 +112,7 @@ export function GalleryPage() {
                 }`}
               >
                 <img
-                  src={`file://${image.file_path}`}
+                  src={localFileUrl(image.file_path)}
                   alt={image.prompt}
                   className="w-full aspect-square object-cover"
                   loading="lazy"
