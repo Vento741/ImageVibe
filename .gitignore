@@ -21,3 +21,8 @@ CLAUDE.md
 # OS
 Thumbs.db
 .DS_Store
+
+release/
+build/
+!build/icon.ico
+!build/icon.png

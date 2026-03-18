@@ -24,7 +24,32 @@
     "url": "https://github.com/Vento741/ImageVibe/issues"
   },
   "homepage": "https://github.com/Vento741/ImageVibe#readme",
-  "description": "",
+  "description": "Desktop AI image generation via OpenRouter API",
+  "build": {
+    "appId": "com.imagevibe.app",
+    "productName": "ImageVibe",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ]
+  },
   "dependencies": {
     "better-sqlite3": "^12.8.0",
     "framer-motion": "^12.38.0",
@@ -51,6 +76,7 @@
     "esbuild": "^0.27.4",
     "eslint": "^10.0.3",
     "jsdom": "^29.0.0",
+    "png2icons": "^2.0.1",
     "postcss": "^8.5.8",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.2.1",

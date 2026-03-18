@@ -5,7 +5,7 @@
 ### AI Image Generation Desktop App
 
 <p>
-  <img src="build/icon.svg" width="120" alt="ImageVibe Logo" />
+  <img src="logo.png" width="160" alt="ImageVibe Logo" />
 </p>
 
 <p>
