@@ -1,201 +1,213 @@
 <div align="center">
 
+<img src="logo.png" width="180" alt="ImageVibe" />
+
 # ImageVibe
 
-### AI Image Generation Desktop App
+**Десктопное приложение для генерации изображений с помощью ИИ**
 
-<p>
-  <img src="logo.png" width="160" alt="ImageVibe Logo" />
-</p>
+<br />
 
-<p>
-  <strong>13 AI models</strong> &bull; <strong>Aurora dark UI</strong> &bull; <strong>Cost tracking</strong> &bull; <strong>Batch generation</strong>
-</p>
+`13 моделей` &nbsp;&middot;&nbsp; `Aurora UI` &nbsp;&middot;&nbsp; `Двусторонний перевод` &nbsp;&middot;&nbsp; `Контроль расходов`
 
-<p>
-  <a href="#features">Features</a> &bull;
-  <a href="#models">Models</a> &bull;
-  <a href="#installation">Installation</a> &bull;
-  <a href="#usage">Usage</a> &bull;
-  <a href="#shortcuts">Shortcuts</a> &bull;
-  <a href="#tech-stack">Tech Stack</a>
-</p>
+<br />
+
+<a href="#-возможности">Возможности</a> &nbsp;&middot;&nbsp;
+<a href="#-модели">Модели</a> &nbsp;&middot;&nbsp;
+<a href="#-установка">Установка</a> &nbsp;&middot;&nbsp;
+<a href="#-как-пользоваться">Как пользоваться</a> &nbsp;&middot;&nbsp;
+<a href="#-горячие-клавиши">Горячие клавиши</a> &nbsp;&middot;&nbsp;
+<a href="#-стек-технологий">Стек</a>
 
 </div>
 
+<br />
+
 ---
 
-## What is ImageVibe?
+## Что такое ImageVibe?
 
-ImageVibe is a desktop application for AI image generation powered by [OpenRouter](https://openrouter.ai). Write a prompt in Russian or English, pick a model, and generate stunning images — all from a beautiful Aurora-themed interface.
+ImageVibe — десктопное приложение для генерации изображений через [OpenRouter](https://openrouter.ai). Пишите промпт на русском или английском, выбирайте модель и получайте результат — всё в одном красивом интерфейсе с Aurora-темой.
 
-**Key differentiators:**
-- **Multi-model access** — 13 image models from 5 providers in one app
-- **Cost intelligence** — real-time spending tracking, budget limits, per-model analytics
-- **Progressive disclosure** — simple mode for beginners, advanced mode for power users
-- **PNG metadata** — every image embeds its full generation parameters
-- **Auto-translate** — write prompts in Russian, they're automatically translated to English
+**Чем отличается от аналогов:**
 
-## Features
+- **13 моделей в одном окне** — от быстрых черновиков до 4K-шедевров, 5 провайдеров
+- **Двусторонний перевод RU ↔ EN** — пишите на русском, промпт автоматически переводится на английский; результаты AI-действий переводятся обратно на русский
+- **Контроль расходов** — лимиты бюджета, аналитика по моделям, оценка стоимости до генерации
+- **Два режима работы** — простой для новичков, расширенный для полного контроля
+- **PNG-метаданные** — каждое изображение хранит параметры генерации внутри файла
 
-### Generation
-- Text-to-image, image-to-image, inpainting, upscale modes
-- 36 style tags across 4 categories (style, quality, lighting, mood)
-- Negative prompt templates (6 built-in presets)
-- AI prompt assistant: generate, enhance, rephrase prompts
-- Live auto-translation RU → EN with preview
-- Batch generation (x2 / x4 / x8 variations)
-- Prompt history with undo/redo
+<br />
 
-### Gallery
-- Image grid with search and filtering
-- Sort by date, cost, or file size
-- Filter by model, favorites
-- Fullscreen viewer with metadata panel
-- Arrow key navigation, keyboard shortcuts
-- Collections for organizing images
-- Auto-tagging with 27 extraction rules
+## ✦ Возможности
 
-### Cost Tracking
-- Real-time spending counter in sidebar
-- Budget limits (daily / weekly / monthly) with alerts
-- Analytics dashboard with model breakdown charts
-- Cost estimation before generation
-- Tracks image generation + prompt AI + translation costs separately
+### Генерация
+- Режимы: текст→фото, фото→фото, инпейнт
+- 36 стилевых тегов в 4 категориях (стиль, качество, освещение, настроение)
+- 6 шаблонов негативных промптов
+- AI-ассистент: генерация, улучшение, перефразирование промптов
+- Двусторонний автоперевод RU ↔ EN с превью
+- Пакетная генерация (x2 / x4 / x8 вариаций)
+- История промптов с отменой/повтором
 
-### UI/UX
-- Aurora dark theme with animated gradient blobs
-- Glass morphism panels with backdrop blur
-- Command Palette (Ctrl+K) with fuzzy search
-- 8 built-in generation presets
-- Progressive disclosure: simple / advanced mode toggle
-- First-run onboarding with API key setup
-- Toast notifications
+### Галерея
+- Сетка изображений с поиском и фильтрацией
+- Сортировка по дате, стоимости, размеру файла
+- Фильтры по модели и избранному
+- Полноэкранный просмотр с панелью метаданных
+- Навигация стрелками, горячие клавиши
+- Коллекции для организации изображений
+- Авто-тегирование (27 правил извлечения)
 
-## Models
+### Расходы и аналитика
+- Счётчик расходов в реальном времени в сайдбаре
+- Лимиты бюджета (день / неделя / месяц) с предупреждениями
+- Дашборд аналитики с разбивкой по моделям
+- Предварительная оценка стоимости перед генерацией
+- Раздельный учёт: генерация + AI-промпт + перевод
 
-| Category | Model | Provider | Best For |
-|----------|-------|----------|----------|
-| **Fast** | FLUX.2 Klein | Black Forest Labs | Quick drafts |
-| | Riverflow V2 Fast | Sourceful | Fast with fonts |
-| | Gemini 3.1 Flash | Google | Pro quality at flash speed |
-| | Gemini 2.5 Flash | Google | Budget option |
-| **Quality** | FLUX.2 Pro | Black Forest Labs | Production balance |
-| | FLUX.2 Max | Black Forest Labs | Maximum quality |
-| | FLUX.2 Flex | Black Forest Labs | Typography, multi-reference |
-| | Seedream 4.5 | ByteDance | Portraits, fine text |
-| | Riverflow V2 Pro | Sourceful | SOTA, fonts, super resolution |
-| | Riverflow V2 Max | Sourceful | Preview max quality |
-| **Smart** | Gemini 3 Pro | Google | 2K/4K, local edits |
-| | GPT-5 Image | OpenAI | Reasoning + generation |
-| | GPT-5 Image Mini | OpenAI | Fast smart generation |
+### Интерфейс
+- Aurora-тема с анимированными градиентами
+- Glass morphism панели с размытием фона
+- Палитра команд (Ctrl+K) с нечётким поиском
+- 8 встроенных пресетов генерации
+- Кастомные тултипы в стиле приложения
+- Иконки Lucide React по всему интерфейсу
+- Онбординг при первом запуске
+- Тост-уведомления
 
-## Installation
+<br />
 
-### Prerequisites
+## ✦ Модели
+
+| Категория | Модель | Провайдер | Для чего |
+|-----------|--------|-----------|----------|
+| **Быстрые** | FLUX.2 Klein | Black Forest Labs | Быстрые черновики |
+| | Riverflow V2 Fast | Sourceful | Быстрая генерация со шрифтами |
+| | Gemini 3.1 Flash | Google | Про-качество на скорости Flash |
+| | Gemini 2.5 Flash | Google | Бюджетный вариант |
+| **Качественные** | FLUX.2 Pro | Black Forest Labs | Баланс скорости и качества |
+| | FLUX.2 Max | Black Forest Labs | Максимальное качество |
+| | FLUX.2 Flex | Black Forest Labs | Типографика, мульти-референсы |
+| | Seedream 4.5 | ByteDance | Портреты, мелкий текст |
+| | Riverflow V2 Pro | Sourceful | SOTA, шрифты, суперразрешение |
+| | Riverflow V2 Max | Sourceful | Превью максимального качества |
+| **Умные** | Gemini 3 Pro | Google | 2K/4K, локальные правки |
+| | GPT-5 Image | OpenAI | Рассуждение + генерация |
+| | GPT-5 Image Mini | OpenAI | Быстрая умная генерация |
+
+<br />
+
+## ✦ Установка
+
+### Что понадобится
 - [Node.js](https://nodejs.org/) 18+
-- [OpenRouter API key](https://openrouter.ai/keys)
+- [API-ключ OpenRouter](https://openrouter.ai/keys)
 
-### Setup
+### Запуск из исходников
 
 ```bash
-# Clone
 git clone https://github.com/Vento741/ImageVibe.git
 cd ImageVibe
-
-# Install dependencies
 npm install
-
-# Run in development mode
 npm run dev
 ```
 
-### Build
+### Сборка установщика
 
 ```bash
-# Build for production
-npm run build
-
-# Build executable (.exe / .dmg / .AppImage)
 npm run build:exe
 ```
 
-## Usage
+Готовый `ImageVibe Setup X.X.X.exe` появится в папке `release/`.
 
-1. **First launch** — enter your OpenRouter API key in the onboarding dialog
-2. **Write a prompt** — type in Russian or English (auto-translated)
-3. **Choose a style** — click style tags or select a preset
-4. **Generate** — press `Ctrl+Enter` or click the button
-5. **Browse results** — view in Canvas, switch to 2x2 grid for variations
+<br />
 
-### Simple Mode (default)
-Prompt + style tags + aspect ratio + generate button. That's it.
+## ✦ Как пользоваться
 
-### Advanced Mode (Ctrl+Shift+M)
-Full control: model selection, negative prompts, batch generation, presets, queue, img2img mode, seed control.
+1. **Первый запуск** — введите API-ключ OpenRouter в диалоге онбординга
+2. **Напишите промпт** — на русском или английском (перевод автоматический в обе стороны)
+3. **Выберите стиль** — кликните теги или выберите пресет
+4. **Генерируйте** — нажмите `Ctrl+Enter` или кнопку
+5. **Просматривайте** — результат на Canvas, переключение на сетку 2x2 для вариаций
 
-## Shortcuts
+### Простой режим (по умолчанию)
+Промпт + стилевые теги + пропорции + кнопка генерации. Больше ничего не нужно.
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Enter` | Generate |
-| `Ctrl+K` | Command Palette |
-| `Ctrl+Shift+M` | Toggle simple/advanced mode |
-| `Ctrl+G` | Go to Generation |
-| `Ctrl+L` | Go to Gallery |
-| `Ctrl+,` | Settings |
-| `Ctrl+R` | Random seed |
-| `Ctrl+D` | Duplicate generation |
-| `?` | Show all shortcuts |
-| `Esc` | Close viewer/palette |
-| `←` `→` | Navigate gallery |
-| `I` | Toggle image info |
-| `F` | Toggle favorite |
+### Расширенный режим (Ctrl+Shift+M)
+Полный контроль: выбор модели, негативные промпты, пакетная генерация, пресеты, очередь, режим фото→фото, управление seed.
 
-## Tech Stack
+<br />
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Electron 41 |
-| Frontend | React 19 + TypeScript 5.9 |
-| Build | Vite 8 |
-| Styles | Tailwind CSS v4 |
-| Animations | Framer Motion |
-| State | Zustand |
-| Database | SQLite (better-sqlite3) |
-| Search | Fuse.js |
+## ✦ Горячие клавиши
+
+| Клавиша | Действие |
+|---------|----------|
+| `Ctrl+Enter` | Генерация |
+| `Ctrl+K` | Палитра команд |
+| `Ctrl+Shift+M` | Простой / расширенный режим |
+| `Ctrl+G` | Перейти к генерации |
+| `Ctrl+L` | Перейти в галерею |
+| `Ctrl+,` | Настройки |
+| `Ctrl+R` | Случайный seed |
+| `Ctrl+D` | Дублировать генерацию |
+| `?` | Все горячие клавиши |
+| `Esc` | Закрыть просмотр / палитру |
+| `←` `→` | Навигация по галерее |
+| `I` | Показать информацию |
+| `F` | В избранное |
+
+<br />
+
+## ✦ Стек технологий
+
+| Слой | Технология |
+|------|-----------|
+| Рантайм | Electron 33 |
+| Фронтенд | React 19 + TypeScript 5.9 |
+| Сборка | Vite 8 |
+| Стили | Tailwind CSS v4 |
+| Анимации | Framer Motion |
+| Иконки | Lucide React |
+| Стейт | Zustand |
+| База данных | SQLite (better-sqlite3, WAL, FTS5) |
+| Поиск | Fuse.js |
 | API | OpenRouter |
-| Packaging | electron-builder |
+| Установщик | electron-builder (NSIS) |
 
-## Project Structure
+<br />
+
+## ✦ Структура проекта
 
 ```
 src/
   modules/
-    generate/        # Image generation (10 components)
-    gallery/         # Image grid, filters, viewer
-    collections/     # User collections
-    cost/            # Cost tracking widget
-    queue/           # Generation queue
-    compare/         # A/B slider, variations grid
-    presets/         # Preset selector
-    analytics/       # Spending dashboard
-    settings/        # API keys, budget, preferences
-    command-palette/ # Ctrl+K search
+    generate/        # Генерация изображений (10 компонентов)
+    gallery/         # Сетка, фильтры, просмотр
+    collections/     # Коллекции пользователя
+    cost/            # Виджет расходов
+    queue/           # Очередь генерации
+    compare/         # A/B слайдер, сетка вариаций
+    presets/         # Селектор пресетов
+    analytics/       # Дашборд расходов
+    settings/        # API-ключи, бюджет, настройки
+    command-palette/ # Поиск Ctrl+K
   shared/
-    components/      # UI components (Aurora, Glass, Toast, Sidebar)
-    lib/             # IPC bridge, utilities
-    types/           # TypeScript type definitions
-    hooks/           # Keyboard shortcuts
+    components/      # UI: Aurora, Glass, Toast, Sidebar, Tooltip
+    lib/             # IPC-мост, утилиты
+    types/           # TypeScript типы
+    hooks/           # Хуки (горячие клавиши)
     stores/          # Toast store
 
 electron/
-  main.ts            # Electron main process
+  main.ts            # Главный процесс Electron
   preload.ts         # Context bridge
-  services/          # Backend services (9 files)
-  ipc/               # IPC handlers
+  services/          # Бэкенд-сервисы (9 файлов)
+  ipc/               # IPC-обработчики
 ```
 
-## License
+<br />
+
+## Лицензия
 
 ISC
