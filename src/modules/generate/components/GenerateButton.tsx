@@ -4,7 +4,8 @@ import { Sparkles } from 'lucide-react';
 import { useGenerateStore } from '../store';
 import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
-import { formatCostDisplay } from '@/shared/lib/utils';
+import { formatCostDisplay, generateId } from '@/shared/lib/utils';
+import { useToastStore } from '@/shared/stores/toastStore';
 
 export function GenerateButton() {
   const prompt = useGenerateStore((s) => s.prompt);
@@ -15,51 +16,71 @@ export function GenerateButton() {
   const seed = useGenerateStore((s) => s.seed);
   const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const styleTags = useGenerateStore((s) => s.styleTags);
-  const isGenerating = useGenerateStore((s) => s.isGenerating);
-  const setIsGenerating = useGenerateStore((s) => s.setIsGenerating);
-  const setCurrentResult = useGenerateStore((s) => s.setCurrentResult);
-  const setTranslatedPrompt = useGenerateStore((s) => s.setTranslatedPrompt);
   const pushPromptHistory = useGenerateStore((s) => s.pushPromptHistory);
+  const addCanvasCard = useGenerateStore((s) => s.addCanvasCard);
   const currentEstimate = useCostStore((s) => s.currentEstimate);
   const setCurrentEstimate = useCostStore((s) => s.setCurrentEstimate);
-  const addSessionCost = useCostStore((s) => s.addSessionCost);
+  const addToast = useToastStore((s) => s.addToast);
 
   // Fetch cost estimate when model/size changes
   useEffect(() => {
     ipc.invoke('cost:estimate', selectedModelId, imageSize).then(setCurrentEstimate).catch(() => {});
   }, [selectedModelId, imageSize, setCurrentEstimate]);
 
-  const handleGenerate = useCallback(async () => {
-    if (!prompt.trim() || isGenerating) return;
+  const handleGenerate = useCallback(() => {
+    if (!prompt.trim()) return;
 
-    setIsGenerating(true);
     pushPromptHistory(prompt);
 
-    try {
-      const result = await ipc.invoke('generate:image', {
-        prompt,
-        negativePrompt: negativePrompt || undefined,
-        modelId: selectedModelId,
-        mode,
-        aspectRatio,
-        imageSize,
-        seed: seed ?? undefined,
-        styleTags: styleTags.length > 0 ? styleTags : undefined,
-      });
+    // Create a canvas card immediately (placeholder)
+    const clientId = generateId();
+    addCanvasCard({
+      id: clientId,
+      status: 'generating',
+      prompt,
+      modelId: selectedModelId,
+      aspectRatio,
+      imageSize,
+      startedAt: Date.now(),
+    });
 
-      setCurrentResult(result);
-      if (result.translatedPrompt) {
-        setTranslatedPrompt(result.translatedPrompt);
-      }
-      if (result.costUsd > 0) {
-        addSessionCost(result.costUsd);
-      }
-    } catch (err) {
-      console.error('Generation failed:', err);
-    } finally {
-      setIsGenerating(false);
+    // Get source image base64 if in img2img/inpaint mode
+    const { sourceImageData, maskData } = useGenerateStore.getState();
+    let sourceImageBase64: string | undefined;
+    if (sourceImageData && mode !== 'text2img') {
+      sourceImageBase64 = sourceImageData.startsWith('data:')
+        ? sourceImageData.replace(/^data:image\/\w+;base64,/, '')
+        : undefined;
     }
-  }, [prompt, negativePrompt, selectedModelId, mode, aspectRatio, imageSize, seed, styleTags, isGenerating, setIsGenerating, pushPromptHistory, setCurrentResult, setTranslatedPrompt, addSessionCost]);
+
+    // Get mask base64 for inpaint mode
+    const maskBase64 = mode === 'inpaint' && maskData ? maskData : undefined;
+
+    // Submit to queue — fire and forget
+    ipc.invoke('queue:submit', {
+      prompt,
+      negativePrompt: negativePrompt || undefined,
+      modelId: selectedModelId,
+      mode,
+      aspectRatio,
+      imageSize,
+      seed: seed ?? undefined,
+      styleTags: styleTags.length > 0 ? styleTags : undefined,
+      sourceImageBase64,
+      maskBase64,
+      clientId,
+    }).then((res) => {
+      // Store the queue item ID on the card
+      useGenerateStore.getState().updateCanvasCard(clientId, { queueItemId: res.queueItemId });
+    }).catch((err) => {
+      // If submission itself failed (e.g. no API key)
+      useGenerateStore.getState().updateCanvasCard(clientId, {
+        status: 'failed',
+        error: err instanceof Error ? err.message : 'Ошибка отправки в очередь',
+      });
+      addToast({ message: 'Ошибка генерации', type: 'error' });
+    });
+  }, [prompt, negativePrompt, selectedModelId, mode, aspectRatio, imageSize, seed, styleTags, pushPromptHistory, addCanvasCard, addToast]);
 
   // Use ref to avoid re-registering listeners on every state change
   const handleGenerateRef = useRef(handleGenerate);
@@ -84,7 +105,7 @@ export function GenerateButton() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const canGenerate = prompt.trim().length > 0 && !isGenerating;
+  const canGenerate = prompt.trim().length > 0;
 
   return (
     <div className="flex items-center gap-3">
@@ -99,17 +120,10 @@ export function GenerateButton() {
             : 'bg-glass text-text-tertiary cursor-not-allowed'
         }`}
       >
-        {isGenerating ? (
-          <span className="flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Генерация...
-          </span>
-        ) : (
-          <span className="flex items-center justify-center gap-2">
-            <Sparkles size={16} />
-            Генерировать
-          </span>
-        )}
+        <span className="flex items-center justify-center gap-2">
+          <Sparkles size={16} />
+          Генерировать
+        </span>
       </motion.button>
 
       {/* Cost estimate */}

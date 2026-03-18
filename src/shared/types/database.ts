@@ -4,6 +4,7 @@ export interface DBImage {
   file_path: string;
   prompt: string;
   translated_prompt: string | null;
+  prompt_ru: string | null;
   negative_prompt: string | null;
   model_id: string;
   mode: string;

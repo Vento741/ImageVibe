@@ -1,59 +1,89 @@
-import { useState, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGenerateStore } from '../store';
+import type { CanvasCard } from '../store';
 import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, randomSeed } from '@/shared/lib/utils';
+import { useToastStore } from '@/shared/stores/toastStore';
+
+let batchIdCounter = 0;
 
 export function BatchControls() {
-  const prompt = useGenerateStore((s) => s.prompt);
-  const selectedModelId = useGenerateStore((s) => s.selectedModelId);
-  const aspectRatio = useGenerateStore((s) => s.aspectRatio);
-  const imageSize = useGenerateStore((s) => s.imageSize);
-  const negativePrompt = useGenerateStore((s) => s.negativePrompt);
-  const styleTags = useGenerateStore((s) => s.styleTags);
-  const mode = useGenerateStore((s) => s.mode);
-  const isGenerating = useGenerateStore((s) => s.isGenerating);
-  const setIsGenerating = useGenerateStore((s) => s.setIsGenerating);
-  const setCurrentResult = useGenerateStore((s) => s.setCurrentResult);
-  const currentEstimate = useCostStore((s) => s.currentEstimate);
-  const addSessionCost = useCostStore((s) => s.addSessionCost);
   const [batchCount, setBatchCount] = useState(4);
-  const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const batchCountRef = useRef(batchCount);
+  batchCountRef.current = batchCount;
 
-  const canBatch = prompt.trim().length > 0 && !isGenerating && !isBatchRunning;
+  const currentEstimate = useCostStore((s) => s.currentEstimate);
   const batchCost = (currentEstimate?.estimatedCost ?? 0) * batchCount;
 
-  const handleBatchGenerate = useCallback(async () => {
-    if (!canBatch) return;
-    setIsBatchRunning(true);
-    setIsGenerating(true);
+  const handleBatchGenerate = () => {
+    const store = useGenerateStore.getState();
+    if (!store.prompt.trim()) return;
 
-    try {
-      for (let i = 0; i < batchCount; i++) {
-        const result = await ipc.invoke('generate:image', {
-          prompt,
-          negativePrompt: negativePrompt || undefined,
-          modelId: selectedModelId,
-          mode,
-          aspectRatio,
-          imageSize,
-          seed: randomSeed(),
-          styleTags: styleTags.length > 0 ? styleTags : undefined,
-        });
+    const count = batchCountRef.current;
+    store.pushPromptHistory(store.prompt);
 
-        setCurrentResult(result);
-        if (result.costUsd > 0) {
-          addSessionCost(result.costUsd);
-        }
-      }
-    } catch (err) {
-      console.error('Batch generation failed:', err);
-    } finally {
-      setIsBatchRunning(false);
-      setIsGenerating(false);
+    // Build cards with guaranteed unique IDs
+    const cards: CanvasCard[] = [];
+    for (let i = 0; i < count; i++) {
+      batchIdCounter++;
+      cards.push({
+        id: `batch-${Date.now()}-${batchIdCounter}-${i}`,
+        status: 'generating',
+        prompt: store.prompt,
+        modelId: store.selectedModelId,
+        aspectRatio: store.aspectRatio,
+        imageSize: store.imageSize,
+        startedAt: Date.now(),
+      });
     }
-  }, [canBatch, batchCount, prompt, negativePrompt, selectedModelId, mode, aspectRatio, imageSize, styleTags, setIsGenerating, setCurrentResult, addSessionCost]);
+
+    // Single atomic store update
+    store.addCanvasCards(cards);
+
+    // Get source image base64 if in img2img/inpaint mode
+    let sourceImageBase64: string | undefined;
+    if (store.sourceImageData && store.mode !== 'text2img') {
+      sourceImageBase64 = store.sourceImageData.startsWith('data:')
+        ? store.sourceImageData.replace(/^data:image\/\w+;base64,/, '')
+        : undefined;
+    }
+
+    // Get mask base64 for inpaint mode
+    const maskBase64 = store.mode === 'inpaint' && store.maskData ? store.maskData : undefined;
+
+    // Submit each to the queue
+    for (const card of cards) {
+      ipc.invoke('queue:submit', {
+        prompt: store.prompt,
+        negativePrompt: store.negativePrompt || undefined,
+        modelId: store.selectedModelId,
+        mode: store.mode,
+        aspectRatio: store.aspectRatio,
+        imageSize: store.imageSize,
+        seed: randomSeed(),
+        styleTags: store.styleTags.length > 0 ? store.styleTags : undefined,
+        sourceImageBase64,
+        maskBase64,
+        clientId: card.id,
+      }).then((res) => {
+        useGenerateStore.getState().updateCanvasCard(card.id, { queueItemId: res.queueItemId });
+      }).catch(() => {
+        useGenerateStore.getState().updateCanvasCard(card.id, {
+          status: 'failed',
+          error: 'Ошибка отправки в очередь',
+        });
+      });
+    }
+
+    useToastStore.getState().addToast({
+      message: `${count} генераций добавлено в очередь`,
+      type: 'info',
+    });
+  };
+
+  const canBatch = useGenerateStore((s) => s.prompt.trim().length > 0);
 
   return (
     <div className="flex items-center gap-1.5">
@@ -89,14 +119,7 @@ export function BatchControls() {
         }`}
         title={`Генерировать ${batchCount} вариаций`}
       >
-        {isBatchRunning ? (
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 border border-aurora-purple/30 border-t-aurora-purple rounded-full animate-spin" />
-            Batch...
-          </span>
-        ) : (
-          <span>×{batchCount}</span>
-        )}
+        <span>×{batchCount}</span>
       </motion.button>
 
       {/* Cost preview */}

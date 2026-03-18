@@ -2,6 +2,20 @@ import { create } from 'zustand';
 import type { AspectRatio, ImageSize, GenerationMode, ModelCategory } from '@/shared/types/models';
 import type { GenerationResult } from '@/shared/types/api';
 
+/** A card on the canvas — either generating, completed, or failed */
+export interface CanvasCard {
+  id: string;
+  queueItemId?: number;
+  status: 'generating' | 'completed' | 'failed';
+  prompt: string;
+  modelId: string;
+  aspectRatio: string;
+  imageSize: string;
+  startedAt: number;
+  result?: GenerationResult & { filePath?: string; imageId?: number };
+  error?: string;
+}
+
 interface GenerateState {
   // Prompt
   prompt: string;
@@ -26,9 +40,16 @@ interface GenerateState {
   uiMode: 'simple' | 'advanced';
   showTranslation: boolean;
 
-  // Result
+  // Source image for img2img / inpaint
+  sourceImageData: string | null;
+  maskData: string | null; // base64 PNG mask (white=edit, black=keep)
+
+  // Result (legacy — kept for compatibility)
   currentResult: (GenerationResult & { filePath?: string; imageId?: number }) | null;
   resultHistory: Array<GenerationResult & { filePath?: string; imageId?: number }>;
+
+  // Canvas cards (new queue-based system)
+  canvasCards: CanvasCard[];
 
   // Actions
   setPrompt: (prompt: string) => void;
@@ -51,6 +72,12 @@ interface GenerateState {
   toggleUiMode: () => void;
   setShowTranslation: (val: boolean) => void;
   setCurrentResult: (result: GenerateState['currentResult']) => void;
+  setSourceImageData: (data: string | null) => void;
+  setMaskData: (data: string | null) => void;
+  addCanvasCard: (card: CanvasCard) => void;
+  addCanvasCards: (cards: CanvasCard[]) => void;
+  updateCanvasCard: (id: string, updates: Partial<CanvasCard>) => void;
+  removeCanvasCard: (id: string) => void;
   reset: () => void;
 }
 
@@ -70,8 +97,11 @@ const initialState = {
   isGenerating: false,
   uiMode: 'simple' as 'simple' | 'advanced',
   showTranslation: false,
+  sourceImageData: null as string | null,
+  maskData: null as string | null,
   currentResult: null as GenerateState['currentResult'],
   resultHistory: [] as Array<GenerationResult & { filePath?: string; imageId?: number }>,
+  canvasCards: [] as CanvasCard[],
 };
 
 export const useGenerateStore = create<GenerateState>((set, get) => ({
@@ -108,7 +138,10 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
 
   setSelectedCategory: (selectedCategory) => set({ selectedCategory }),
   setSelectedModelId: (selectedModelId) => set({ selectedModelId }),
-  setMode: (mode) => set({ mode }),
+  setMode: (mode) => set((s) => ({
+    mode,
+    maskData: mode !== 'inpaint' ? null : s.maskData,
+  })),
   setAspectRatio: (aspectRatio) => set({ aspectRatio }),
   setImageSize: (imageSize) => set({ imageSize }),
   setSeed: (seed) => set({ seed }),
@@ -128,11 +161,12 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
   setUiMode: (uiMode) => set({ uiMode }),
   toggleUiMode: () => set((s) => ({ uiMode: s.uiMode === 'simple' ? 'advanced' : 'simple' })),
   setShowTranslation: (showTranslation) => set({ showTranslation }),
+  setSourceImageData: (sourceImageData) => set({ sourceImageData, maskData: null }),
+  setMaskData: (maskData) => set({ maskData }),
 
   setCurrentResult: (result) => {
     if (result) {
       set((s) => {
-        // Don't duplicate if already in history
         const alreadyInHistory = s.resultHistory.some(
           (r) => r.generationId === result.generationId
         );
@@ -147,6 +181,22 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
       set({ currentResult: result });
     }
   },
+
+  addCanvasCard: (card) => set((s) => ({
+    canvasCards: [card, ...s.canvasCards],
+  })),
+
+  addCanvasCards: (cards) => set((s) => ({
+    canvasCards: [...cards, ...s.canvasCards],
+  })),
+
+  updateCanvasCard: (id, updates) => set((s) => ({
+    canvasCards: s.canvasCards.map((c) => c.id === id ? { ...c, ...updates } : c),
+  })),
+
+  removeCanvasCard: (id) => set((s) => ({
+    canvasCards: s.canvasCards.filter((c) => c.id !== id),
+  })),
 
   reset: () => set(initialState),
 }));

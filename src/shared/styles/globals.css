@@ -55,8 +55,13 @@
 
 /* ═══ Base styles ═══ */
 
+html {
+  background: transparent;
+}
+
 body {
-  @apply bg-bg-primary text-text-primary font-sans antialiased;
+  @apply text-text-primary font-sans antialiased;
+  background: transparent;
   overflow: hidden;
   margin: 0;
   padding: 0;
@@ -161,6 +166,40 @@ body {
 
 .titlebar-no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* ═══ Mode toggle pulse ═══ */
+
+@keyframes mode-pulse {
+  0%, 100% {
+    border-color: rgba(79, 142, 247, 0);
+    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0);
+  }
+  50% {
+    border-color: rgba(79, 142, 247, 0.35);
+    box-shadow: 0 0 12px 0 rgba(79, 142, 247, 0.15);
+  }
+}
+
+.animate-mode-pulse {
+  animation: mode-pulse 3s ease-in-out infinite;
+  border: 1px solid transparent;
+}
+
+/* ═══ Generation placeholder animation ═══ */
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
 }
 
 /* ═══ Selection ═══ */

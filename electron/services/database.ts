@@ -306,5 +306,12 @@ function getMigrations(): Migration[] {
         ('Аниме', '🎌', '{"tags":["аниме"]}', 1, 3);
       `,
     },
+    {
+      version: 3,
+      sql: `
+        -- Cache for Russian translation of prompts
+        ALTER TABLE images ADD COLUMN prompt_ru TEXT;
+      `,
+    },
   ];
 }

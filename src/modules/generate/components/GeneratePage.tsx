@@ -68,7 +68,7 @@ export function GeneratePage() {
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer w-full ${
               uiMode === 'advanced'
                 ? 'bg-aurora-purple/15 text-aurora-purple border border-aurora-purple/25'
-                : 'glass-panel text-text-secondary hover:text-text-primary'
+                : 'glass-panel text-text-secondary hover:text-text-primary animate-mode-pulse'
             }`}
           >
             <Zap size={14} />

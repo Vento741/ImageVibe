@@ -37,6 +37,7 @@ export interface IpcChannels {
     args: [string];
     result: DBImage[];
   };
+  'gallery:set-prompt-ru': { args: [number, string]; result: void };
 
   // ═══ Collections ═══
   'collections:list': { args: []; result: DBCollection[] };
@@ -74,6 +75,10 @@ export interface IpcChannels {
   'queue:add': {
     args: [Omit<DBQueueItem, 'id' | 'status' | 'created_at' | 'started_at' | 'completed_at' | 'result_image_id' | 'error_message' | 'actual_cost'>];
     result: DBQueueItem;
+  };
+  'queue:submit': {
+    args: [GenerationRequest & { clientId: string }];
+    result: { queueItemId: number };
   };
   'queue:cancel': { args: [number]; result: void };
   'queue:clear': { args: []; result: void };
@@ -189,6 +194,16 @@ export interface IpcEvents {
     status: DBQueueItem['status'];
     resultImageId?: number;
     error?: string;
+  };
+  'queue:item-completed': {
+    clientId: string;
+    queueItemId: number;
+    result: GenerationResult & { filePath: string; imageId: number };
+  };
+  'queue:item-failed': {
+    clientId: string;
+    queueItemId: number;
+    error: string;
   };
   'generation:progress': { stage: string; percent: number };
 }

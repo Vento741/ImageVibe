@@ -86,13 +86,14 @@ export function ParamsPanel() {
                 const firstModel = MODELS_BY_CATEGORY[cat.id]?.[0];
                 if (firstModel) setSelectedModelId(firstModel.id);
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex flex-col items-center gap-1 ${
                 selectedCategory === cat.id
                   ? 'bg-aurora-blue/20 text-aurora-blue border border-aurora-blue/30'
                   : 'text-text-secondary hover:bg-glass-hover border border-transparent'
               }`}
             >
-              <cat.icon size={14} className="inline-block" /> {cat.name}
+              <cat.icon size={16} />
+              {cat.name}
             </button>
           ))}
         </div>

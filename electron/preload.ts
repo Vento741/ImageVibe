@@ -12,6 +12,11 @@ const electronAPI = {
   once: (channel: string, callback: (...args: unknown[]) => void): void => {
     ipcRenderer.once(channel, (_event, ...args) => callback(...args));
   },
+  // Window controls
+  windowMinimize: () => ipcRenderer.send('window:minimize'),
+  windowMaximize: () => ipcRenderer.send('window:maximize'),
+  windowClose: () => ipcRenderer.send('window:close'),
+  windowIsMaximized: (): Promise<boolean> => ipcRenderer.invoke('window:isMaximized'),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

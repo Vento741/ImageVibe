@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, net } from 'electron';
+import { app, BrowserWindow, protocol, net, ipcMain } from 'electron';
 import path from 'path';
 import { initDatabase, closeDatabase } from './services/database';
 import { loadConfig } from './services/configManager';
@@ -17,14 +17,10 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    backgroundColor: '#0a0a0f',
+    backgroundColor: '#00000000',
+    transparent: true,
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#0a0a0f',
-      symbolColor: '#9ca3af',
-      height: 36,
-    },
+    frame: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -54,6 +50,18 @@ function createWindow() {
     });
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
+
+  // Window control handlers
+  ipcMain.on('window:minimize', () => mainWindow?.minimize());
+  ipcMain.on('window:maximize', () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow?.maximize();
+    }
+  });
+  ipcMain.on('window:close', () => mainWindow?.close());
+  ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false);
 
   mainWindow.on('closed', () => {
     mainWindow = null;

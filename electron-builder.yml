@@ -9,6 +9,10 @@ files:
   - dist/**/*
   - dist-electron/**/*
   - "!node_modules/**/*"
+  - node_modules/better-sqlite3/**/*
+  - node_modules/bindings/**/*
+  - node_modules/file-uri-to-path/**/*
+  - node_modules/prebuild-install/**/*
 
 extraResources:
   - from: node_modules/better-sqlite3/build/Release/
@@ -22,10 +26,13 @@ win:
       arch:
         - x64
   icon: build/icon.ico
+  requestedExecutionLevel: asInvoker
 
 nsis:
   oneClick: false
+  perMachine: false
   allowToChangeInstallationDirectory: true
+  allowElevation: false
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
   installerHeaderIcon: build/icon.ico
@@ -49,3 +56,5 @@ linux:
   category: Graphics
 
 asar: true
+asarUnpack:
+  - "node_modules/better-sqlite3/**/*"

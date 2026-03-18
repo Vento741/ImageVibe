@@ -23,6 +23,7 @@ import {
   TRANSLATE_ESTIMATED_COST_USD,
   PROMPT_ASSIST_ESTIMATED_COST_USD,
 } from '../services/costTracker';
+import { submitGeneration } from '../services/queueProcessor';
 import type { GenerationRequest } from '../../src/shared/types/api';
 import type { GalleryQuery } from '../../src/shared/types/ipc';
 import type { DBBudgetConfig, DBImage } from '../../src/shared/types/database';
@@ -217,6 +218,11 @@ export function registerIpcHandlers(): void {
     const image = db.prepare('SELECT file_path FROM images WHERE id = ?').get(id) as { file_path: string } | undefined;
     if (image) {
       deleteImage(image.file_path);
+      // Clear foreign key references before deleting
+      db.prepare('UPDATE generation_queue SET result_image_id = NULL WHERE result_image_id = ?').run(id);
+      db.prepare('DELETE FROM generation_costs WHERE image_id = ?').run(id);
+      db.prepare('DELETE FROM image_tags WHERE image_id = ?').run(id);
+      db.prepare('DELETE FROM collection_images WHERE image_id = ?').run(id);
       db.prepare('DELETE FROM images WHERE id = ?').run(id);
     }
   });
@@ -226,6 +232,11 @@ export function registerIpcHandlers(): void {
     db.prepare('UPDATE images SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id);
     const result = db.prepare('SELECT is_favorite FROM images WHERE id = ?').get(id) as { is_favorite: number };
     return !!result?.is_favorite;
+  });
+
+  ipcMain.handle('gallery:set-prompt-ru', (_, id: number, promptRu: string) => {
+    const db = getDatabase();
+    db.prepare('UPDATE images SET prompt_ru = ? WHERE id = ?').run(promptRu, id);
   });
 
   ipcMain.handle('gallery:search', (_, searchText: string) => {
@@ -354,6 +365,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('queue:retry', (_, id: number) => {
     const db = getDatabase();
     db.prepare("UPDATE generation_queue SET status = 'pending', error_message = NULL WHERE id = ?").run(id);
+  });
+
+  ipcMain.handle('queue:submit', (_, request: GenerationRequest & { clientId: string }) => {
+    const queueItemId = submitGeneration(request);
+    return { queueItemId };
   });
 
   // ═══ File: select folder ═══

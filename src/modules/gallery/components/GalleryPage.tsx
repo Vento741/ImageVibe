@@ -1,6 +1,6 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ImageIcon, Star, Trash2 } from 'lucide-react';
+import { ImageIcon, Star, Trash2, FolderOpen, Grid2x2, Grid3x3, LayoutGrid } from 'lucide-react';
 import { useGalleryStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName, localFileUrl } from '@/shared/lib/utils';
@@ -26,6 +26,7 @@ export function GalleryPage() {
   const setPage = useGalleryStore((s) => s.setPage);
   const toggleFavorite = useGalleryStore((s) => s.toggleFavorite);
   const removeImage = useGalleryStore((s) => s.removeImage);
+  const [gridCols, setGridCols] = useState(3);
 
   // Fetch images
   const fetchImages = useCallback(async () => {
@@ -73,8 +74,29 @@ export function GalleryPage() {
           <span className="text-xs text-text-tertiary">{total} изображений</span>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-2">
+        {/* Search + grid selector */}
+        <div className="flex items-center gap-3">
+          {/* Grid size */}
+          <div className="flex items-center gap-0.5 glass-panel px-1 py-0.5">
+            {([2, 3, 4, 5] as const).map((cols) => (
+              <button
+                key={cols}
+                onClick={() => setGridCols(cols)}
+                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                  gridCols === cols
+                    ? 'bg-aurora-blue/20 text-aurora-blue'
+                    : 'text-text-tertiary hover:text-text-secondary'
+                }`}
+                title={`${cols} в ряд`}
+              >
+                {cols === 2 && <Grid2x2 size={14} />}
+                {cols === 3 && <Grid3x3 size={14} />}
+                {cols === 4 && <LayoutGrid size={14} />}
+                {cols === 5 && <span className="text-[10px] font-bold w-3.5 h-3.5 flex items-center justify-center">5</span>}
+              </button>
+            ))}
+          </div>
+
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -99,7 +121,7 @@ export function GalleryPage() {
             <span className="text-sm">Пока нет изображений</span>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3 auto-rows-auto">
+          <div className="grid gap-3 auto-rows-auto" style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
             {images.map((image, idx) => (
               <motion.div
                 key={image.id}
@@ -128,12 +150,21 @@ export function GalleryPage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggleFavorite(image.id); }}
                       className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-sm cursor-pointer hover:bg-black/70"
+                      title="Избранное"
                     >
                       {image.is_favorite ? <Star size={14} fill="currentColor" /> : <Star size={14} />}
                     </button>
                     <button
+                      onClick={(e) => { e.stopPropagation(); ipc.invoke('file:open-folder', image.file_path.replace(/[/\\][^/\\]+$/, '')); }}
+                      className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-sm cursor-pointer hover:bg-black/70"
+                      title="Открыть папку"
+                    >
+                      <FolderOpen size={14} />
+                    </button>
+                    <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(image.id); }}
                       className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-sm cursor-pointer hover:bg-status-error/50"
+                      title="Удалить"
                     >
                       <Trash2 size={14} />
                     </button>

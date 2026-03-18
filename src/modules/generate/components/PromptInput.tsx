@@ -13,17 +13,26 @@ export function PromptInput() {
   const setPrompt = useGenerateStore((s) => s.setPrompt);
   const setNegativePrompt = useGenerateStore((s) => s.setNegativePrompt);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const negTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const charCount = prompt.length;
   const estimatedTokens = Math.ceil(charCount / 4);
 
-  // Auto-resize textarea based on content
+  // Auto-resize prompt textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
   }, [prompt]);
+
+  // Auto-resize negative prompt textarea
+  useEffect(() => {
+    const el = negTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [negativePrompt]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -63,11 +72,12 @@ export function PromptInput() {
             <NegativePromptTemplates />
           </div>
           <textarea
+            ref={negTextareaRef}
             value={negativePrompt}
             onChange={(e) => setNegativePrompt(e.target.value)}
             placeholder="blurry, deformed, low quality..."
-            className="w-full bg-transparent text-text-primary placeholder-text-tertiary resize-none outline-none text-xs leading-relaxed mt-1 min-h-[40px] max-h-[80px]"
-            rows={2}
+            className="w-full bg-transparent text-text-primary placeholder-text-tertiary resize-none outline-none text-xs leading-relaxed mt-1 min-h-[24px]"
+            rows={1}
           />
         </div>
       )}

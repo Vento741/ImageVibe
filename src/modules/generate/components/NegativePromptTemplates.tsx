@@ -45,11 +45,7 @@ export function NegativePromptTemplates() {
   }, [isOpen]);
 
   const applyTemplate = (template: string) => {
-    if (negativePrompt.trim()) {
-      setNegativePrompt(`${negativePrompt}, ${template}`);
-    } else {
-      setNegativePrompt(template);
-    }
+    setNegativePrompt(template);
     setIsOpen(false);
   };
 
