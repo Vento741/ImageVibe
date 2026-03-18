@@ -198,6 +198,9 @@ export function SettingsPage() {
         </div>
       </GlassPanel>
 
+      {/* Benchmark & Reset — dev only, hidden from users */}
+      {/* <BenchmarkSection /> */}
+
       {/* App Info */}
       <GlassPanel>
         <h3 className="text-sm font-medium text-text-primary mb-3">О приложении</h3>
@@ -212,8 +215,10 @@ export function SettingsPage() {
               <span className="text-text-tertiary truncate max-w-[40%] text-right text-[10px]">{config.storage.imagesPath}</span>
               <button
                 onClick={async () => {
-                  const folder = await ipc.invoke('file:select-folder' as any);
+                  const folder = await ipc.invoke('file:select-folder');
                   if (folder) {
+                    const oldPath = config.storage.imagesPath;
+                    await ipc.invoke('storage:migrate-paths', oldPath, folder);
                     await saveConfig({ storage: { ...config.storage, imagesPath: folder } });
                   }
                 }}
@@ -281,4 +286,104 @@ function AppVersion() {
     ipc.invoke('app:get-version').then(setVersion).catch(() => setVersion('—'));
   }, []);
   return <span className="text-text-tertiary">{version}</span>;
+}
+
+// @ts-ignore: kept for dev use, commented out in render
+function BenchmarkSection() {
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number; modelName: string } | null>(null);
+  const [reportPath, setReportPath] = useState<string | null>(null);
+
+  const BENCHMARK_PROMPT = 'Cinematic action shot on a vibrant, alien battlefield with bioluminescent flora and jagged obsidian rock formations. A massive, gritty polar bear standing upright, wearing a bulky, weathered industrial-grade space suit with glowing blue seals and cracked glass plating, dual-wielding futuristic plasma blasters that fire streaks of neon orange energy. The polar bear is locked in a fierce firefight against a swarm of grotesque, amphibious alien creatures—bipedal, humanoid-sized predatory fish with slick iridescent scales, protruding glowing eyes, and sharp spindly legs, emerging from a thick, purple-tinted alien mist. Dynamic composition with debris flying, explosions of ionized gas, and sparks hitting the bear\'s suit. Dramatic high-contrast lighting, deep shadows, cinematic depth of field, hyper-realistic textures, 8k resolution, sci-fi epic aesthetic, intricate mechanical details, intense atmosphere.';
+
+  useEffect(() => {
+    const unsub = ipc.on('benchmark:progress', (data) => {
+      setProgress(data as { current: number; total: number; modelName: string });
+    });
+    return unsub;
+  }, []);
+
+  const handleRunBenchmark = async () => {
+    setIsRunning(true);
+    setReportPath(null);
+    try {
+      const result = await ipc.invoke('benchmark:run', BENCHMARK_PROMPT);
+      setReportPath((result as { reportPath: string }).reportPath);
+    } catch (err) {
+      console.error('Benchmark failed:', err);
+    } finally {
+      setIsRunning(false);
+      setProgress(null);
+    }
+  };
+
+  const handleResetAnalytics = async () => {
+    await ipc.invoke('analytics:reset');
+  };
+
+  return (
+    <GlassPanel>
+      <h3 className="text-sm font-medium text-text-primary mb-3">Инструменты</h3>
+      <div className="flex flex-col gap-3">
+        {/* Reset analytics */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-text-secondary">Сбросить аналитику</div>
+            <div className="text-[10px] text-text-tertiary">Очистить все данные о расходах</div>
+          </div>
+          <button
+            onClick={handleResetAnalytics}
+            className="px-3 py-1.5 rounded-lg text-xs text-status-error hover:bg-status-error/10 border border-status-error/20 cursor-pointer transition-colors"
+          >
+            Сбросить
+          </button>
+        </div>
+
+        <div className="border-t border-glass-border" />
+
+        {/* Benchmark */}
+        <div className="flex flex-col gap-2">
+          <div>
+            <div className="text-xs text-text-secondary">Бенчмарк моделей</div>
+            <div className="text-[10px] text-text-tertiary">
+              Прогнать промпт по всем 13 моделям, собрать реальные цены и время генерации. Отчёт сохранится на рабочий стол.
+            </div>
+          </div>
+
+          {isRunning && progress && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-aurora-purple">{progress.modelName}</span>
+                <span className="text-text-tertiary">{progress.current}/{progress.total}</span>
+              </div>
+              <div className="h-1 bg-glass-border rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-aurora-blue to-aurora-purple rounded-full transition-all duration-500"
+                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {reportPath && (
+            <div className="text-[10px] text-aurora-blue">
+              Отчёт сохранён: {reportPath}
+            </div>
+          )}
+
+          <button
+            onClick={handleRunBenchmark}
+            disabled={isRunning}
+            className={`px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              isRunning
+                ? 'bg-glass text-text-tertiary cursor-not-allowed'
+                : 'bg-aurora-purple/15 text-aurora-purple hover:bg-aurora-purple/25 border border-aurora-purple/25'
+            }`}
+          >
+            {isRunning ? `Генерация ${progress?.current ?? 0}/${progress?.total ?? 13}...` : 'Запустить бенчмарк'}
+          </button>
+        </div>
+      </div>
+    </GlassPanel>
+  );
 }

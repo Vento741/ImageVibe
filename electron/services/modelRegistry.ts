@@ -9,7 +9,7 @@ const MODELS: ImageModel[] = [
     provider: 'Black Forest Labs',
     category: 'fast',
     description: 'Самый быстрый и дешёвый FLUX. 4B параметров, идеально для черновиков.',
-    pricing: { type: 'per_megapixel', perMegapixel: 0.014 },
+    pricing: { type: 'per_image', perImage: 0.017 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -53,7 +53,7 @@ const MODELS: ImageModel[] = [
     provider: 'Google',
     category: 'fast',
     description: 'Pro-качество на Flash скорости. Поддерживает редактирование и мультимодальность.',
-    pricing: { type: 'per_token', perPromptToken: 0.0000005, perCompletionToken: 0.000003, perImageOutputToken: 0.00006 },
+    pricing: { type: 'per_image', perImage: 0.068 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: true, aspectRatio: true, imageSize: false,
@@ -74,7 +74,7 @@ const MODELS: ImageModel[] = [
     provider: 'Google',
     category: 'fast',
     description: 'Оригинальный Nano Banana. Бюджетный вариант Gemini.',
-    pricing: { type: 'per_token', perPromptToken: 0.0000003, perCompletionToken: 0.0000025, perImageOutputToken: 0.000035 },
+    pricing: { type: 'per_image', perImage: 0.039 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: true, aspectRatio: true, imageSize: false,
@@ -97,7 +97,7 @@ const MODELS: ImageModel[] = [
     provider: 'Black Forest Labs',
     category: 'quality',
     description: 'Продакшн баланс скорости и качества. Отличные результаты за разумную цену.',
-    pricing: { type: 'per_megapixel', perMegapixel: 0.03 },
+    pricing: { type: 'per_image', perImage: 0.075 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -120,7 +120,7 @@ const MODELS: ImageModel[] = [
     provider: 'Black Forest Labs',
     category: 'quality',
     description: 'Лучший в линейке FLUX. Максимальное качество генерации.',
-    pricing: { type: 'per_megapixel', perMegapixel: 0.07 },
+    pricing: { type: 'per_image', perImage: 0.16 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -143,7 +143,7 @@ const MODELS: ImageModel[] = [
     provider: 'Black Forest Labs',
     category: 'quality',
     description: 'Лучший текст/типографика. Мульти-референс изображения.',
-    pricing: { type: 'per_image', perImage: 0.1 },
+    pricing: { type: 'per_image', perImage: 0.20 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -166,7 +166,7 @@ const MODELS: ImageModel[] = [
     provider: 'ByteDance',
     category: 'quality',
     description: 'Портреты, мелкий текст, мульти-композиция. Отличное качество.',
-    pricing: { type: 'per_image', perImage: 0.4 },
+    pricing: { type: 'per_image', perImage: 0.04 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -188,7 +188,7 @@ const MODELS: ImageModel[] = [
     provider: 'Sourceful',
     category: 'quality',
     description: 'SOTA качество, поддержка шрифтов, super resolution, до 4K.',
-    pricing: { type: 'per_image', perImage: 0.15 },
+    pricing: { type: 'per_image', perImage: 0.06 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -211,7 +211,7 @@ const MODELS: ImageModel[] = [
     provider: 'Sourceful',
     category: 'quality',
     description: 'Превью максимального качества Riverflow.',
-    pricing: { type: 'per_image', perImage: 0.075 },
+    pricing: { type: 'per_image', perImage: 0.08 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: false,
       seed: true, aspectRatio: true, imageSize: true,
@@ -235,7 +235,7 @@ const MODELS: ImageModel[] = [
     provider: 'Google',
     category: 'smart',
     description: '2K/4K генерация, локальные правки, до 5 субъектов. Самый умный Gemini.',
-    pricing: { type: 'per_token', perPromptToken: 0.000002, perCompletionToken: 0.00012 },
+    pricing: { type: 'per_image', perImage: 0.137 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: true, aspectRatio: true, imageSize: true,
@@ -258,7 +258,7 @@ const MODELS: ImageModel[] = [
     provider: 'OpenAI',
     category: 'smart',
     description: 'Рассуждения + генерация. 400K контекст, мультимодальность.',
-    pricing: { type: 'per_token', perPromptToken: 0.00001, perImageOutputToken: 0.00004 },
+    pricing: { type: 'per_image', perImage: 0.209 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: false, aspectRatio: true, imageSize: true,
@@ -280,7 +280,7 @@ const MODELS: ImageModel[] = [
     provider: 'OpenAI',
     category: 'smart',
     description: 'Быстрее и дешевле GPT-5 Image. Отличный баланс ум/скорость.',
-    pricing: { type: 'per_image', perImage: 0.05 },
+    pricing: { type: 'per_image', perImage: 0.043 },
     supports: {
       textToImage: true, imageToImage: true, inpainting: true,
       seed: false, aspectRatio: true, imageSize: true,

@@ -101,6 +101,15 @@ export interface IpcChannels {
     result: string;
   };
 
+  // ═══ Storage ═══
+  'storage:migrate-paths': { args: [string, string]; result: { migrated: number } };
+
+  // ═══ Analytics ═══
+  'analytics:reset': { args: []; result: { success: boolean } };
+
+  // ═══ Benchmark ═══
+  'benchmark:run': { args: [string]; result: { report: unknown; reportPath: string } };
+
   // ═══ App ═══
   'app:get-version': { args: []; result: string };
   'app:open-external': { args: [string]; result: void };
@@ -206,4 +215,5 @@ export interface IpcEvents {
     error: string;
   };
   'generation:progress': { stage: string; percent: number };
+  'benchmark:progress': { current: number; total: number; modelName: string; modelId: string };
 }

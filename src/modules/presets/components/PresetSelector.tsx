@@ -100,6 +100,7 @@ export function PresetSelector() {
   }, [setSelectedModelId, setStyleTags, setNegativePrompt]);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [activePresetId, setActivePresetId] = useState<number | null>(null);
 
   return (
     <div className="flex flex-col gap-1.5 glass-panel p-3 rounded-lg">
@@ -151,9 +152,13 @@ export function PresetSelector() {
                     }
                   >
                     <motion.button
-                      onClick={() => applyPreset(preset)}
+                      onClick={() => { applyPreset(preset); setActivePresetId(preset.id); }}
                       whileTap={{ scale: 0.97 }}
-                      className="px-2.5 py-1.5 rounded-md text-xs text-text-secondary hover:bg-glass-hover hover:text-text-primary transition-colors cursor-pointer flex items-center gap-1.5 border border-transparent hover:border-glass-border"
+                      className={`px-2.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer flex items-center gap-1.5 border ${
+                        activePresetId === preset.id
+                          ? 'bg-aurora-blue/15 text-aurora-blue border-aurora-blue/30'
+                          : 'text-text-secondary hover:bg-glass-hover hover:text-text-primary border-transparent hover:border-glass-border'
+                      }`}
                     >
                       <span className="flex items-center">{renderPresetIcon(preset.icon)}</span>
                       <span>{preset.name}</span>

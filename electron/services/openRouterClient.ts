@@ -87,9 +87,21 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
     imageConfig.aspect_ratio = request.aspectRatio;
   }
   if (model.supports.imageSize && request.imageSize) {
-    const sizes = model.sizes[request.imageSize];
-    if (sizes) {
-      imageConfig.image_size = `${sizes.width}x${sizes.height}`;
+    // Resolve size key — fallback to largest available if requested size doesn't exist
+    const sizeKeys = ['4K', '2K', '1K'] as const;
+    const resolvedKey = model.sizes[request.imageSize]
+      ? request.imageSize
+      : sizeKeys.find((k) => model.sizes[k]) ?? request.imageSize;
+
+    // Gemini models expect string keys like "1K", "2K", "4K"
+    // Other models expect pixel dimensions like "1024x1024"
+    if (model.id.startsWith('google/')) {
+      imageConfig.image_size = resolvedKey;
+    } else {
+      const sizes = model.sizes[resolvedKey];
+      if (sizes) {
+        imageConfig.image_size = `${sizes.width}x${sizes.height}`;
+      }
     }
   }
   if (model.supports.seed && request.seed !== undefined) {
@@ -384,13 +396,44 @@ export async function fetchCredits(): Promise<{ totalCredits: number; totalUsage
 
 /** Fetch actual cost of a specific generation */
 export async function fetchGenerationCost(generationId: string): Promise<number> {
-  const response = await fetch(`${BASE_URL}/generation?id=${generationId}`, {
-    headers: getHeaders(),
-  });
+  try {
+    const response = await fetch(`${BASE_URL}/generation?id=${generationId}`, {
+      headers: getHeaders(),
+    });
+    if (!response.ok) return 0;
+    const raw = await response.json();
+    // API may return object directly or wrapped in { data: ... }
+    const info = raw.data ?? raw;
+    return typeof info.usage === 'number' ? info.usage : 0;
+  } catch {
+    return 0;
+  }
+}
 
-  if (!response.ok) return 0;
-  const data = (await response.json()) as OpenRouterGenerationInfo;
-  return data.data?.total_cost ?? 0;
+/** Fetch full generation info for benchmarking */
+export async function fetchGenerationInfo(generationId: string): Promise<OpenRouterGenerationInfo | null> {
+  try {
+    const url = `${BASE_URL}/generation?id=${generationId}`;
+    const headers = getHeaders();
+    console.log(`[benchmark] fetching: ${url}`);
+    const response = await fetch(url, { headers });
+    console.log(`[benchmark] response status: ${response.status}`);
+    if (!response.ok) {
+      const errText = await response.text();
+      console.log(`[benchmark] error body: ${errText}`);
+      return null;
+    }
+    const raw = await response.json();
+    console.log(`[benchmark] raw keys: ${Object.keys(raw).join(', ')}`);
+    console.log(`[benchmark] raw.usage=${raw.usage}, raw.data=${JSON.stringify(raw.data)?.slice(0, 200)}`);
+    // API may return the object directly or wrapped in { data: ... }
+    const info = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) ? raw.data : raw;
+    console.log(`[benchmark] resolved: usage=${info.usage}, model=${info.model}, gen_time=${info.generation_time}`);
+    return info as OpenRouterGenerationInfo;
+  } catch (err) {
+    console.log(`[benchmark] fetch error: ${err}`);
+    return null;
+  }
 }
 
 /** Fetch generation cost with retry (cost may not be immediately available) */

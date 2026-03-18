@@ -84,16 +84,22 @@ export interface OpenRouterResponse {
 
 /** OpenRouter generation cost query response */
 export interface OpenRouterGenerationInfo {
-  data: {
-    id: string;
-    model: string;
-    total_cost: number;
-    usage: {
-      prompt_tokens: number;
-      completion_tokens: number;
-      total_tokens: number;
-    };
-    created_at: string;
+  id: number;
+  generation_id: string;
+  model: string;
+  provider_name: string;
+  generation_time: number;
+  tokens_prompt: number;
+  tokens_completion: number;
+  native_tokens_prompt: number;
+  native_tokens_completion: number;
+  native_tokens_completion_images: number;
+  usage: number; // actual cost in USD
+  created_at: string;
+  // Nested format fallback
+  data?: {
+    total_cost?: number;
+    usage?: number;
   };
 }
 

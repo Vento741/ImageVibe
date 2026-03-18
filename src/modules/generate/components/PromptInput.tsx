@@ -1,10 +1,20 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
+import { getModelShortName } from '@/shared/lib/utils';
 import { PromptActions } from './PromptActions';
 import { PromptVersions } from './PromptVersions';
 import { TranslationPreview } from './TranslationPreview';
 import { NegativePromptTemplates } from './NegativePromptTemplates';
+
+function ModelName() {
+  const modelId = useGenerateStore((s) => s.selectedModelId);
+  return (
+    <span className="text-[10px] text-text-tertiary/60 truncate max-w-[120px]">
+      {getModelShortName(modelId)}
+    </span>
+  );
+}
 
 export function PromptInput() {
   const prompt = useGenerateStore((s) => s.prompt);
@@ -82,9 +92,10 @@ export function PromptInput() {
         </div>
       )}
 
-      {/* Counter */}
-      <div className="flex justify-between text-xs text-text-tertiary">
+      {/* Counter + model */}
+      <div className="flex justify-between items-center text-xs text-text-tertiary">
         <span>{charCount} символов</span>
+        <ModelName />
         <span>~{estimatedTokens} токенов</span>
       </div>
 

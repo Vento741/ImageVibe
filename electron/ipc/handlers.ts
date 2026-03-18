@@ -384,6 +384,149 @@ export function registerIpcHandlers(): void {
     shell.openPath(folderPath);
   });
 
+  // ═══ Storage: migrate paths ═══
+  ipcMain.handle('storage:migrate-paths', (_, _oldPath: string, newPath: string) => {
+    const db = getDatabase();
+    const path = require('path');
+    // Get ALL images and update their directory to newPath, keeping filename
+    const images = db.prepare('SELECT id, file_path FROM images').all() as Array<{ id: number; file_path: string }>;
+    const update = db.prepare('UPDATE images SET file_path = ? WHERE id = ?');
+    let count = 0;
+    for (const img of images) {
+      const fileName = path.basename(img.file_path);
+      const newFilePath = path.join(newPath, fileName);
+      if (newFilePath !== img.file_path) {
+        update.run(newFilePath, img.id);
+        count++;
+      }
+    }
+    return { migrated: count };
+  });
+
+  // ═══ Analytics reset ═══
+  ipcMain.handle('analytics:reset', () => {
+    const db = getDatabase();
+    db.prepare('DELETE FROM generation_costs').run();
+    db.prepare('UPDATE images SET cost_usd = 0').run();
+    db.prepare('DELETE FROM budget_config').run();
+    return { success: true };
+  });
+
+  // ═══ Benchmark: run prompt across all models ═══
+  ipcMain.handle('benchmark:run', async (_, prompt: string) => {
+    const { getAllModels } = await import('../services/modelRegistry');
+    const { fetchGenerationInfo } = await import('../services/openRouterClient');
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const models = getAllModels().filter((m) => m.supports.textToImage);
+    const results: Array<{
+      modelId: string;
+      modelName: string;
+      provider: string;
+      category: string;
+      status: 'success' | 'error';
+      generationId?: string;
+      generationTimeMs?: number;
+      costUsd?: number;
+      tokensPrompt?: number;
+      tokensCompletion?: number;
+      nativeTokensPrompt?: number;
+      nativeTokensCompletion?: number;
+      nativeTokensImages?: number;
+      imageSize?: string;
+      error?: string;
+    }> = [];
+
+    const win = BrowserWindow.getAllWindows()[0];
+
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+
+      // Notify renderer of progress
+      win?.webContents.send('benchmark:progress', {
+        current: i + 1,
+        total: models.length,
+        modelName: model.name,
+        modelId: model.id,
+      });
+
+      try {
+        const result = await generateImage({
+          prompt,
+          modelId: model.id,
+          mode: 'text2img',
+          aspectRatio: '1:1',
+          imageSize: '1K',
+        });
+
+        // Wait for cost data to be available (OpenRouter needs time to calculate)
+        await new Promise((r) => setTimeout(r, 5000));
+
+        let info = null;
+        if (result.generationId) {
+          // Retry fetching generation info with increasing delays
+          for (let retry = 0; retry < 6; retry++) {
+            info = await fetchGenerationInfo(result.generationId);
+            if (info && typeof info.usage === 'number' && info.usage > 0) break;
+            info = null;
+            await new Promise((r) => setTimeout(r, 3000 * (retry + 1)));
+          }
+        }
+
+        results.push({
+          modelId: model.id,
+          modelName: model.name,
+          provider: model.provider,
+          category: model.category,
+          status: 'success',
+          generationId: result.generationId,
+          generationTimeMs: info?.generation_time,
+          costUsd: info?.usage ?? 0,
+          tokensPrompt: info?.tokens_prompt,
+          tokensCompletion: info?.tokens_completion,
+          nativeTokensPrompt: info?.native_tokens_prompt,
+          nativeTokensCompletion: info?.native_tokens_completion,
+          nativeTokensImages: info?.native_tokens_completion_images,
+          imageSize: '1K',
+        });
+      } catch (err) {
+        results.push({
+          modelId: model.id,
+          modelName: model.name,
+          provider: model.provider,
+          category: model.category,
+          status: 'error',
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    // Save report to file
+    const report = {
+      timestamp: new Date().toISOString(),
+      prompt,
+      imageSize: '1K',
+      aspectRatio: '1:1',
+      results,
+      summary: {
+        total: results.length,
+        success: results.filter((r) => r.status === 'success').length,
+        failed: results.filter((r) => r.status === 'error').length,
+        totalCost: results.reduce((sum, r) => sum + (r.costUsd ?? 0), 0),
+      },
+    };
+
+    const reportPath = path.join(app.getPath('userData'), `benchmark_${Date.now()}.json`);
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
+
+    // Also save to desktop for easy access
+    const desktopPath = path.join(app.getPath('desktop'), 'ImageVibe_Benchmark.json');
+    fs.writeFileSync(desktopPath, JSON.stringify(report, null, 2), 'utf-8');
+
+    return { report, reportPath: desktopPath };
+  });
+
   // ═══ App ═══
   ipcMain.handle('app:get-version', () => app.getVersion());
   ipcMain.handle('app:open-external', (_, url: string) => shell.openExternal(url));

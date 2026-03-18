@@ -232,7 +232,7 @@ function StatCard({
     >
       <GlassPanel padding="sm" className="flex flex-col items-center gap-1">
         <span className="text-text-secondary">{icon}</span>
-        <span className="text-sm font-medium text-text-primary">{value}</span>
+        <span className="text-sm font-medium text-text-primary selectable">{value}</span>
         <span className="text-[10px] text-text-tertiary">{label}</span>
       </GlassPanel>
     </motion.div>
