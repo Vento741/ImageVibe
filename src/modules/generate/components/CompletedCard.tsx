@@ -15,6 +15,7 @@ function formatTime(ms: number): string {
 import { ipc } from '@/shared/lib/ipc';
 import { useToastStore } from '@/shared/stores/toastStore';
 import { Tooltip } from '@/shared/components/ui/Tooltip';
+import { ExportButton } from '@/shared/components/ui/ExportButton';
 import type { CanvasCard } from '../store';
 
 interface CompletedCardProps {
@@ -111,6 +112,15 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
             <SmallAction icon={<Star size={12} />} label="Избранное" onClick={handleToggleFavorite} />
             <SmallAction icon={<RotateCw size={12} />} label="Повторить" onClick={handleRepeat} />
             <SmallAction icon={<FolderOpen size={12} />} label="Папка" onClick={handleOpenFolder} />
+            {result.imageId && (
+              <Tooltip text="Экспорт">
+                <ExportButton
+                  imageId={result.imageId}
+                  size="sm"
+                  className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+                />
+              </Tooltip>
+            )}
 
             <span className="ml-auto text-[10px] text-white/50">
               {getModelShortName(result.modelId)}

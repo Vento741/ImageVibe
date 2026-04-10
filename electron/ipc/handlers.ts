@@ -1,6 +1,10 @@
+import fs from 'fs';
+import path from 'path';
 import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
 import { getConfig, updateConfig } from '../services/configManager';
 import { getDatabase } from '../services/database';
+import { logger } from '../services/logger';
+import type { LogCategory } from '../services/logger';
 import {
   generateImage,
   translatePrompt,
@@ -13,7 +17,7 @@ import {
 } from '../services/openRouterClient';
 import { estimateCost } from '../services/costEstimator';
 import { saveImageTags } from '../services/autoTagger';
-import { saveImage, deleteImage, getFileSize } from '../services/fileStorage';
+import { saveImage, deleteImage, getFileSize, exportImage } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
 import {
   recordCost,
@@ -23,9 +27,9 @@ import {
   TRANSLATE_ESTIMATED_COST_USD,
   PROMPT_ASSIST_ESTIMATED_COST_USD,
 } from '../services/costTracker';
-import { submitGeneration } from '../services/queueProcessor';
+import { submitGeneration, cancelGeneration } from '../services/queueProcessor';
 import type { GenerationRequest } from '../../src/shared/types/api';
-import type { GalleryQuery } from '../../src/shared/types/ipc';
+import type { GalleryQuery, ExportOptions } from '../../src/shared/types/ipc';
 import type { DBBudgetConfig, DBImage } from '../../src/shared/types/database';
 
 /** Allowed sort columns to prevent SQL injection */
@@ -36,13 +40,19 @@ const ALLOWED_SORT_COLUMNS: Record<string, boolean> = {
 };
 
 export function registerIpcHandlers(): void {
+  logger.log('general', 'info', 'Registering IPC handlers');
+
   // ═══ Config ═══
   ipcMain.handle('config:get', () => getConfig());
-  ipcMain.handle('config:set', (_, partial) => updateConfig(partial));
+  ipcMain.handle('config:set', (_, partial) => {
+    logger.log('ipc', 'info', 'config:set', { keys: Object.keys(partial) });
+    return updateConfig(partial);
+  });
   ipcMain.handle('config:get-images-path', () => getConfig().storage.imagesPath);
 
   // ═══ Generation ═══
   ipcMain.handle('generate:image', async (_event, request: GenerationRequest) => {
+    logger.log('ipc', 'info', 'generate:image', { modelId: request.modelId, mode: request.mode });
     const config = getConfig();
 
     // Auto-translate if Russian
@@ -267,6 +277,39 @@ export function registerIpcHandlers(): void {
     return result.filePaths[0] || null;
   });
 
+  ipcMain.handle('file:export', async (_, imageId: number, options: ExportOptions) => {
+    const cfg = getConfig();
+    const format = options.format || cfg.export.defaultFormat || 'png';
+    const quality = options.quality ?? (format === 'jpeg' ? cfg.export.jpegQuality : undefined);
+
+    logger.log('ipc', 'info', 'file:export', { imageId, format, quality });
+    const db = getDatabase();
+    const image = db.prepare('SELECT file_path FROM images WHERE id = ?').get(imageId) as { file_path: string } | undefined;
+    if (!image) throw new Error('Image not found');
+
+    if (!fs.existsSync(image.file_path)) {
+      throw new Error(`Исходный файл не найден: ${image.file_path}`);
+    }
+
+    const ext = format === 'jpeg' ? 'jpg' : format;
+    const defaultName = path.basename(image.file_path, path.extname(image.file_path)) + '.' + ext;
+
+    const filterMap: Record<string, { name: string; extensions: string[] }> = {
+      png: { name: 'PNG Image', extensions: ['png'] },
+      jpeg: { name: 'JPEG Image', extensions: ['jpg', 'jpeg'] },
+      webp: { name: 'WebP Image', extensions: ['webp'] },
+    };
+
+    const result = await dialog.showSaveDialog({
+      defaultPath: defaultName,
+      filters: [filterMap[format]],
+    });
+
+    if (!result.filePath) return '';
+
+    return exportImage(image.file_path, result.filePath, format, quality);
+  });
+
   // ═══ Collections ═══
   ipcMain.handle('collections:list', () => {
     const db = getDatabase();
@@ -353,8 +396,8 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('queue:cancel', (_, id: number) => {
-    const db = getDatabase();
-    db.prepare("UPDATE generation_queue SET status = 'cancelled' WHERE id = ? AND status = 'pending'").run(id);
+    logger.log('ipc', 'info', 'queue:cancel', { queueItemId: id });
+    cancelGeneration(id);
   });
 
   ipcMain.handle('queue:clear', () => {
@@ -368,6 +411,7 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('queue:submit', (_, request: GenerationRequest & { clientId: string }) => {
+    logger.log('ipc', 'info', 'queue:submit', { modelId: request.modelId, mode: request.mode });
     const queueItemId = submitGeneration(request);
     return { queueItemId };
   });
@@ -382,6 +426,60 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('file:open-folder', (_, folderPath: string) => {
     shell.openPath(folderPath);
+  });
+
+  // ═══ File: convert external image ═══
+  ipcMain.handle('file:convert', async (_, sourcePath: string, format: 'png' | 'jpeg' | 'webp', quality?: number) => {
+    logger.log('ipc', 'info', 'file:convert', { sourcePath, format, quality });
+
+    if (!fs.existsSync(sourcePath)) {
+      throw new Error(`Исходный файл не найден: ${sourcePath}`);
+    }
+
+    const ext = format === 'jpeg' ? 'jpg' : format;
+    const defaultName = path.basename(sourcePath, path.extname(sourcePath)) + '.' + ext;
+
+    const filterMap: Record<string, { name: string; extensions: string[] }> = {
+      png: { name: 'PNG Image', extensions: ['png'] },
+      jpeg: { name: 'JPEG Image', extensions: ['jpg', 'jpeg'] },
+      webp: { name: 'WebP Image', extensions: ['webp'] },
+    };
+
+    const result = await dialog.showSaveDialog({
+      defaultPath: defaultName,
+      filters: [filterMap[format]],
+    });
+
+    if (!result.filePath) return '';
+
+    return exportImage(sourcePath, result.filePath, format, quality);
+  });
+
+  // ═══ File: batch convert ═══
+  ipcMain.handle('file:convert-batch', async (_, sourcePaths: string[], destFolder: string, format: 'png' | 'jpeg' | 'webp', quality?: number) => {
+    logger.log('ipc', 'info', 'file:convert-batch', { count: sourcePaths.length, destFolder, format, quality });
+
+    const results: string[] = [];
+    const ext = format === 'jpeg' ? 'jpg' : format;
+
+    for (const sourcePath of sourcePaths) {
+      if (!fs.existsSync(sourcePath)) {
+        logger.log('ipc', 'warn', `Batch convert: file not found: ${sourcePath}`);
+        results.push('');
+        continue;
+      }
+      const baseName = path.basename(sourcePath, path.extname(sourcePath));
+      const destPath = path.join(destFolder, `${baseName}.${ext}`);
+      try {
+        const exported = await exportImage(sourcePath, destPath, format, quality);
+        results.push(exported);
+      } catch (err) {
+        logger.log('ipc', 'warn', `Batch convert failed: ${sourcePath}`, { error: err instanceof Error ? err.message : String(err) });
+        results.push('');
+      }
+    }
+
+    return results;
   });
 
   // ═══ Storage: migrate paths ═══
@@ -525,6 +623,25 @@ export function registerIpcHandlers(): void {
     fs.writeFileSync(desktopPath, JSON.stringify(report, null, 2), 'utf-8');
 
     return { report, reportPath: desktopPath };
+  });
+
+  // ═══ Logs ═══
+  ipcMain.handle('logs:get', (_, category?: LogCategory) => {
+    return logger.getLogs(category);
+  });
+
+  ipcMain.handle('logs:clear', () => {
+    logger.clearLogs();
+  });
+
+  // ═══ Debug ═══
+  ipcMain.handle('debug:get-enabled', () => {
+    return getConfig().debug.enabled;
+  });
+
+  ipcMain.handle('debug:set-enabled', (_, enabled: boolean) => {
+    updateConfig({ debug: { enabled } });
+    logger.log('general', 'info', enabled ? 'Debug mode enabled' : 'Debug mode disabled');
   });
 
   // ═══ App ═══

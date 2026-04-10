@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCostStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay } from '@/shared/lib/utils';
@@ -53,20 +53,33 @@ export function CostCounter() {
       animate={{ opacity: 1 }}
     >
       <div className="glass-panel px-2 py-2 flex flex-col gap-1 text-center">
-        {/* Расходы за сегодня */}
-        <div className="text-xs font-medium text-text-primary">
-          {formatCostDisplay(todaySpent)}
-        </div>
+        {/* Расходы за сегодня — показываем только от $0.01 */}
+        <AnimatePresence>
+          {todaySpent >= 0.01 && (
+            <motion.div
+              key="today-spent"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="text-xs font-medium text-text-primary">
+                {formatCostDisplay(todaySpent)}
+              </div>
 
-        {/* Полоса бюджета */}
-        {dailyLimit && (
-          <div className="budget-bar">
-            <div
-              className={`budget-bar-fill ${barColor}`}
-              style={{ width: `${budgetPercent}%` }}
-            />
-          </div>
-        )}
+              {/* Полоса бюджета */}
+              {dailyLimit && (
+                <div className="budget-bar mt-1">
+                  <div
+                    className={`budget-bar-fill ${barColor}`}
+                    style={{ width: `${budgetPercent}%` }}
+                  />
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Баланс */}
         {balance && (

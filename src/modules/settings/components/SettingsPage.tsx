@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ipc } from '@/shared/lib/ipc';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
+import { useToastStore } from '@shared/stores/toastStore';
+import { useDebugStore } from '@shared/stores/debugStore';
 import type { AppConfig } from '@/shared/types/config';
 
 export function SettingsPage() {
@@ -282,10 +284,47 @@ function BudgetInput({ label, value, onChange }: { label: string; value?: number
 
 function AppVersion() {
   const [version, setVersion] = useState('...');
+  const debugEnabled = useDebugStore((s) => s.enabled);
+  const setDebugEnabled = useDebugStore((s) => s.setEnabled);
+  const clickCountRef = useRef(0);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const addToast = useToastStore((s) => s.addToast);
+
   useEffect(() => {
     ipc.invoke('app:get-version').then(setVersion).catch(() => setVersion('—'));
   }, []);
-  return <span className="text-text-tertiary">{version}</span>;
+
+  const handleClick = useCallback(() => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
+
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current >= 5) {
+      clickCountRef.current = 0;
+      const newState = !debugEnabled;
+      setDebugEnabled(newState);
+      ipc.invoke('debug:set-enabled', newState);
+      addToast({
+        message: newState ? 'Режим разработчика активирован' : 'Режим разработчика деактивирован',
+        type: newState ? 'success' : 'info',
+      });
+    } else {
+      resetTimerRef.current = setTimeout(() => {
+        clickCountRef.current = 0;
+      }, 2000);
+    }
+  }, [debugEnabled, setDebugEnabled, addToast]);
+
+  return (
+    <span
+      className="text-text-tertiary cursor-default select-none"
+      onClick={handleClick}
+    >
+      {version}
+    </span>
+  );
 }
 
 // @ts-ignore: kept for dev use, commented out in render

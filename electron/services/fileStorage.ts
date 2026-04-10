@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { shell } from 'electron';
+import sharp from 'sharp';
 import { getConfig } from './configManager';
 import { embedMetadata } from './pngMetadata';
 
@@ -79,15 +80,42 @@ export function getFileSize(filePath: string): number {
 }
 
 /**
- * Export an image in a different format.
- * For now, just copies as PNG. JPEG/WebP conversion
- * can be added later via sharp or canvas.
+ * Export an image, converting to the requested format via sharp.
+ * PNG is copied directly to preserve embedded metadata chunks.
  */
-export function exportImage(
+export async function exportImage(
   sourcePath: string,
   destPath: string,
-  _format: 'png' | 'jpeg' | 'webp' = 'png',
-): string {
+  format: 'png' | 'jpeg' | 'webp' = 'png',
+  quality?: number,
+): Promise<string> {
+  if (format === 'png') {
+    // Copy as-is to preserve ImageVibe tEXt metadata chunks
+    fs.copyFileSync(sourcePath, destPath);
+    return destPath;
+  }
+
+  if (format === 'webp') {
+    try {
+      await sharp(sourcePath).webp({ quality: quality ?? 80 }).toFile(destPath);
+    } catch (err) {
+      try { fs.unlinkSync(destPath); } catch { /* partial file cleanup */ }
+      throw err;
+    }
+    return destPath;
+  }
+
+  if (format === 'jpeg') {
+    try {
+      await sharp(sourcePath).jpeg({ quality: quality ?? 85 }).toFile(destPath);
+    } catch (err) {
+      try { fs.unlinkSync(destPath); } catch { /* partial file cleanup */ }
+      throw err;
+    }
+    return destPath;
+  }
+
+  // Fallback: unknown format, just copy
   fs.copyFileSync(sourcePath, destPath);
   return destPath;
 }

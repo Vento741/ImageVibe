@@ -1,8 +1,11 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Paintbrush, Image, FolderOpen, BarChart3, Settings } from 'lucide-react';
+import { Paintbrush, Image, FolderOpen, ArrowLeftRight, BarChart3, Settings, Bug } from 'lucide-react';
 import type { ComponentType } from 'react';
 import type { Page } from '../../../App';
 import { CostCounter } from '@/modules/cost/components/CostCounter';
+import { useDebugStore } from '@shared/stores/debugStore';
+import { ipc } from '@shared/lib/ipc';
 
 interface SidebarProps {
   currentPage: Page;
@@ -20,6 +23,7 @@ const navItems: NavItem[] = [
   { id: 'generate', icon: Paintbrush, label: 'Генерация', shortcut: 'Ctrl+G' },
   { id: 'gallery', icon: Image, label: 'Галерея', shortcut: 'Ctrl+L' },
   { id: 'collections', icon: FolderOpen, label: 'Коллекции' },
+  { id: 'convert', icon: ArrowLeftRight, label: 'Конвертация' },
   { id: 'analytics', icon: BarChart3, label: 'Аналитика' },
 ];
 
@@ -27,7 +31,16 @@ const bottomItems: NavItem[] = [
   { id: 'settings', icon: Settings, label: 'Настройки', shortcut: 'Ctrl+,' },
 ];
 
+const logsItem: NavItem = { id: 'logs', icon: Bug, label: 'Логи' };
+
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+  const debugEnabled = useDebugStore((s) => s.enabled);
+
+  // Hydrate debug state from config on mount
+  useEffect(() => {
+    ipc.invoke('debug:get-enabled').then(useDebugStore.getState().setEnabled).catch(() => {});
+  }, []);
+
   return (
     <aside className="w-16 h-full flex flex-col items-center py-3 gap-1 bg-bg-secondary/50 border-r border-glass-border relative z-10">
       {/* Main navigation */}
@@ -45,6 +58,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       {/* Bottom items */}
       <div className="flex flex-col items-center gap-1 w-full">
         <CostCounter />
+        {debugEnabled && (
+          <SidebarButton
+            item={logsItem}
+            isActive={currentPage === 'logs'}
+            onClick={() => onNavigate('logs')}
+          />
+        )}
         {bottomItems.map((item) => (
           <SidebarButton
             key={item.id}

@@ -13,6 +13,8 @@ files:
   - node_modules/bindings/**/*
   - node_modules/file-uri-to-path/**/*
   - node_modules/prebuild-install/**/*
+  - node_modules/sharp/**/*
+  - node_modules/@img/**/*
 
 extraResources:
   - from: node_modules/better-sqlite3/build/Release/
@@ -58,3 +60,5 @@ linux:
 asar: true
 asarUnpack:
   - "node_modules/better-sqlite3/**/*"
+  - "node_modules/sharp/**/*"
+  - "node_modules/@img/**/*"

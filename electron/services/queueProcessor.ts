@@ -11,12 +11,25 @@ import { saveImage, getFileSize } from './fileStorage';
 import { saveImageTags } from './autoTagger';
 import { recordCost, TRANSLATE_ESTIMATED_COST_USD } from './costTracker';
 import { getConfig } from './configManager';
+import { logger } from './logger';
 import type { GenerationRequest } from '../../src/shared/types/api';
 import type { DBQueueItem } from '../../src/shared/types/database';
 
 /** Maps queueItemId → clientId for routing events back to renderer */
 const clientIdMap = new Map<number, string>();
-let processing = false;
+
+/** Maps queueItemId → AbortController for cancelling running generations */
+const abortControllers = new Map<number, AbortController>();
+
+/** Maximum number of concurrent image generations */
+const MAX_CONCURRENT = 3;
+
+/** Set of queue item IDs currently being processed */
+const activeGenerations = new Set<number>();
+
+function canProcessMore(): boolean {
+  return activeGenerations.size < MAX_CONCURRENT;
+}
 
 function sendToRenderer(channel: string, data: unknown): void {
   const win = BrowserWindow.getAllWindows()[0];
@@ -54,41 +67,80 @@ export function submitGeneration(request: GenerationRequest & { clientId: string
   const queueItemId = Number(result.lastInsertRowid);
   clientIdMap.set(queueItemId, request.clientId);
 
+  logger.log('generation', 'info', `Генерация #${queueItemId} добавлена в очередь`, { modelId: request.modelId, prompt: request.prompt.slice(0, 80) });
+
   // Kick off processing
   processNext();
 
   return queueItemId;
 }
 
-async function processNext(): Promise<void> {
-  if (processing) return;
+function processNext(): void {
+  if (!canProcessMore()) return;
 
   const db = getDatabase();
-  const next = db.prepare(
-    "SELECT * FROM generation_queue WHERE status = 'pending' ORDER BY priority DESC, created_at ASC LIMIT 1"
-  ).get() as DBQueueItem | undefined;
+
+  // Exclude items already being processed
+  const activeIds = Array.from(activeGenerations);
+  let query = "SELECT * FROM generation_queue WHERE status = 'pending'";
+  if (activeIds.length > 0) {
+    const placeholders = activeIds.map(() => '?').join(',');
+    query += ` AND id NOT IN (${placeholders})`;
+  }
+  query += ' ORDER BY priority DESC, created_at ASC LIMIT 1';
+
+  const next = (activeIds.length > 0
+    ? db.prepare(query).get(...activeIds)
+    : db.prepare(query).get()
+  ) as DBQueueItem | undefined;
 
   if (!next) return;
 
-  processing = true;
+  // Track this generation as active
+  activeGenerations.add(next.id);
   const clientId = clientIdMap.get(next.id) ?? '';
 
+  // Create AbortController for this generation
+  const abortController = new AbortController();
+  abortControllers.set(next.id, abortController);
+
+  // Launch the generation without awaiting — allows parallel execution
+  processItem(next, clientId, abortController).finally(() => {
+    activeGenerations.delete(next.id);
+    clientIdMap.delete(next.id);
+    abortControllers.delete(next.id);
+
+    // Try to pick up the next pending item
+    processNext();
+  });
+
+  // Immediately try to fill remaining concurrency slots
+  if (canProcessMore()) {
+    processNext();
+  }
+}
+
+async function processItem(item: DBQueueItem, clientId: string, abortController: AbortController): Promise<void> {
+  const db = getDatabase();
+
   try {
+    logger.log('generation', 'info', `Генерация #${item.id} запущена`, { modelId: item.model_id });
+
     // Mark as running
-    db.prepare("UPDATE generation_queue SET status = 'running', started_at = datetime('now') WHERE id = ?").run(next.id);
+    db.prepare("UPDATE generation_queue SET status = 'running', started_at = datetime('now') WHERE id = ?").run(item.id);
 
     sendToRenderer('queue:progress', {
-      id: next.id,
+      id: item.id,
       status: 'running',
     });
 
     // Parse stored params
-    const params = JSON.parse(next.params || '{}');
+    const params = JSON.parse(item.params || '{}');
     const request: GenerationRequest = {
-      prompt: next.prompt,
-      translatedPrompt: next.translated_prompt || undefined,
-      negativePrompt: next.negative_prompt || undefined,
-      modelId: next.model_id,
+      prompt: item.prompt,
+      translatedPrompt: item.translated_prompt || undefined,
+      negativePrompt: item.negative_prompt || undefined,
+      modelId: item.model_id,
       mode: params.mode || 'text2img',
       aspectRatio: params.aspectRatio || '1:1',
       imageSize: params.imageSize || '1K',
@@ -118,8 +170,8 @@ async function processNext(): Promise<void> {
       }
     }
 
-    // Generate image
-    const genResult = await generateImage(request);
+    // Generate image (pass abort signal for timeout + cancellation)
+    const genResult = await generateImage(request, abortController.signal);
 
     // Build metadata for PNG embedding
     const metadata: Record<string, string> = {
@@ -165,31 +217,38 @@ async function processNext(): Promise<void> {
     const promptForTags = genResult.translatedPrompt || request.prompt;
     saveImageTags(imageId, promptForTags, request.styleTags, request.mode);
 
+    logger.log('generation', 'info', `Генерация #${item.id} завершена, imageId=${imageId}`, { modelId: item.model_id, generationTimeMs: genResult.generationTimeMs });
+
     // Update queue item
     db.prepare("UPDATE generation_queue SET status = 'completed', result_image_id = ?, completed_at = datetime('now') WHERE id = ?")
-      .run(imageId, next.id);
+      .run(imageId, item.id);
 
     // Send completion event to renderer
     sendToRenderer('queue:item-completed', {
       clientId,
-      queueItemId: next.id,
+      queueItemId: item.id,
       result: { ...genResult, filePath, imageId },
     });
 
     sendToRenderer('queue:progress', {
-      id: next.id,
+      id: item.id,
       status: 'completed',
       resultImageId: imageId,
     });
 
-    // Background cost fetch
+    // Background cost fetch (fire-and-forget)
     if (genResult.generationId) {
-      fetchGenerationCostWithRetry(genResult.generationId).then((actualCost) => {
+      (async () => {
+        let actualCost = 0;
+        try {
+          actualCost = await fetchGenerationCostWithRetry(genResult.generationId);
+        } catch { /* use estimate as fallback */ }
+
         const cost = actualCost || estimateCost(genResult.modelId, request.imageSize).estimatedCost;
         const costSource: 'actual' | 'estimated' = actualCost > 0 ? 'actual' : 'estimated';
 
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
-        db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, next.id);
+        db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, item.id);
 
         recordCost({
           imageId,
@@ -197,49 +256,83 @@ async function processNext(): Promise<void> {
           modelId: genResult.modelId,
           costUsd: cost,
           costType: 'image',
-          tokensInput: genResult.tokensInput ?? 0,
-          tokensOutput: genResult.tokensOutput ?? 0,
+          tokensInput: costSource === 'actual' ? (genResult.tokensInput ?? 0) : 0,
+          tokensOutput: costSource === 'actual' ? (genResult.tokensOutput ?? 0) : 0,
           costSource,
         });
 
-        sendToRenderer('cost:updated', { cost, generationId: genResult.generationId });
-      }).catch(() => {
-        const estimated = estimateCost(genResult.modelId, request.imageSize).estimatedCost;
-        db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(estimated, imageId);
-        recordCost({
-          imageId,
-          generationId: genResult.generationId,
-          modelId: genResult.modelId,
-          costUsd: estimated,
-          costType: 'image',
-          tokensInput: 0,
-          tokensOutput: 0,
-          costSource: 'estimated',
-        });
-      });
+        if (actualCost > 0) {
+          sendToRenderer('cost:updated', { cost, generationId: genResult.generationId });
+        }
+      })();
     }
   } catch (err: unknown) {
+    // Distinguish intentional cancellation from real errors
+    if (abortController.signal.aborted) {
+      logger.log('generation', 'warn', `Генерация #${item.id} отменена`, { modelId: item.model_id });
+      db.prepare("UPDATE generation_queue SET status = 'cancelled', completed_at = datetime('now') WHERE id = ?")
+        .run(item.id);
+      sendToRenderer('queue:item-failed', {
+        clientId,
+        queueItemId: item.id,
+        error: 'Генерация отменена',
+      });
+      sendToRenderer('queue:progress', { id: item.id, status: 'cancelled' });
+      return;
+    }
+
     const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
 
+    logger.log('generation', 'error', `Генерация #${item.id} ошибка: ${errorMessage}`, { modelId: item.model_id });
+
     db.prepare("UPDATE generation_queue SET status = 'failed', error_message = ?, completed_at = datetime('now') WHERE id = ?")
-      .run(errorMessage, next.id);
+      .run(errorMessage, item.id);
 
     sendToRenderer('queue:item-failed', {
       clientId,
-      queueItemId: next.id,
+      queueItemId: item.id,
       error: errorMessage,
     });
 
     sendToRenderer('queue:progress', {
-      id: next.id,
+      id: item.id,
       status: 'failed',
       error: errorMessage,
     });
-  } finally {
-    processing = false;
-    clientIdMap.delete(next.id);
+  }
+}
 
-    // Process next item in queue
-    processNext();
+/** Cancel a running or pending generation by queue item ID */
+export function cancelGeneration(queueItemId: number): void {
+  const db = getDatabase();
+  const clientId = clientIdMap.get(queueItemId) ?? '';
+
+  // If it's currently running, abort the fetch
+  const controller = abortControllers.get(queueItemId);
+  if (controller) {
+    logger.log('generation', 'warn', `Отмена активной генерации #${queueItemId}`);
+    controller.abort();
+    // The processItem catch block will handle status update and events
+    return;
+  }
+
+  // If it's pending (not yet started), just update the DB
+  const item = db.prepare('SELECT status FROM generation_queue WHERE id = ?').get(queueItemId) as { status: string } | undefined;
+  if (item && item.status === 'pending') {
+    logger.log('generation', 'warn', `Отмена ожидающей генерации #${queueItemId}`);
+    db.prepare("UPDATE generation_queue SET status = 'cancelled', completed_at = datetime('now') WHERE id = ?").run(queueItemId);
+
+    sendToRenderer('queue:item-failed', {
+      clientId,
+      queueItemId,
+      error: 'Генерация отменена',
+    });
+
+    sendToRenderer('queue:progress', {
+      id: queueItemId,
+      status: 'cancelled',
+    });
+
+    clientIdMap.delete(queueItemId);
   }
 }

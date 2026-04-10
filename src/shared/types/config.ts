@@ -39,6 +39,9 @@ export interface AppConfig {
     jpegQuality: number;
     embedMetadata: boolean;
   };
+  debug: {
+    enabled: boolean;
+  };
 }
 
 /** Default config values */
@@ -71,5 +74,8 @@ export const DEFAULT_CONFIG: AppConfig = {
     defaultFormat: 'png',
     jpegQuality: 85,
     embedMetadata: true,
+  },
+  debug: {
+    enabled: false,
   },
 };

@@ -11,6 +11,8 @@ import { ShortcutsHelp } from './shared/components/ui/ShortcutsHelp';
 import { ImageViewer } from './modules/gallery/components/ImageViewer';
 import { AnalyticsPage } from './modules/analytics/components/AnalyticsPage';
 import { SettingsPage } from './modules/settings/components/SettingsPage';
+import { LogsPage } from './modules/logs/components/LogsPage';
+import { ConvertPage } from './modules/convert/components/ConvertPage';
 import { ToastContainer } from './shared/components/ui/Toast';
 import { useToastStore } from './shared/stores/toastStore';
 import { Onboarding } from './shared/components/ui/Onboarding';
@@ -20,7 +22,7 @@ import { useCostStore } from './modules/cost/store';
 import { ipc } from './shared/lib/ipc';
 import { useCallback } from 'react';
 
-export type Page = 'generate' | 'gallery' | 'collections' | 'analytics' | 'settings';
+export type Page = 'generate' | 'gallery' | 'collections' | 'convert' | 'analytics' | 'settings' | 'logs';
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>('generate');
@@ -73,6 +75,32 @@ export function App() {
     };
   }, []);
 
+  // Health check: mark stuck generating cards as failed (fallback safety net)
+  useEffect(() => {
+    const STUCK_THRESHOLD_MS = 150_000; // 150 seconds
+    const CHECK_INTERVAL_MS = 30_000; // check every 30 seconds
+
+    const interval = setInterval(() => {
+      const store = useGenerateStore.getState();
+      const now = Date.now();
+      const stuckCards = store.canvasCards.filter(
+        (c) => c.status === 'generating' && now - c.startedAt > STUCK_THRESHOLD_MS,
+      );
+
+      for (const card of stuckCards) {
+        if (card.queueItemId) {
+          ipc.invoke('queue:cancel', card.queueItemId).catch(() => {});
+        }
+        store.updateCanvasCard(card.id, {
+          status: 'failed',
+          error: 'Генерация не завершилась вовремя. Попробуйте ещё раз.',
+        });
+      }
+    }, CHECK_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden rounded-xl bg-bg-primary">
       {/* Titlebar drag region + window controls */}
@@ -107,8 +135,10 @@ export function App() {
             {currentPage === 'generate' && <GeneratePage />}
             {currentPage === 'gallery' && <GalleryPage />}
             {currentPage === 'collections' && <CollectionsPage />}
+            {currentPage === 'convert' && <ConvertPage />}
             {currentPage === 'analytics' && <AnalyticsPage />}
             {currentPage === 'settings' && <SettingsPage />}
+            {currentPage === 'logs' && <LogsPage />}
           </div>
         </main>
       </div>

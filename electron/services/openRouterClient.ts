@@ -8,6 +8,7 @@ import type {
 } from '../../src/shared/types/api';
 import { getModelById } from './modelRegistry';
 import { getActiveApiKey, getConfig } from './configManager';
+import { logger } from './logger';
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -23,8 +24,14 @@ function getHeaders(): Record<string, string> {
   };
 }
 
+/** Timeout for image generation API calls (2 minutes) */
+const GENERATE_TIMEOUT_MS = 120_000;
+
 /** Generate an image via OpenRouter */
-export async function generateImage(request: GenerationRequest): Promise<GenerationResult> {
+export async function generateImage(
+  request: GenerationRequest,
+  externalSignal?: AbortSignal,
+): Promise<GenerationResult> {
   const startTime = Date.now();
   const model = getModelById(request.modelId);
   if (!model) throw new Error(`Модель не найдена: ${request.modelId}`);
@@ -120,15 +127,56 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
     });
   }
 
-  const response = await fetch(`${BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(body),
+  logger.log('generation', 'info', `API запрос: ${request.modelId}`, {
+    mode: request.mode,
+    aspectRatio: request.aspectRatio,
+    imageSize: request.imageSize,
   });
+
+  // AbortController for timeout + external cancellation
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GENERATE_TIMEOUT_MS);
+
+  // If external signal is provided, forward its abort to our controller
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      clearTimeout(timeoutId);
+      throw new Error('Генерация отменена');
+    }
+    const onExternalAbort = () => controller.abort();
+    externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    controller.signal.addEventListener('abort', () => {
+      externalSignal.removeEventListener('abort', onExternalAbort);
+    }, { once: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      if (externalSignal?.aborted) {
+        logger.log('generation', 'warn', 'Генерация отменена пользователем', { modelId: request.modelId });
+        throw new Error('Генерация отменена');
+      }
+      logger.log('generation', 'error', `Таймаут API (${GENERATE_TIMEOUT_MS / 1000}с)`, { modelId: request.modelId });
+      throw new Error(`Превышено время ожидания ответа от API (${GENERATE_TIMEOUT_MS / 1000} сек)`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     const message = errorData?.error?.message || `HTTP ${response.status}`;
+    logger.log('generation', 'error', `Ошибка API: ${message}`, { modelId: request.modelId, status: response.status });
     throw new Error(`Ошибка API: ${message}`);
   }
 
@@ -142,6 +190,12 @@ export async function generateImage(request: GenerationRequest): Promise<Generat
   }
 
   const generationTimeMs = Date.now() - startTime;
+
+  logger.log('generation', 'info', `Готово за ${generationTimeMs}мс`, {
+    modelId: request.modelId,
+    generationId,
+    generationTimeMs,
+  });
 
   return {
     imageBase64,
@@ -262,6 +316,7 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
 
 /** Translate text RU→EN using Gemini Flash Lite */
 export async function translatePrompt(text: string): Promise<string> {
+  logger.log('api', 'info', 'Translating prompt RU→EN', { length: text.length });
   const config = getConfig();
   const response = await fetch(`${BASE_URL}/chat/completions`, {
     method: 'POST',
@@ -280,9 +335,14 @@ export async function translatePrompt(text: string): Promise<string> {
     }),
   });
 
-  if (!response.ok) throw new Error('Ошибка перевода');
+  if (!response.ok) {
+    logger.log('api', 'error', 'Translation RU→EN failed', { status: response.status });
+    throw new Error('Ошибка перевода');
+  }
   const data = (await response.json()) as OpenRouterResponse;
-  return (data.choices[0]?.message.content as string)?.trim() || text;
+  const result = (data.choices[0]?.message.content as string)?.trim() || text;
+  logger.log('api', 'info', 'Translation RU→EN completed');
+  return result;
 }
 
 /** Translate text EN→RU using Gemini Flash Lite */
@@ -315,6 +375,7 @@ export async function promptAssist(
   input: string,
   action: 'generate' | 'enhance' | 'rephrase'
 ): Promise<string> {
+  logger.log('api', 'info', `Prompt assist: ${action}`, { inputLength: input.length });
   const config = getConfig();
 
   const systemPrompts: Record<string, string> = {
@@ -340,8 +401,12 @@ export async function promptAssist(
     }),
   });
 
-  if (!response.ok) throw new Error('Ошибка промпт-ассистента');
+  if (!response.ok) {
+    logger.log('api', 'error', `Prompt assist (${action}) failed`, { status: response.status });
+    throw new Error('Ошибка промпт-ассистента');
+  }
   const data = (await response.json()) as OpenRouterResponse;
+  logger.log('api', 'info', `Prompt assist (${action}) completed`);
   return (data.choices[0]?.message.content as string)?.trim() || input;
 }
 
@@ -381,11 +446,15 @@ export async function promptFromImage(imageBase64: string): Promise<string> {
 
 /** Fetch account credits/balance */
 export async function fetchCredits(): Promise<{ totalCredits: number; totalUsage: number; balance: number }> {
+  logger.log('api', 'debug', 'Fetching account credits');
   const response = await fetch(`${BASE_URL}/credits`, {
     headers: getHeaders(),
   });
 
-  if (!response.ok) throw new Error('Не удалось получить баланс');
+  if (!response.ok) {
+    logger.log('api', 'error', 'Failed to fetch credits', { status: response.status });
+    throw new Error('Не удалось получить баланс');
+  }
   const data = (await response.json()) as OpenRouterCredits;
   return {
     totalCredits: data.data.total_credits,

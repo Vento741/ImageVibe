@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Info, Copy, Check, X, GripVertical, ZoomIn, ZoomOut, Maximize, FolderOpen, Trash2, Pencil } from 'lucide-react';
+import { Star, Info, Copy, Check, X, GripVertical, ZoomIn, ZoomOut, Maximize, FolderOpen, Trash2, Pencil, Download } from 'lucide-react';
 import { useGalleryStore } from '../store';
 import { useGenerateStore } from '@/modules/generate/store';
 import { ipc } from '@/shared/lib/ipc';
@@ -25,6 +25,7 @@ const HIDDEN_META_KEYS = new Set([
 ]);
 import type { DBImage } from '@/shared/types/database';
 import { AddToCollectionMenu } from '@/modules/collections/components/AddToCollectionMenu';
+import { ExportButton } from '@/shared/components/ui/ExportButton';
 
 export function ImageViewer() {
   const selectedImageId = useGalleryStore((s) => s.selectedImageId);
@@ -274,6 +275,22 @@ export function ImageViewer() {
     }
   }, [image, addToast]);
 
+  const handleExportDefault = useCallback(async () => {
+    if (!image) return;
+    try {
+      const config = await ipc.invoke('config:get');
+      const format = config.export?.defaultFormat || 'png';
+      const result = await ipc.invoke('file:export', image.id, { format });
+      if (result) {
+        addToast({ message: 'Изображение сохранено', type: 'success' });
+      } else {
+        addToast({ message: 'Экспорт отменён', type: 'info' });
+      }
+    } catch {
+      addToast({ message: 'Не удалось экспортировать', type: 'error' });
+    }
+  }, [image, addToast]);
+
   const handleEditImg2Img = useCallback(() => {
     if (!image) return;
     // Read the image file and convert to base64 data URL
@@ -330,6 +347,11 @@ export function ImageViewer() {
                 {image.is_favorite ? <><Star size={16} fill="currentColor" className="inline -mt-0.5" /> Избранное</> : <><Star size={16} className="inline -mt-0.5" /> В избранное</>}
               </button>
               <AddToCollectionMenu imageId={image.id} />
+              <ExportButton
+                imageId={image.id}
+                size="md"
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm flex items-center gap-1.5"
+              />
               <button
                 onClick={() => setShowMetadata(!showMetadata)}
                 className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer ${
@@ -423,6 +445,7 @@ export function ImageViewer() {
                   });
                 }} />
                 <CtxItem icon={<FolderOpen size={14} />} label="Открыть папку" onClick={() => { setContextMenu(null); handleOpenFolder(); }} />
+                <CtxItem icon={<Download size={14} />} label="Экспорт..." onClick={() => { setContextMenu(null); handleExportDefault(); }} />
                 <div className="mx-2 my-1 border-t border-glass-border" />
                 <CtxItem icon={<ZoomIn size={14} />} label="Увеличить" onClick={() => { setContextMenu(null); setZoom((z) => Math.min(z * 1.25, 10)); }} />
                 <CtxItem icon={<ZoomOut size={14} />} label="Уменьшить" onClick={() => { setContextMenu(null); setZoom((z) => Math.max(z * 0.8, 0.1)); }} />

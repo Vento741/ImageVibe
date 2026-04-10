@@ -6,6 +6,7 @@ import {
   Paintbrush,
   ImageIcon,
   Folder,
+  ArrowLeftRight,
   BarChart3,
   Settings,
   Zap,
@@ -48,6 +49,7 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
     { id: 'nav-generate', icon: <Paintbrush size={16} />, label: 'Генерация', category: 'Навигация', shortcut: 'Ctrl+G', action: () => { onNavigate('generate'); onClose(); } },
     { id: 'nav-gallery', icon: <ImageIcon size={16} />, label: 'Галерея', category: 'Навигация', shortcut: 'Ctrl+L', action: () => { onNavigate('gallery'); onClose(); } },
     { id: 'nav-collections', icon: <Folder size={16} />, label: 'Коллекции', category: 'Навигация', action: () => { onNavigate('collections'); onClose(); } },
+    { id: 'nav-convert', icon: <ArrowLeftRight size={16} />, label: 'Конвертация', category: 'Навигация', action: () => { onNavigate('convert'); onClose(); } },
     { id: 'nav-analytics', icon: <BarChart3 size={16} />, label: 'Аналитика', category: 'Навигация', action: () => { onNavigate('analytics'); onClose(); } },
     { id: 'nav-settings', icon: <Settings size={16} />, label: 'Настройки', category: 'Навигация', shortcut: 'Ctrl+,', action: () => { onNavigate('settings'); onClose(); } },
 

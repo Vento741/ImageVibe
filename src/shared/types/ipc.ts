@@ -7,6 +7,7 @@ import type {
   DBPreset,
   DBQueueItem,
 } from './database';
+import type { LogCategory, LogEntry } from './logging';
 
 /** IPC channel definitions: main ↔ renderer */
 export interface IpcChannels {
@@ -100,6 +101,14 @@ export interface IpcChannels {
     args: [number, ExportOptions];
     result: string;
   };
+  'file:convert': {
+    args: [string, 'png' | 'jpeg' | 'webp', number?];
+    result: string;
+  };
+  'file:convert-batch': {
+    args: [string[], string, 'png' | 'jpeg' | 'webp', number?];
+    result: string[];
+  };
 
   // ═══ Storage ═══
   'storage:migrate-paths': { args: [string, string]; result: { migrated: number } };
@@ -109,6 +118,14 @@ export interface IpcChannels {
 
   // ═══ Benchmark ═══
   'benchmark:run': { args: [string]; result: { report: unknown; reportPath: string } };
+
+  // ═══ Logs ═══
+  'logs:get': { args: [LogCategory?]; result: LogEntry[] };
+  'logs:clear': { args: []; result: void };
+
+  // ═══ Debug ═══
+  'debug:get-enabled': { args: []; result: boolean };
+  'debug:set-enabled': { args: [boolean]; result: void };
 
   // ═══ App ═══
   'app:get-version': { args: []; result: string };
@@ -133,9 +150,6 @@ export interface GalleryQuery {
 export interface ExportOptions {
   format: 'png' | 'jpeg' | 'webp';
   quality?: number;
-  width?: number;
-  height?: number;
-  embedMetadata?: boolean;
 }
 
 /** Credit balance from OpenRouter */

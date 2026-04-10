@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { app } from 'electron';
+import { logger } from './logger';
 
 let db: Database.Database | null = null;
 
@@ -13,6 +14,7 @@ export function getDatabase(): Database.Database {
 
 export function initDatabase(): Database.Database {
   const dbPath = path.join(app.getPath('userData'), 'imagevibe.db');
+  logger.log('database', 'info', `Initializing database at ${dbPath}`);
   db = new Database(dbPath);
 
   // Performance settings
@@ -22,6 +24,7 @@ export function initDatabase(): Database.Database {
   db.pragma('cache_size = -64000'); // 64MB
 
   runMigrations(db);
+  logger.log('database', 'info', 'Database initialized successfully');
   return db;
 }
 
@@ -52,7 +55,13 @@ function runMigrations(db: Database.Database): void {
 
   for (const migration of migrations) {
     if (migration.version > currentVersion.version) {
-      applyMigration(migration.version, migration.sql);
+      logger.log('database', 'info', `Applying migration v${migration.version}`);
+      try {
+        applyMigration(migration.version, migration.sql);
+      } catch (err) {
+        logger.log('database', 'error', `Migration v${migration.version} failed`, { error: err instanceof Error ? err.message : String(err) });
+        throw err;
+      }
     }
   }
 }
