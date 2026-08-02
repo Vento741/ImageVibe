@@ -8,6 +8,7 @@ import type {
   DBQueueItem,
 } from './database';
 import type { LogCategory, LogEntry } from './logging';
+import type { PricingRow } from './models';
 
 /** IPC channel definitions: main ↔ renderer */
 export interface IpcChannels {
@@ -184,15 +185,16 @@ export interface SpendingSummary {
   }>;
 }
 
-/** Cost estimate before generation */
+/** Pre-generation cost estimate. Always approximate — exact cost arrives in usage.cost. */
 export interface CostEstimate {
-  estimatedCost: number;
-  confidence: 'exact' | 'approximate';
-  modelPricing: {
-    perImage?: number;
-    perMegapixel?: number;
-    perToken?: number;
-  };
+  /** null when the price cannot be derived from the catalog */
+  estimatedCost: number | null;
+  /** 'point' — a per-image price; 'upper-bound' — a megapixel rate that overstates above ~1MP */
+  basis: 'point' | 'upper-bound' | 'unknown';
+  /** why the estimate is unavailable, shown to the user as-is */
+  reason?: string;
+  /** the pricing rows the estimate came from, exactly as the API returned them */
+  pricing: PricingRow[];
 }
 
 /** Budget status */

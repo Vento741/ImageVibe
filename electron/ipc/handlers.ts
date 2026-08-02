@@ -126,7 +126,7 @@ export function registerIpcHandlers(): void {
     // Fetch actual cost in background
     if (result.generationId) {
       fetchGenerationCostWithRetry(result.generationId).then((actualCost) => {
-        const cost = actualCost || estimateCost(result.modelId, request.imageSize).estimatedCost;
+        const cost = actualCost ?? estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
         const costSource: 'actual' | 'estimated' = actualCost > 0 ? 'actual' : 'estimated';
 
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
@@ -148,7 +148,7 @@ export function registerIpcHandlers(): void {
           win.webContents.send('cost:updated', { cost, generationId: result.generationId });
         }
       }).catch(() => {
-        const estimated = estimateCost(result.modelId, request.imageSize).estimatedCost;
+        const estimated = estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(estimated, imageId);
         recordCost({
           imageId,
