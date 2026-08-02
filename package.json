@@ -1,6 +1,6 @@
 {
   "name": "imagevibe",
-  "version": "1.0.3",
+  "version": "1.2.0",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "node scripts/build-electron.mjs && concurrently \"vite\" \"node scripts/start-electron.mjs\"",
