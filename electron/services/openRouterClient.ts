@@ -202,8 +202,23 @@ export async function generateImage(
   });
 
   // Actual size of the result — a size parameter is not proof of what came back, and there
-  // is no per-model size table left to guess from (see catalog schema for why).
-  const { width, height } = await sharp(Buffer.from(imageBase64, 'base64')).metadata();
+  // is no per-model size table left to guess from (see catalog schema for why). Parsing can
+  // fail on an unsupported/truncated/corrupt image; by the time we get here the generation
+  // already succeeded and, per the all-or-nothing billing rule, is already paid for — a
+  // parse failure must not throw away that result, only leave its size unknown.
+  let width: number | undefined;
+  let height: number | undefined;
+  try {
+    const metadata = await sharp(Buffer.from(imageBase64, 'base64')).metadata();
+    width = metadata.width;
+    height = metadata.height;
+  } catch (err) {
+    logger.log('generation', 'warn', 'Не удалось измерить размеры изображения', {
+      modelId: request.modelId,
+      generationId,
+      error: String(err),
+    });
+  }
 
   return {
     imageBase64,

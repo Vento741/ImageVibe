@@ -7,6 +7,20 @@ vi.mock('../electron/services/configManager', () => ({
 vi.mock('../electron/services/logger', () => ({
   logger: { log: () => {} },
 }));
+vi.mock('../electron/services/modelCatalog', () => ({
+  getModelById: () => ({
+    id: 'test/model',
+    name: 'Test Model',
+    description: '',
+    schema: {},
+    passthrough: [],
+    pricing: [],
+    providerSlugs: ['test-provider'],
+    outputModalities: ['image'],
+    category: 'quality',
+    pricesLoaded: true,
+  }),
+}));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -80,5 +94,46 @@ describe('fetchGenerationCostWithRetry', () => {
     const promise = fetchGenerationCostWithRetry('gen-1', 3);
     await vi.runAllTimersAsync();
     expect(await promise).toBe(0.07);
+  });
+});
+
+describe('generateImage', () => {
+  it('does not throw when the returned bytes cannot be parsed as an image, and reports unknown size', async () => {
+    // Bytes that are not a valid image in any format sharp understands.
+    const unparseableBase64 = Buffer.from('this is plain text, not image bytes').toString('base64');
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        id: 'gen-unparseable',
+        model: 'test/model',
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: '',
+              images: [
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:image/png;base64,${unparseableBase64}` },
+                },
+              ],
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    })));
+
+    const { generateImage } = await import('../electron/services/openRouterClient');
+    const result = await generateImage({
+      prompt: 'test prompt',
+      modelId: 'test/model',
+      mode: 'text2img',
+      aspectRatio: '1:1',
+      imageSize: '1K',
+    });
+
+    expect(result.width).toBe(0);
+    expect(result.height).toBe(0);
   });
 });
