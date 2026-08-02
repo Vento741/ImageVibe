@@ -16,6 +16,12 @@ import {
   isRussianText,
 } from '../services/openRouterClient';
 import { estimateCost } from '../services/costEstimator';
+import {
+  getAllModels,
+  getGroupedModels,
+  getCatalogStatus,
+  refreshCatalog,
+} from '../services/modelCatalog';
 import { saveImageTags } from '../services/autoTagger';
 import { saveImage, deleteImage, getFileSize, exportImage } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
@@ -267,6 +273,14 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('cost:check-budget', () => checkBudget());
   ipcMain.handle('cost:set-budget', (_, limits: Partial<DBBudgetConfig>) => setBudget(limits));
 
+  // ═══ Model catalog ═══
+  ipcMain.handle('catalog:list', () => getGroupedModels());
+  ipcMain.handle('catalog:status', () => getCatalogStatus());
+  ipcMain.handle('catalog:refresh', async () => {
+    await refreshCatalog();
+    return getCatalogStatus();
+  });
+
   // ═══ File operations ═══
   ipcMain.handle('file:read-metadata', (_, filePath: string) => readMetadataFromFile(filePath));
   ipcMain.handle('file:select-image', async () => {
@@ -512,12 +526,11 @@ export function registerIpcHandlers(): void {
 
   // ═══ Benchmark: run prompt across all models ═══
   ipcMain.handle('benchmark:run', async (_, prompt: string) => {
-    const { getAllModels } = await import('../services/modelRegistry');
     const { fetchGenerationInfo } = await import('../services/openRouterClient');
     const fs = await import('fs');
     const path = await import('path');
 
-    const models = getAllModels().filter((m) => m.supports.textToImage);
+    const models = getAllModels();
     const results: Array<{
       modelId: string;
       modelName: string;
@@ -575,7 +588,7 @@ export function registerIpcHandlers(): void {
         results.push({
           modelId: model.id,
           modelName: model.name,
-          provider: model.provider,
+          provider: model.providerSlugs[0] ?? '',
           category: model.category,
           status: 'success',
           generationId: result.generationId,
@@ -592,7 +605,7 @@ export function registerIpcHandlers(): void {
         results.push({
           modelId: model.id,
           modelName: model.name,
-          provider: model.provider,
+          provider: model.providerSlugs[0] ?? '',
           category: model.category,
           status: 'error',
           error: err instanceof Error ? err.message : String(err),

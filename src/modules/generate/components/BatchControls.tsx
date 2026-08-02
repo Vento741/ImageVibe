@@ -123,7 +123,7 @@ export function BatchControls() {
       </motion.button>
 
       {/* Cost preview */}
-      {batchCost > 0 && (
+      {currentEstimate && currentEstimate.estimatedCost !== null && (
         <span className="text-[10px] text-text-tertiary">
           ~{formatCostDisplay(batchCost)}
         </span>

@@ -127,9 +127,10 @@ export function GenerateButton() {
       </motion.button>
 
       {/* Cost estimate */}
-      {currentEstimate && currentEstimate.estimatedCost > 0 && (
+      {currentEstimate && currentEstimate.estimatedCost !== null && (
         <div className="text-xs text-text-tertiary whitespace-nowrap">
-          ~{formatCostDisplay(currentEstimate.estimatedCost)}
+          {currentEstimate.basis === 'upper-bound' ? '≤' : '~'}
+          {formatCostDisplay(currentEstimate.estimatedCost)}
         </div>
       )}
     </div>

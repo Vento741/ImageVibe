@@ -3,6 +3,7 @@ import path from 'path';
 import { initDatabase, closeDatabase } from './services/database';
 import { loadConfig } from './services/configManager';
 import { registerIpcHandlers } from './ipc/handlers';
+import { initCatalog } from './services/modelCatalog';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -80,6 +81,12 @@ app.whenReady().then(() => {
   initDatabase();
   registerIpcHandlers();
   createWindow();
+
+  initCatalog(() => {
+    for (const window of BrowserWindow.getAllWindows()) {
+      window.webContents.send('catalog:prices-updated');
+    }
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

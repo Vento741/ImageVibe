@@ -8,7 +8,7 @@ import type {
   DBQueueItem,
 } from './database';
 import type { LogCategory, LogEntry } from './logging';
-import type { PricingRow } from './models';
+import type { ModelCategory, ParamSchema, PricingRow } from './models';
 
 /** IPC channel definitions: main ↔ renderer */
 export interface IpcChannels {
@@ -120,6 +120,20 @@ export interface IpcChannels {
   // ═══ Benchmark ═══
   'benchmark:run': { args: [string]; result: { report: unknown; reportPath: string } };
 
+  // ═══ Model catalog ═══
+  'catalog:list': {
+    args: [];
+    result: Array<{ category: ModelCategory; models: CatalogModelDTO[] }>;
+  };
+  'catalog:status': {
+    args: [];
+    result: { state: 'empty' | 'loading' | 'ready' | 'error'; error?: string; fetchedAt?: number; stale: boolean };
+  };
+  'catalog:refresh': {
+    args: [];
+    result: { state: 'empty' | 'loading' | 'ready' | 'error'; error?: string; fetchedAt?: number; stale: boolean };
+  };
+
   // ═══ Logs ═══
   'logs:get': { args: [LogCategory?]; result: LogEntry[] };
   'logs:clear': { args: []; result: void };
@@ -185,6 +199,20 @@ export interface SpendingSummary {
   }>;
 }
 
+/** A catalog model as it crosses IPC */
+export interface CatalogModelDTO {
+  id: string;
+  name: string;
+  description: string;
+  schema: Record<string, ParamSchema>;
+  passthrough: string[];
+  pricing: PricingRow[];
+  providerSlugs: string[];
+  outputModalities: string[];
+  category: ModelCategory;
+  pricesLoaded: boolean;
+}
+
 /** Pre-generation cost estimate. Always approximate — exact cost arrives in usage.cost. */
 export interface CostEstimate {
   /** null when the price cannot be derived from the catalog */
@@ -232,4 +260,5 @@ export interface IpcEvents {
   };
   'generation:progress': { stage: string; percent: number };
   'benchmark:progress': { current: number; total: number; modelName: string; modelId: string };
+  'catalog:prices-updated': undefined;
 }
