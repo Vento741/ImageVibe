@@ -54,7 +54,10 @@ export function PresetSelector() {
   // availability field from presets:list doesn't have to leak into that type.
   const [availability, setAvailability] = useState<Record<number, boolean | null>>({});
 
-  // Load presets on mount
+  // Load presets on mount, then again on every catalog:updated — the catalog is still
+  // loading (or not even started) on a typical cold start, so the first load almost always
+  // sees every model as unknown; without this the availability flag freezes at that
+  // snapshot forever. Same pattern as ParamsPanel.tsx and GenerateButton.tsx.
   useEffect(() => {
     const builtinFallback = () =>
       BUILTIN_PRESETS.map((p, i) => ({
@@ -70,13 +73,17 @@ export function PresetSelector() {
         created_at: new Date().toISOString(),
       }));
 
-    ipc.invoke('presets:list').then((loaded) => {
-      setPresets(loaded.length > 0 ? loaded : builtinFallback());
-      setAvailability(Object.fromEntries(loaded.map((p) => [p.id, p.modelAvailable])));
-    }).catch(() => {
-      setPresets(builtinFallback());
-      setAvailability({});
-    });
+    const load = () => {
+      ipc.invoke('presets:list').then((loaded) => {
+        setPresets(loaded.length > 0 ? loaded : builtinFallback());
+        setAvailability(Object.fromEntries(loaded.map((p) => [p.id, p.modelAvailable])));
+      }).catch(() => {
+        setPresets(builtinFallback());
+        setAvailability({});
+      });
+    };
+    load();
+    return ipc.on('catalog:updated', load);
   }, [setPresets]);
 
   const applyPreset = useCallback((preset: typeof presets[0]) => {
@@ -143,7 +150,7 @@ export function PresetSelector() {
                       <div className="flex flex-col gap-1">
                         <div className="text-text-primary font-medium">{preset.name}</div>
                         {isUnavailable && (
-                          <div className="text-red-400">
+                          <div className="text-status-error">
                             Модель недоступна: её больше нет в каталоге OpenRouter
                           </div>
                         )}
@@ -178,7 +185,7 @@ export function PresetSelector() {
                     >
                       <span className="flex items-center">{renderPresetIcon(preset.icon)}</span>
                       <span>{preset.name}</span>
-                      {isUnavailable && <span className="text-red-400">⚠</span>}
+                      {isUnavailable && <span className="text-status-error">⚠</span>}
                     </motion.button>
                   </Tooltip>
                 );
