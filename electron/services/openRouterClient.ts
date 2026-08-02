@@ -6,7 +6,9 @@ import type {
   OpenRouterGenerationInfo,
   OpenRouterContentPart,
 } from '../../src/shared/types/api';
-import { getModelById } from './modelRegistry';
+import sharp from 'sharp';
+import { getModelById } from './modelCatalog';
+import { hasParameter, enumValues } from './catalogSchema';
 import { getActiveApiKey, getConfig } from './configManager';
 import { logger } from './logger';
 
@@ -24,8 +26,13 @@ function getHeaders(): Record<string, string> {
   };
 }
 
-/** Timeout for image generation API calls (2 minutes) */
-const GENERATE_TIMEOUT_MS = 120_000;
+/**
+ * Ceiling for a generation call. Measured: a high-quality generation took 156 s, and the
+ * former 2-minute limit aborted successful generations that were already billed. The API
+ * exposes no latency field, so this is a client-side guard against a hung socket — the
+ * normal way to stop a generation is user cancellation.
+ */
+const GENERATE_TIMEOUT_MS = 600_000;
 
 /** Generate an image via OpenRouter */
 export async function generateImage(
@@ -55,11 +62,20 @@ export async function generateImage(
       ],
     });
   } else if (request.mode === 'inpaint' && request.sourceImageBase64 && request.maskBase64) {
-    // Inpaint: include source + mask
+    // Inpaint: source + mask. Without an explicit explanation the model ignores the mask
+    // entirely and edits the wrong region — measured, the result came out inverted.
     messages.push({
       role: 'user',
       content: [
-        { type: 'text', text: effectivePrompt },
+        {
+          type: 'text',
+          text:
+            `${effectivePrompt}\n\n` +
+            'The first image is the source. The second image is a binary mask for it: ' +
+            'edit only the areas that are white in the mask, and keep every area that is ' +
+            'black in the mask pixel for pixel identical to the source. Return the full ' +
+            'image at the same size.',
+        },
         {
           type: 'image_url',
           image_url: { url: `data:image/png;base64,${request.sourceImageBase64}` },
@@ -81,50 +97,38 @@ export async function generateImage(
     messages,
   };
 
-  // Add modalities for image output
-  if (model.supports.textOutput) {
-    body.modalities = ['image', 'text'];
-  } else {
-    body.modalities = ['image'];
-  }
+  // Text alongside the image only when the catalog record says the model outputs text
+  const outputsText = model.outputModalities.includes('text');
+  body.modalities = outputsText ? ['image', 'text'] : ['image'];
 
-  // Add image_config if model supports it
+  // Parameters the model actually declares — nothing is sent on a guess
   const imageConfig: Record<string, unknown> = {};
-  if (model.supports.aspectRatio && request.aspectRatio) {
+
+  const aspectValues = enumValues(model.schema, 'aspect_ratio');
+  if (aspectValues && request.aspectRatio && aspectValues.includes(request.aspectRatio)) {
     imageConfig.aspect_ratio = request.aspectRatio;
   }
-  if (model.supports.imageSize && request.imageSize) {
-    // Resolve size key — fallback to largest available if requested size doesn't exist
-    const sizeKeys = ['4K', '2K', '1K'] as const;
-    const resolvedKey = model.sizes[request.imageSize]
-      ? request.imageSize
-      : sizeKeys.find((k) => model.sizes[k]) ?? request.imageSize;
 
-    // Gemini models expect string keys like "1K", "2K", "4K"
-    // Other models expect pixel dimensions like "1024x1024"
-    if (model.id.startsWith('google/')) {
-      imageConfig.image_size = resolvedKey;
-    } else {
-      const sizes = model.sizes[resolvedKey];
-      if (sizes) {
-        imageConfig.image_size = `${sizes.width}x${sizes.height}`;
-      }
+  const resolutionValues = enumValues(model.schema, 'resolution');
+  if (resolutionValues && request.imageSize && resolutionValues.includes(request.imageSize)) {
+    imageConfig.image_size = request.imageSize;
+  } else if (!resolutionValues && request.imageSize) {
+    // The model has no resolution parameter. Measured: a pixel-form size still works on
+    // some providers and is the only way to get above 1K there; providers that do not
+    // support it ignore it silently. The returned image must be measured, not assumed.
+    const side = /^(\d+)(k)?$/i.exec(request.imageSize.trim());
+    if (side) {
+      const pixels = side[2] ? Number(side[1]) * 1024 : Number(side[1]);
+      imageConfig.image_size = `${pixels}x${pixels}`;
     }
   }
-  if (model.supports.seed && request.seed !== undefined) {
+
+  if (hasParameter(model.schema, 'seed') && request.seed !== undefined) {
     body.seed = request.seed;
   }
+
   if (Object.keys(imageConfig).length > 0) {
     body.image_config = imageConfig;
-  }
-
-  // Add negative prompt if supported
-  if (model.supports.negativePrompt && request.negativePrompt) {
-    // Add as system message for models that support it
-    messages.unshift({
-      role: 'system',
-      content: `Negative prompt: ${request.negativePrompt}`,
-    });
   }
 
   logger.log('generation', 'info', `API запрос: ${request.modelId}`, {
@@ -197,6 +201,10 @@ export async function generateImage(
     generationTimeMs,
   });
 
+  // Actual size of the result — a size parameter is not proof of what came back, and there
+  // is no per-model size table left to guess from (see catalog schema for why).
+  const { width, height } = await sharp(Buffer.from(imageBase64, 'base64')).metadata();
+
   return {
     imageBase64,
     generationId,
@@ -205,8 +213,8 @@ export async function generateImage(
     translatedPrompt: request.translatedPrompt,
     negativePrompt: request.negativePrompt,
     seed: request.seed,
-    width: model.sizes[request.imageSize]?.width ?? 1024,
-    height: model.sizes[request.imageSize]?.height ?? 1024,
+    width: width ?? 0,
+    height: height ?? 0,
     costUsd: 0, // Will be filled by cost tracker
     costSource: 'estimated',
     generationTimeMs,
