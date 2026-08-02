@@ -84,7 +84,7 @@ export function BatchControls() {
     });
   };
 
-  const canBatch = useGenerateStore((s) => s.prompt.trim().length > 0);
+  const canBatch = useGenerateStore((s) => s.prompt.trim().length > 0 && s.selectedModelId.trim().length > 0);
 
   return (
     <div className="flex items-center gap-1.5">

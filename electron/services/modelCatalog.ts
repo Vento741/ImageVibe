@@ -237,15 +237,20 @@ export function getGroupedModels(): Array<{ category: ModelCategory; models: Cat
     .filter((group) => group.models.length > 0);
 }
 
-/** The cheapest model whose price is known; no model id is written in code. */
+/**
+ * The cheapest model whose price is known; no model id is written in code. Returns
+ * undefined — never the first array element in API order — when no model has a known
+ * price yet (the state right after the list arrives, before /endpoints has resolved for
+ * any model): a caller must leave the choice empty and retry once prices are in, not settle
+ * for an arbitrary id that would then never get revisited.
+ */
 export function getDefaultModelId(): string | undefined {
   const models = buildModels();
-  if (models.length === 0) return undefined;
   const priced = models
     .map((model) => ({ id: model.id, price: comparablePrice(model) }))
     .filter((entry): entry is { id: string; price: number } => entry.price !== null)
     .sort((a, b) => a.price - b.price);
-  return priced.length > 0 ? priced[0].id : models[0].id;
+  return priced.length > 0 ? priced[0].id : undefined;
 }
 
 export function getCatalogStatus(): {
@@ -304,6 +309,9 @@ async function refreshFromNetwork(
         error: lastError,
       });
     }
+    // Notify on failure too: a slow network failure otherwise never fires an event, and
+    // subscribers are left showing "loading" forever with no update to switch them to error.
+    onPricesUpdated();
   }
 }
 

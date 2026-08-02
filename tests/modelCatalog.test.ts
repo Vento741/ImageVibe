@@ -153,6 +153,16 @@ describe('initCatalog', () => {
     expect(mod.getAllModels()).toEqual([]);
   });
 
+  it('notifies even when the fetch fails outright, so subscribers leave "loading"', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
+    const notified = vi.fn();
+    const mod = await loadModule();
+    await mod.initCatalog(notified);
+
+    expect(mod.getCatalogStatus().state).toBe('error');
+    expect(notified).toHaveBeenCalled();
+  });
+
   it('resolves from a valid cache without waiting for a slow network refresh', async () => {
     mockFetch((url) => {
       if (url.endsWith('/images/models')) return { ok: true, body: { data: [SEEDREAM] } };
@@ -250,6 +260,30 @@ describe('getDefaultModelId', () => {
     await mod.waitForPricesForTests();
 
     expect(mod.getDefaultModelId()).toBe('bytedance-seed/seedream-4.5');
+  });
+
+  it('returns undefined — not the first model in API order — before any price is known', async () => {
+    let releaseEndpoints: () => void = () => {};
+    const blocked = new Promise<void>((resolve) => { releaseEndpoints = resolve; });
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).endsWith('/images/models')) {
+        return { ok: true, status: 200, json: async () => ({ data: [RIVERFLOW, SEEDREAM] }) };
+      }
+      await blocked;
+      return { ok: true, status: 200, json: async () => ({ id: 'x', endpoints: RIVERFLOW_ENDPOINTS }) };
+    }));
+
+    const mod = await loadModule();
+    await mod.initCatalog(() => {});
+
+    // The list has arrived (two models) but no /endpoints call has resolved yet — no price
+    // is known for anything, so the function must not fall back to models[0].id.
+    expect(mod.getAllModels()).toHaveLength(2);
+    expect(mod.getDefaultModelId()).toBeUndefined();
+
+    releaseEndpoints();
+    await mod.waitForPricesForTests();
   });
 });
 
