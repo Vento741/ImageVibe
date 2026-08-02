@@ -1,76 +1,69 @@
-import type { ImageSize } from '../../src/shared/types/models';
 import type { CostEstimate } from '../../src/shared/types/ipc';
+import { enumValues } from './catalogSchema';
+import { estimateOutputImage } from './catalogPricing';
+import { getModelById } from './modelCatalog';
+
+/** '1K' -> 1024. A step names the side of the square in thousands of pixels. */
+function stepToPixels(step: string): number | null {
+  const match = /^(\d+)(k)?$/i.exec(step.trim());
+  if (!match) return null;
+  const value = Number(match[1]);
+  return match[2] ? value * 1024 : value;
+}
+
+function megapixelsFor(step: string | undefined): number | null {
+  if (!step) return null;
+  const side = stepToPixels(step);
+  if (side === null) return null;
+  return (side * side) / 1_000_000;
+}
 
 /**
- * Real benchmark-measured costs per model at 1K (1024x1024).
- * Based on actual OpenRouter API responses (March 2026).
- * Token-based models (Gemini, GPT) have variable costs — these are typical values.
+ * Estimate what a generation will cost, from the pricing rows of the live catalog.
+ * Always approximate: the exact figure arrives in usage.cost after the generation.
  */
-const BENCHMARK_COSTS_1K: Record<string, number> = {
-  'black-forest-labs/flux.2-klein-4b': 0.017,
-  'sourceful/riverflow-v2-fast': 0.02,
-  'google/gemini-3.1-flash-image-preview': 0.068,
-  'google/gemini-2.5-flash-image': 0.039,
-  'black-forest-labs/flux.2-pro': 0.075,
-  'black-forest-labs/flux.2-max': 0.16,
-  'black-forest-labs/flux.2-flex': 0.20,
-  'bytedance-seed/seedream-4.5': 0.04,
-  'sourceful/riverflow-v2-pro': 0.06,
-  'sourceful/riverflow-v2-max-preview': 0.08,
-  'google/gemini-3-pro-image-preview': 0.137,
-  'openai/gpt-5-image': 0.209,
-  'openai/gpt-5-image-mini': 0.043,
-};
-
-/** Size multipliers relative to 1K */
-const SIZE_MULTIPLIER: Record<ImageSize, number> = {
-  '1K': 1.0,
-  '2K': 2.5,  // ~2.5x for 4x pixels (not linear due to provider pricing)
-  '4K': 6.0,  // ~6x for 16x pixels
-};
-
-/**
- * Estimate the cost of a generation before it happens.
- * Uses real benchmark data from OpenRouter API.
- */
-export function estimateCost(
-  modelId: string,
-  imageSize: ImageSize = '1K',
-): CostEstimate {
-  const baseCost = BENCHMARK_COSTS_1K[modelId];
-
-  if (baseCost === undefined) {
+export function estimateCost(modelId: string, imageSize?: string): CostEstimate {
+  const model = getModelById(modelId);
+  if (!model) {
     return {
-      estimatedCost: 0,
-      confidence: 'approximate',
-      modelPricing: {},
+      estimatedCost: null,
+      basis: 'unknown',
+      reason: 'модель отсутствует в каталоге',
+      pricing: [],
     };
   }
 
-  const multiplier = SIZE_MULTIPLIER[imageSize] ?? 1.0;
-  const estimatedCost = baseCost * multiplier;
+  const declaredSteps = enumValues(model.schema, 'resolution') ?? [];
+  const step = imageSize && declaredSteps.length > 0 ? imageSize : null;
 
-  // Token-based models have variable costs
-  const isTokenBased = modelId.startsWith('google/') || modelId.startsWith('openai/');
+  const estimate = estimateOutputImage({
+    pricing: model.pricing,
+    step,
+    declaredSteps,
+    megapixels: megapixelsFor(imageSize),
+  });
 
   return {
-    estimatedCost: Math.round(estimatedCost * 1000000) / 1000000,
-    confidence: isTokenBased ? 'approximate' : 'exact',
-    modelPricing: {
-      perImage: baseCost,
-    },
+    estimatedCost: estimate.amountUsd,
+    basis: estimate.basis,
+    reason: estimate.reason,
+    pricing: estimate.rows,
   };
 }
 
-/** Estimate batch cost (N images) */
+/** Estimate a batch of N images. Unknown stays unknown — it does not collapse to zero. */
 export function estimateBatchCost(
   modelId: string,
-  imageSize: ImageSize,
+  imageSize: string | undefined,
   count: number,
-): { totalCost: number; perImage: number } {
+): { totalCost: number | null; perImage: number | null; basis: CostEstimate['basis'] } {
   const estimate = estimateCost(modelId, imageSize);
+  if (estimate.estimatedCost === null) {
+    return { totalCost: null, perImage: null, basis: estimate.basis };
+  }
   return {
     totalCost: estimate.estimatedCost * count,
     perImage: estimate.estimatedCost,
+    basis: estimate.basis,
   };
 }

@@ -58,7 +58,8 @@ export interface DBGenerationCost {
   cost_type: 'image' | 'prompt_ai' | 'translate';
   tokens_input: number;
   tokens_output: number;
-  cost_source: 'actual' | 'estimated';
+  /** 'unknown' — cost_usd is 0 only because neither the actual nor an estimate was available */
+  cost_source: 'actual' | 'estimated' | 'unknown';
   created_at: string;
 }
 

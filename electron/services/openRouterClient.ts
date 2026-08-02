@@ -6,7 +6,9 @@ import type {
   OpenRouterGenerationInfo,
   OpenRouterContentPart,
 } from '../../src/shared/types/api';
-import { getModelById } from './modelRegistry';
+import sharp from 'sharp';
+import { getModelById } from './modelCatalog';
+import { hasParameter, enumValues } from './catalogSchema';
 import { getActiveApiKey, getConfig } from './configManager';
 import { logger } from './logger';
 
@@ -24,8 +26,13 @@ function getHeaders(): Record<string, string> {
   };
 }
 
-/** Timeout for image generation API calls (2 minutes) */
-const GENERATE_TIMEOUT_MS = 120_000;
+/**
+ * Ceiling for a generation call. Measured: a high-quality generation took 156 s, and the
+ * former 2-minute limit aborted successful generations that were already billed. The API
+ * exposes no latency field, so this is a client-side guard against a hung socket — the
+ * normal way to stop a generation is user cancellation.
+ */
+const GENERATE_TIMEOUT_MS = 600_000;
 
 /** Generate an image via OpenRouter */
 export async function generateImage(
@@ -55,11 +62,20 @@ export async function generateImage(
       ],
     });
   } else if (request.mode === 'inpaint' && request.sourceImageBase64 && request.maskBase64) {
-    // Inpaint: include source + mask
+    // Inpaint: source + mask. Without an explicit explanation the model ignores the mask
+    // entirely and edits the wrong region — measured, the result came out inverted.
     messages.push({
       role: 'user',
       content: [
-        { type: 'text', text: effectivePrompt },
+        {
+          type: 'text',
+          text:
+            `${effectivePrompt}\n\n` +
+            'The first image is the source. The second image is a binary mask for it: ' +
+            'edit only the areas that are white in the mask, and keep every area that is ' +
+            'black in the mask pixel for pixel identical to the source. Return the full ' +
+            'image at the same size.',
+        },
         {
           type: 'image_url',
           image_url: { url: `data:image/png;base64,${request.sourceImageBase64}` },
@@ -81,50 +97,36 @@ export async function generateImage(
     messages,
   };
 
-  // Add modalities for image output
-  if (model.supports.textOutput) {
-    body.modalities = ['image', 'text'];
-  } else {
-    body.modalities = ['image'];
-  }
+  // Text alongside the image only when the catalog record says the model outputs text
+  const outputsText = model.outputModalities.includes('text');
+  body.modalities = outputsText ? ['image', 'text'] : ['image'];
 
-  // Add image_config if model supports it
+  // Parameters the model actually declares — nothing is sent on a guess
   const imageConfig: Record<string, unknown> = {};
-  if (model.supports.aspectRatio && request.aspectRatio) {
+
+  const aspectValues = enumValues(model.schema, 'aspect_ratio');
+  if (aspectValues && request.aspectRatio && aspectValues.includes(request.aspectRatio)) {
     imageConfig.aspect_ratio = request.aspectRatio;
   }
-  if (model.supports.imageSize && request.imageSize) {
-    // Resolve size key — fallback to largest available if requested size doesn't exist
-    const sizeKeys = ['4K', '2K', '1K'] as const;
-    const resolvedKey = model.sizes[request.imageSize]
-      ? request.imageSize
-      : sizeKeys.find((k) => model.sizes[k]) ?? request.imageSize;
 
-    // Gemini models expect string keys like "1K", "2K", "4K"
-    // Other models expect pixel dimensions like "1024x1024"
-    if (model.id.startsWith('google/')) {
-      imageConfig.image_size = resolvedKey;
-    } else {
-      const sizes = model.sizes[resolvedKey];
-      if (sizes) {
-        imageConfig.image_size = `${sizes.width}x${sizes.height}`;
-      }
-    }
+  const resolutionValues = enumValues(model.schema, 'resolution');
+  if (resolutionValues && request.imageSize && resolutionValues.includes(request.imageSize)) {
+    imageConfig.image_size = request.imageSize;
   }
-  if (model.supports.seed && request.seed !== undefined) {
+  // else: the model declares no resolution parameter. The Size control is hidden for such
+  // models (ParamsPanel), so request.imageSize here is never the user's choice — it is
+  // whatever was last picked for a *different* model, stuck in the store. Sending it as a
+  // pixel form (as this branch used to) forwards that stale value, not a real intent; measured
+  // on a live model, it also overshoots the provider's megapixel cap and the call fails outright.
+  // A pixel-form size control for these models is a real, separate feature to design and
+  // surface deliberately — not a byproduct of a stuck value falling through unconditionally.
+
+  if (hasParameter(model.schema, 'seed') && request.seed !== undefined) {
     body.seed = request.seed;
   }
+
   if (Object.keys(imageConfig).length > 0) {
     body.image_config = imageConfig;
-  }
-
-  // Add negative prompt if supported
-  if (model.supports.negativePrompt && request.negativePrompt) {
-    // Add as system message for models that support it
-    messages.unshift({
-      role: 'system',
-      content: `Negative prompt: ${request.negativePrompt}`,
-    });
   }
 
   logger.log('generation', 'info', `API запрос: ${request.modelId}`, {
@@ -197,6 +199,25 @@ export async function generateImage(
     generationTimeMs,
   });
 
+  // Actual size of the result — a size parameter is not proof of what came back, and there
+  // is no per-model size table left to guess from (see catalog schema for why). Parsing can
+  // fail on an unsupported/truncated/corrupt image; by the time we get here the generation
+  // already succeeded and, per the all-or-nothing billing rule, is already paid for — a
+  // parse failure must not throw away that result, only leave its size unknown.
+  let width: number | undefined;
+  let height: number | undefined;
+  try {
+    const metadata = await sharp(Buffer.from(imageBase64, 'base64')).metadata();
+    width = metadata.width;
+    height = metadata.height;
+  } catch (err) {
+    logger.log('generation', 'warn', 'Не удалось измерить размеры изображения', {
+      modelId: request.modelId,
+      generationId,
+      error: String(err),
+    });
+  }
+
   return {
     imageBase64,
     generationId,
@@ -205,8 +226,8 @@ export async function generateImage(
     translatedPrompt: request.translatedPrompt,
     negativePrompt: request.negativePrompt,
     seed: request.seed,
-    width: model.sizes[request.imageSize]?.width ?? 1024,
-    height: model.sizes[request.imageSize]?.height ?? 1024,
+    width: width ?? 0,
+    height: height ?? 0,
     costUsd: 0, // Will be filled by cost tracker
     costSource: 'estimated',
     generationTimeMs,
@@ -463,19 +484,23 @@ export async function fetchCredits(): Promise<{ totalCredits: number; totalUsage
   };
 }
 
-/** Fetch actual cost of a specific generation */
-export async function fetchGenerationCost(generationId: string): Promise<number> {
+/**
+ * Fetch actual cost of a specific generation.
+ * null means the cost could not be determined (network failure, non-ok response, no
+ * usage field yet) — it is not the same as a genuine zero reported by the API.
+ */
+export async function fetchGenerationCost(generationId: string): Promise<number | null> {
   try {
     const response = await fetch(`${BASE_URL}/generation?id=${generationId}`, {
       headers: getHeaders(),
     });
-    if (!response.ok) return 0;
+    if (!response.ok) return null;
     const raw = await response.json();
     // API may return object directly or wrapped in { data: ... }
     const info = raw.data ?? raw;
-    return typeof info.usage === 'number' ? info.usage : 0;
+    return typeof info.usage === 'number' ? info.usage : null;
   } catch {
-    return 0;
+    return null;
   }
 }
 
@@ -505,17 +530,21 @@ export async function fetchGenerationInfo(generationId: string): Promise<OpenRou
   }
 }
 
-/** Fetch generation cost with retry (cost may not be immediately available) */
+/**
+ * Fetch generation cost with retry (cost may not be immediately available).
+ * Retries only while the cost is undetermined (null); a genuine value — including a
+ * real zero — returns immediately. Returns null, not 0, if every retry stays undetermined.
+ */
 export async function fetchGenerationCostWithRetry(
   generationId: string,
   maxRetries = 3
-): Promise<number> {
+): Promise<number | null> {
   for (let i = 0; i < maxRetries; i++) {
     const cost = await fetchGenerationCost(generationId);
-    if (cost > 0) return cost;
+    if (cost !== null) return cost;
     await new Promise((resolve) => setTimeout(resolve, 1500 * (i + 1)));
   }
-  return 0;
+  return null;
 }
 
 /** Detect if text is in Russian */

@@ -15,7 +15,8 @@ export function BatchControls() {
   batchCountRef.current = batchCount;
 
   const currentEstimate = useCostStore((s) => s.currentEstimate);
-  const batchCost = (currentEstimate?.estimatedCost ?? 0) * batchCount;
+  const perImageCost = currentEstimate?.estimatedCost;
+  const batchCost = perImageCost !== null && perImageCost !== undefined ? perImageCost * batchCount : null;
 
   const handleBatchGenerate = () => {
     const store = useGenerateStore.getState();
@@ -83,7 +84,7 @@ export function BatchControls() {
     });
   };
 
-  const canBatch = useGenerateStore((s) => s.prompt.trim().length > 0);
+  const canBatch = useGenerateStore((s) => s.prompt.trim().length > 0 && s.selectedModelId.trim().length > 0);
 
   return (
     <div className="flex items-center gap-1.5">
@@ -123,9 +124,10 @@ export function BatchControls() {
       </motion.button>
 
       {/* Cost preview */}
-      {batchCost > 0 && (
+      {batchCost !== null && (
         <span className="text-[10px] text-text-tertiary">
-          ~{formatCostDisplay(batchCost)}
+          {currentEstimate?.basis === 'upper-bound' ? '≤' : '~'}
+          {formatCostDisplay(batchCost)}
         </span>
       )}
     </div>

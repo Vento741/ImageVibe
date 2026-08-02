@@ -88,7 +88,7 @@ const initialState = {
   promptHistory: [] as string[],
   promptHistoryIndex: -1,
   selectedCategory: 'fast' as ModelCategory,
-  selectedModelId: 'google/gemini-2.5-flash-image',
+  selectedModelId: '',
   mode: 'text2img' as GenerationMode,
   aspectRatio: '1:1' as AspectRatio,
   imageSize: '1K' as ImageSize,

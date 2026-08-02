@@ -1,11 +1,11 @@
-import type { AspectRatio, ImageSize, ModelId } from './models';
+import type { AspectRatio, ImageSize } from './models';
 
 /** Request to generate an image */
 export interface GenerationRequest {
   prompt: string;
   translatedPrompt?: string;
   negativePrompt?: string;
-  modelId: ModelId | string;
+  modelId: string;
   mode: 'text2img' | 'img2img' | 'inpaint' | 'upscale';
   aspectRatio: AspectRatio;
   imageSize: ImageSize;

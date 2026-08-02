@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
-import { getConfig, updateConfig } from '../services/configManager';
+import { getConfig, updateConfig, getActiveApiKey } from '../services/configManager';
 import { getDatabase } from '../services/database';
 import { logger } from '../services/logger';
 import type { LogCategory } from '../services/logger';
@@ -16,6 +16,14 @@ import {
   isRussianText,
 } from '../services/openRouterClient';
 import { estimateCost } from '../services/costEstimator';
+import {
+  getAllModels,
+  getGroupedModels,
+  getCatalogStatus,
+  getDefaultModelId,
+  refreshCatalog,
+  getModelById,
+} from '../services/modelCatalog';
 import { saveImageTags } from '../services/autoTagger';
 import { saveImage, deleteImage, getFileSize, exportImage } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
@@ -30,7 +38,7 @@ import {
 import { submitGeneration, cancelGeneration } from '../services/queueProcessor';
 import type { GenerationRequest } from '../../src/shared/types/api';
 import type { GalleryQuery, ExportOptions } from '../../src/shared/types/ipc';
-import type { DBBudgetConfig, DBImage } from '../../src/shared/types/database';
+import type { DBBudgetConfig, DBImage, DBPreset } from '../../src/shared/types/database';
 
 /** Allowed sort columns to prevent SQL injection */
 const ALLOWED_SORT_COLUMNS: Record<string, boolean> = {
@@ -46,7 +54,18 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('config:get', () => getConfig());
   ipcMain.handle('config:set', (_, partial) => {
     logger.log('ipc', 'info', 'config:set', { keys: Object.keys(partial) });
-    return updateConfig(partial);
+    const previousApiKey = getActiveApiKey();
+    const updated = updateConfig(partial);
+    if (partial.apiKeys && getActiveApiKey() !== previousApiKey) {
+      // Fire and forget: the API key just became available (or changed), so the catalog —
+      // which may have failed with "no API key" on a fresh install — gets another chance.
+      refreshCatalog().catch((error) => {
+        logger.log('ipc', 'warn', 'Обновление каталога после смены ключа API не удалось', {
+          error: String(error),
+        });
+      });
+    }
+    return updated;
   });
   ipcMain.handle('config:get-images-path', () => getConfig().storage.imagesPath);
 
@@ -126,8 +145,8 @@ export function registerIpcHandlers(): void {
     // Fetch actual cost in background
     if (result.generationId) {
       fetchGenerationCostWithRetry(result.generationId).then((actualCost) => {
-        const cost = actualCost || estimateCost(result.modelId, request.imageSize).estimatedCost;
-        const costSource: 'actual' | 'estimated' = actualCost > 0 ? 'actual' : 'estimated';
+        const cost = actualCost ?? estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
+        const costSource: 'actual' | 'estimated' = actualCost !== null ? 'actual' : 'estimated';
 
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
 
@@ -148,7 +167,7 @@ export function registerIpcHandlers(): void {
           win.webContents.send('cost:updated', { cost, generationId: result.generationId });
         }
       }).catch(() => {
-        const estimated = estimateCost(result.modelId, request.imageSize).estimatedCost;
+        const estimated = estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(estimated, imageId);
         recordCost({
           imageId,
@@ -267,6 +286,15 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('cost:check-budget', () => checkBudget());
   ipcMain.handle('cost:set-budget', (_, limits: Partial<DBBudgetConfig>) => setBudget(limits));
 
+  // ═══ Model catalog ═══
+  ipcMain.handle('catalog:list', () => getGroupedModels());
+  ipcMain.handle('catalog:status', () => getCatalogStatus());
+  ipcMain.handle('catalog:default-model', () => getDefaultModelId());
+  ipcMain.handle('catalog:refresh', async () => {
+    await refreshCatalog();
+    return getCatalogStatus();
+  });
+
   // ═══ File operations ═══
   ipcMain.handle('file:read-metadata', (_, filePath: string) => readMetadataFromFile(filePath));
   ipcMain.handle('file:select-image', async () => {
@@ -350,7 +378,15 @@ export function registerIpcHandlers(): void {
   // ═══ Presets ═══
   ipcMain.handle('presets:list', () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM presets ORDER BY sort_order ASC').all();
+    const rows = db.prepare('SELECT * FROM presets ORDER BY sort_order ASC').all() as DBPreset[];
+    // Only a fully loaded catalog (state 'ready') is a trustworthy source for "this model
+    // doesn't exist" — while it is empty/loading/error, absence would be a false positive.
+    const catalogReady = getCatalogStatus().state === 'ready';
+    return rows.map((preset) => ({
+      ...preset,
+      modelAvailable:
+        !catalogReady || !preset.model_id ? null : getModelById(preset.model_id) !== undefined,
+    }));
   });
 
   ipcMain.handle('presets:create', (_, preset: any) => {
@@ -512,12 +548,11 @@ export function registerIpcHandlers(): void {
 
   // ═══ Benchmark: run prompt across all models ═══
   ipcMain.handle('benchmark:run', async (_, prompt: string) => {
-    const { getAllModels } = await import('../services/modelRegistry');
     const { fetchGenerationInfo } = await import('../services/openRouterClient');
     const fs = await import('fs');
     const path = await import('path');
 
-    const models = getAllModels().filter((m) => m.supports.textToImage);
+    const models = getAllModels();
     const results: Array<{
       modelId: string;
       modelName: string;
@@ -575,7 +610,7 @@ export function registerIpcHandlers(): void {
         results.push({
           modelId: model.id,
           modelName: model.name,
-          provider: model.provider,
+          provider: model.providerSlugs[0] ?? '',
           category: model.category,
           status: 'success',
           generationId: result.generationId,
@@ -592,7 +627,7 @@ export function registerIpcHandlers(): void {
         results.push({
           modelId: model.id,
           modelName: model.name,
-          provider: model.provider,
+          provider: model.providerSlugs[0] ?? '',
           category: model.category,
           status: 'error',
           error: err instanceof Error ? err.message : String(err),

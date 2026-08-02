@@ -8,6 +8,7 @@ import type {
   DBQueueItem,
 } from './database';
 import type { LogCategory, LogEntry } from './logging';
+import type { ModelCategory, ParamSchema, PricingRow } from './models';
 
 /** IPC channel definitions: main ↔ renderer */
 export interface IpcChannels {
@@ -66,7 +67,7 @@ export interface IpcChannels {
   };
 
   // ═══ Presets ═══
-  'presets:list': { args: []; result: DBPreset[] };
+  'presets:list': { args: []; result: PresetWithAvailability[] };
   'presets:create': { args: [Omit<DBPreset, 'id' | 'created_at'>]; result: DBPreset };
   'presets:update': { args: [number, Partial<DBPreset>]; result: void };
   'presets:delete': { args: [number]; result: void };
@@ -118,6 +119,15 @@ export interface IpcChannels {
 
   // ═══ Benchmark ═══
   'benchmark:run': { args: [string]; result: { report: unknown; reportPath: string } };
+
+  // ═══ Model catalog ═══
+  'catalog:list': {
+    args: [];
+    result: Array<{ category: ModelCategory; models: CatalogModelDTO[] }>;
+  };
+  'catalog:status': { args: []; result: CatalogStatusResult };
+  'catalog:default-model': { args: []; result: string | undefined };
+  'catalog:refresh': { args: []; result: CatalogStatusResult };
 
   // ═══ Logs ═══
   'logs:get': { args: [LogCategory?]; result: LogEntry[] };
@@ -184,15 +194,49 @@ export interface SpendingSummary {
   }>;
 }
 
-/** Cost estimate before generation */
+/** Result of `catalog:status` / `catalog:refresh` */
+export interface CatalogStatusResult {
+  state: 'empty' | 'loading' | 'ready' | 'error';
+  error?: string;
+  fetchedAt?: number;
+  stale: boolean;
+}
+
+/**
+ * A preset row with its model checked against the live catalog.
+ * `modelAvailable` is `true`/`false` only once the catalog has actually loaded
+ * (state 'ready'); while it is 'empty' | 'loading' | 'error', or the preset has
+ * no `model_id`, availability is unknown and this is `null` — never `false` —
+ * so a catalog that hasn't arrived yet cannot make a valid preset look broken.
+ */
+export interface PresetWithAvailability extends DBPreset {
+  modelAvailable: boolean | null;
+}
+
+/** A catalog model as it crosses IPC */
+export interface CatalogModelDTO {
+  id: string;
+  name: string;
+  description: string;
+  schema: Record<string, ParamSchema>;
+  passthrough: string[];
+  pricing: PricingRow[];
+  providerSlugs: string[];
+  outputModalities: string[];
+  category: ModelCategory;
+  pricesLoaded: boolean;
+}
+
+/** Pre-generation cost estimate. Always approximate — exact cost arrives in usage.cost. */
 export interface CostEstimate {
-  estimatedCost: number;
-  confidence: 'exact' | 'approximate';
-  modelPricing: {
-    perImage?: number;
-    perMegapixel?: number;
-    perToken?: number;
-  };
+  /** null when the price cannot be derived from the catalog */
+  estimatedCost: number | null;
+  /** 'point' — a per-image price; 'upper-bound' — a megapixel rate that overstates above ~1MP */
+  basis: 'point' | 'upper-bound' | 'unknown';
+  /** why the estimate is unavailable, shown to the user as-is */
+  reason?: string;
+  /** the pricing rows the estimate came from, exactly as the API returned them */
+  pricing: PricingRow[];
 }
 
 /** Budget status */
@@ -230,4 +274,5 @@ export interface IpcEvents {
   };
   'generation:progress': { stage: string; percent: number };
   'benchmark:progress': { current: number; total: number; modelName: string; modelId: string };
+  'catalog:updated': undefined;
 }

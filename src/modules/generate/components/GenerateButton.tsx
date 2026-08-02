@@ -22,9 +22,15 @@ export function GenerateButton() {
   const setCurrentEstimate = useCostStore((s) => s.setCurrentEstimate);
   const addToast = useToastStore((s) => s.addToast);
 
-  // Fetch cost estimate when model/size changes
+  // Fetch cost estimate when model/size changes, and again once catalog prices arrive —
+  // a cold cache can have models but no endpoints yet, in which case the first estimate
+  // comes back unknown and nothing else would ever re-trigger it.
   useEffect(() => {
-    ipc.invoke('cost:estimate', selectedModelId, imageSize).then(setCurrentEstimate).catch(() => {});
+    const fetchEstimate = () => {
+      ipc.invoke('cost:estimate', selectedModelId, imageSize).then(setCurrentEstimate).catch(() => {});
+    };
+    fetchEstimate();
+    return ipc.on('catalog:updated', fetchEstimate);
   }, [selectedModelId, imageSize, setCurrentEstimate]);
 
   const handleGenerate = useCallback(() => {
@@ -105,7 +111,7 @@ export function GenerateButton() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const canGenerate = prompt.trim().length > 0;
+  const canGenerate = prompt.trim().length > 0 && selectedModelId.trim().length > 0;
 
   return (
     <div className="flex items-center gap-3">
@@ -126,10 +132,19 @@ export function GenerateButton() {
         </span>
       </motion.button>
 
-      {/* Cost estimate */}
-      {currentEstimate && currentEstimate.estimatedCost > 0 && (
+      {/* Cost estimate — when it's unknown, say why instead of showing nothing */}
+      {currentEstimate && currentEstimate.estimatedCost !== null && (
         <div className="text-xs text-text-tertiary whitespace-nowrap">
-          ~{formatCostDisplay(currentEstimate.estimatedCost)}
+          {currentEstimate.basis === 'upper-bound' ? '≤' : '~'}
+          {formatCostDisplay(currentEstimate.estimatedCost)}
+        </div>
+      )}
+      {currentEstimate && currentEstimate.estimatedCost === null && currentEstimate.reason && (
+        <div
+          className="text-xs text-text-tertiary/70 whitespace-nowrap truncate max-w-[220px]"
+          title={currentEstimate.reason}
+        >
+          Цена неизвестна: {currentEstimate.reason}
         </div>
       )}
     </div>
