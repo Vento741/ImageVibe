@@ -108,6 +108,63 @@ describe('initCatalog', () => {
     expect(mod.getCatalogStatus().state).toBe('error');
     expect(mod.getAllModels()).toEqual([]);
   });
+
+  it('resolves from a valid cache without waiting for a slow network refresh', async () => {
+    mockFetch((url) => {
+      if (url.endsWith('/images/models')) return { ok: true, body: { data: [SEEDREAM] } };
+      return { ok: true, body: { id: 's', endpoints: SEEDREAM_ENDPOINTS } };
+    });
+
+    const first = await loadModule();
+    await first.initCatalog(() => {});
+    await first.waitForPricesForTests();
+
+    vi.resetModules();
+    let releaseCatalog: () => void = () => {};
+    const blocked = new Promise<void>((resolve) => { releaseCatalog = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).endsWith('/images/models')) {
+        await blocked;
+        throw new Error('offline');
+      }
+      return { ok: true, status: 200, json: async () => ({ id: 's', endpoints: SEEDREAM_ENDPOINTS }) };
+    }));
+
+    const second = await import('../electron/services/modelCatalog');
+    second.setCachePathForTests(cacheDir);
+    await second.initCatalog(() => {});
+
+    // Resolved from cache alone — the network refresh above is still blocked at this point.
+    expect(second.getAllModels()).toHaveLength(1);
+    expect(second.getCatalogStatus().state).toBe('ready');
+
+    releaseCatalog();
+    await second.waitForCatalogRefreshForTests();
+    expect(second.getCatalogStatus().error).toContain('offline');
+  });
+});
+
+describe('getCatalogStatus', () => {
+  it('marks a cache older than 24h as stale but still serves its models', async () => {
+    const staleFetchedAt = Date.now() - 25 * 60 * 60 * 1000;
+    await fs.promises.writeFile(
+      path.join(cacheDir, 'models-cache.json'),
+      JSON.stringify({
+        fetchedAt: staleFetchedAt,
+        models: [SEEDREAM],
+        endpoints: { [SEEDREAM.id]: SEEDREAM_ENDPOINTS },
+      }),
+      'utf-8',
+    );
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
+
+    const mod = await loadModule();
+    await mod.initCatalog(() => {});
+    await mod.waitForCatalogRefreshForTests();
+
+    expect(mod.getCatalogStatus().stale).toBe(true);
+    expect(mod.getAllModels()).toHaveLength(1);
+  });
 });
 
 describe('getDefaultModelId', () => {

@@ -9,7 +9,7 @@ import type {
   PricingRow,
 } from '../../src/shared/types/models';
 import { intersectPassthrough, intersectSchemas, enumValues } from './catalogSchema';
-import { bucketByPrice, rowsFor, selectRow } from './catalogPricing';
+import { bucketByPrice, estimateOutputImage, rowsFor, stepRank } from './catalogPricing';
 import { getActiveApiKey } from './configManager';
 import { logger } from './logger';
 
@@ -48,7 +48,9 @@ let fetchedAt = 0;
 let records: CatalogRecord[] = [];
 let endpointsById: Record<string, EndpointRecord[]> = {};
 let pricesTask: Promise<void> = Promise.resolve();
+let catalogRefreshTask: Promise<void> = Promise.resolve();
 let cacheDirOverride: string | null = null;
+let lastOnPricesUpdated: () => void = () => {};
 
 /** Test seam: point the cache at a temp directory instead of userData. */
 export function setCachePathForTests(dir: string): void {
@@ -58,6 +60,11 @@ export function setCachePathForTests(dir: string): void {
 /** Test seam: await the background price load. */
 export function waitForPricesForTests(): Promise<void> {
   return pricesTask;
+}
+
+/** Test seam: await the background catalog refresh that runs behind a valid cache. */
+export function waitForCatalogRefreshForTests(): Promise<void> {
+  return catalogRefreshTask;
 }
 
 function cachePath(): string {
@@ -143,17 +150,25 @@ async function loadEndpoints(onUpdated: () => void): Promise<void> {
   }
 }
 
-/** Price of one output image at the lowest declared step — the number buckets compare. */
+/**
+ * A price used only to sort/bucket models against each other — never shown to the user as
+ * an actual cost. Reduced to a common 1-megapixel basis via estimateOutputImage: that is the
+ * only point where a flat per-image price and a per-megapixel rate become comparable (at
+ * megapixels: 1 the megapixel rate equals the price of a hypothetical 1MP image). Picks the
+ * cheapest declared resolution step by pixel count (stepRank), not by array order — the
+ * order supported_parameters.resolution comes back in is whatever the API returned, not
+ * necessarily ascending.
+ */
 function comparablePrice(model: CatalogModel): number | null {
-  const rows = rowsFor(model.pricing, 'output_image');
-  if (rows.length === 0) return null;
   const steps = enumValues(model.schema, 'resolution') ?? [];
-  const step = steps.length > 0 ? steps[0] : null;
-  const row = selectRow(rows, step, steps);
-  if (!row) return null;
-  if (row.unit === 'image') return row.cost_usd;
-  if (row.unit === 'megapixel') return row.cost_usd;
-  return null;
+  const sorted = [...steps].sort((a, b) => stepRank(a) - stepRank(b));
+  const step = sorted.length > 0 ? sorted[0] : null;
+  return estimateOutputImage({
+    pricing: model.pricing,
+    step,
+    declaredSteps: steps,
+    megapixels: 1,
+  }).amountUsd;
 }
 
 /**
@@ -255,39 +270,51 @@ async function fetchCatalog(onPricesUpdated: () => void): Promise<void> {
   pricesTask = loadEndpoints(onPricesUpdated);
 }
 
-/** Load the cache, then refresh from the network. Resolves once models are available. */
+/**
+ * Load the cache, then refresh from the network.
+ * When a cache exists it is good enough to serve immediately: the promise resolves right
+ * after it is loaded, and the network refresh (and, through it, the price load) continues
+ * in the background — see waitForCatalogRefreshForTests. Without a cache there is nothing
+ * to serve yet, so the promise waits for the network and surfaces a network failure as
+ * state: 'error' rather than a silent built-in fallback.
+ */
 export async function initCatalog(onPricesUpdated: () => void): Promise<void> {
+  lastOnPricesUpdated = onPricesUpdated;
   state = 'loading';
   const cached = await readCache();
 
   if (cached) {
+    // Merge, don't replace: a concurrent initCatalog/refreshCatalog call may already have
+    // populated endpointsById in the background, and the cache must not wipe that out.
+    endpointsById = { ...(cached.endpoints ?? {}), ...endpointsById };
     records = cached.models;
-    endpointsById = cached.endpoints ?? {};
     fetchedAt = cached.fetchedAt;
     state = 'ready';
+
+    catalogRefreshTask = fetchCatalog(onPricesUpdated).catch((error) => {
+      lastError = String(error);
+      logger.log('generation', 'warn', 'Каталог не обновлён, работаем на кеше', {
+        error: lastError,
+      });
+    });
+    return;
   }
 
   try {
     await fetchCatalog(onPricesUpdated);
   } catch (error) {
     lastError = String(error);
-    if (!cached) {
-      state = 'error';
-      records = [];
-      endpointsById = {};
-      logger.log('generation', 'error', 'Каталог моделей недоступен и кеша нет', {
-        error: lastError,
-      });
-    } else {
-      logger.log('generation', 'warn', 'Каталог не обновлён, работаем на кеше', {
-        error: lastError,
-      });
-    }
+    state = 'error';
+    records = [];
+    endpointsById = {};
+    logger.log('generation', 'error', 'Каталог моделей недоступен и кеша нет', {
+      error: lastError,
+    });
   }
 }
 
-/** Force a refresh, e.g. from settings. */
+/** Force a refresh, e.g. from settings. Reuses the callback initCatalog was started with. */
 export async function refreshCatalog(): Promise<void> {
-  await initCatalog(() => {});
+  await initCatalog(lastOnPricesUpdated);
   await pricesTask;
 }
