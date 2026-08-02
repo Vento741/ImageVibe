@@ -517,8 +517,9 @@ export function ImageViewer() {
                       <MetadataRow label="Модель" value={getModelShortName(image.model_id)} />
                       <MetadataRow label="Режим" value={image.mode} />
                       <MetadataRow label="Размер" value={`${image.width}×${image.height}`} />
-                      {params.aspectRatio && <MetadataRow label="Пропорции" value={params.aspectRatio} />}
-                      {params.seed && <MetadataRow label="Seed" value={String(params.seed)} />}
+                      {Object.entries(params).map(([key, value]) => (
+                        <MetadataRow key={key} label={key} value={String(value)} />
+                      ))}
                       {image.cost_usd ? <MetadataRow label="Стоимость" value={formatCostDisplay(image.cost_usd)} /> : null}
                       {image.generation_time_ms ? <MetadataRow label="Время" value={formatTime(image.generation_time_ms)} /> : null}
                       <MetadataRow label="Файл" value={image.file_path.split(/[/\\]/).pop() ?? ''} />

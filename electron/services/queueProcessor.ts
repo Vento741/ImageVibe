@@ -170,6 +170,20 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
     // Generate image (pass abort signal for timeout + cancellation)
     const genResult = await generateImage(request, abortController.signal);
 
+    // usage.cost arrives with the generation itself (finding 12) — there is no second
+    // request to make. Computed here, before the images insert below, so the same figure
+    // lands in images.cost_usd, generation_queue.actual_cost and generation_costs — a
+    // null actual cost must not leave images.cost_usd null while the estimate elsewhere
+    // shows a number, or the gallery and cost summary would disagree about one generation.
+    // Bridge until task 3 gives the estimator the parameter record: the current signature
+    // takes a resolution step, and the record is where that step now lives.
+    const resolutionStep =
+      typeof genResult.params.resolution === 'string' ? genResult.params.resolution : undefined;
+    const estimated = estimateCost(genResult.modelId, resolutionStep).estimatedCost;
+    const cost = genResult.costUsd ?? estimated;
+    const costSource: 'actual' | 'estimated' | 'unknown' =
+      genResult.costUsd !== null ? 'actual' : estimated !== null ? 'estimated' : 'unknown';
+
     // Build metadata for PNG embedding
     const metadata: Record<string, string> = {
       prompt: genResult.prompt,
@@ -205,7 +219,7 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
       fileSize,
       genResult.generationId,
       genResult.generationTimeMs,
-      genResult.costUsd,
+      cost,
     );
     const imageId = Number(insertResult.lastInsertRowid);
 
@@ -231,17 +245,6 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
       status: 'completed',
       resultImageId: imageId,
     });
-
-    // usage.cost arrives with the generation itself (finding 12) — there is no second
-    // request to make, and no window in which the cost is a placeholder zero.
-    // Bridge until task 3 gives the estimator the parameter record: the current signature
-    // takes a resolution step, and the record is where that step now lives.
-    const resolutionStep =
-      typeof genResult.params.resolution === 'string' ? genResult.params.resolution : undefined;
-    const estimated = estimateCost(genResult.modelId, resolutionStep).estimatedCost;
-    const cost = genResult.costUsd ?? estimated;
-    const costSource: 'actual' | 'estimated' | 'unknown' =
-      genResult.costUsd !== null ? 'actual' : estimated !== null ? 'estimated' : 'unknown';
 
     db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, item.id);
 

@@ -153,6 +153,6 @@ describe('generateImage — response', () => {
       json: async () => ({ created: 0, data: [] }),
     })));
     const { generateImage } = await import('../electron/services/openRouterClient');
-    await expect(generateImage(baseRequest)).rejects.toThrow('изображение');
+    await expect(generateImage(baseRequest)).rejects.toThrow('Ответ API не содержит изображение');
   });
 });

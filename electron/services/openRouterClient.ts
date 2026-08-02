@@ -8,7 +8,7 @@ import type {
 } from '../../src/shared/types/api';
 import sharp from 'sharp';
 import { getModelById } from './modelCatalog';
-import { hasParameter } from './catalogSchema';
+import { applySchema } from '../../src/shared/lib/paramSchema';
 import { getActiveApiKey, getConfig } from './configManager';
 import { logger } from './logger';
 
@@ -53,9 +53,11 @@ export async function generateImage(
   const references: string[] = [];
   if (request.mode !== 'text2img' && request.sourceImageBase64) {
     references.push(request.sourceImageBase64);
-  }
-  if (request.mode === 'inpaint' && request.maskBase64) {
-    references.push(request.maskBase64);
+    // The mask is the second reference — without a source there is nothing for it to
+    // mask, and sending it alone would submit a paid call with the mask as the image.
+    if (request.mode === 'inpaint' && request.maskBase64) {
+      references.push(request.maskBase64);
+    }
   }
 
   const basePrompt = request.translatedPrompt || request.prompt;
@@ -63,10 +65,14 @@ export async function generateImage(
 
   const body: Record<string, unknown> = { model: request.modelId, prompt };
 
-  // Only what the model declares. size is the one exception: no model declares it, but
-  // in pixel form it is the only way to exceed 1K on models without resolution (finding 3).
-  for (const [key, value] of Object.entries(request.params)) {
-    if (key === 'size' || hasParameter(model.schema, key)) body[key] = value;
+  // Bring the record to what this model's schema actually allows — dropping a value that
+  // fell out of its enum (e.g. a stale '4K' from a previously selected model) instead of
+  // forwarding it and letting the provider reject the whole call (finding 3). This also
+  // keeps 'size' only while the model declares no 'resolution', so the two size controls
+  // never contradict each other (finding 11 follow-up).
+  const appliedParams = applySchema(request.params, model.schema);
+  for (const [key, value] of Object.entries(appliedParams)) {
+    body[key] = value;
   }
 
   if (references.length > 0) {
@@ -130,10 +136,11 @@ export async function generateImage(
 
   const data = (await response.json()) as ImagesResponse;
 
-  // The body carries no id at all — it arrives as a header (finding 12). An absent
-  // header means unknown, and unknown is null: an empty string would collide with
-  // every other unknown id in setCurrentResult's de-duplication.
-  const generationId = response.headers.get('x-generation-id');
+  // The body carries no id at all — it arrives as a header (finding 12). An absent or
+  // empty header means unknown, and unknown is null — not '', which setCurrentResult's
+  // de-duplication would otherwise treat as one more generation sharing that same id.
+  const rawGenerationId = response.headers.get('x-generation-id');
+  const generationId = rawGenerationId ? rawGenerationId : null;
 
   const imageBase64 = data.data?.[0]?.b64_json;
   if (!imageBase64) throw new Error('Ответ API не содержит изображение');
@@ -155,6 +162,12 @@ export async function generateImage(
   }
 
   const cost = typeof data.usage?.cost === 'number' ? data.usage.cost : null;
+
+  logger.log('generation', 'info', `Готово за ${generationTimeMs}мс`, {
+    modelId: request.modelId,
+    generationId,
+    generationTimeMs,
+  });
 
   return {
     imageBase64,

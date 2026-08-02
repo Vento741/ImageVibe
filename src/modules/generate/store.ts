@@ -167,9 +167,12 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
   setCurrentResult: (result) => {
     if (result) {
       set((s) => {
-        const alreadyInHistory = s.resultHistory.some(
-          (r) => r.generationId === result.generationId
-        );
+        // An unknown id (null) never matches anything else unknown — two paid
+        // generations without an x-generation-id header must both stay in history,
+        // not collapse into one because null === null.
+        const alreadyInHistory =
+          result.generationId !== null &&
+          s.resultHistory.some((r) => r.generationId === result.generationId);
         return {
           currentResult: result,
           resultHistory: alreadyInHistory
