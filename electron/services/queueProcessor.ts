@@ -42,7 +42,6 @@ function sendToRenderer(channel: string, data: unknown): void {
 export function submitGeneration(request: GenerationRequest & { clientId: string }): number {
   const db = getDatabase();
   const estimate = estimateCost(request.modelId, request.imageSize);
-  const estimatedCost = estimate.estimatedCost ?? 0;
 
   const result = db.prepare(
     'INSERT INTO generation_queue (prompt, translated_prompt, model_id, params, negative_prompt, batch_group_id, estimated_cost, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -61,7 +60,7 @@ export function submitGeneration(request: GenerationRequest & { clientId: string
     }),
     request.negativePrompt || null,
     null,
-    estimatedCost,
+    estimate.estimatedCost,
     0,
   );
 
@@ -240,13 +239,13 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
     // Background cost fetch (fire-and-forget)
     if (genResult.generationId) {
       (async () => {
-        let actualCost = 0;
+        let actualCost: number | null = null;
         try {
           actualCost = await fetchGenerationCostWithRetry(genResult.generationId);
         } catch { /* use estimate as fallback */ }
 
         const cost = actualCost ?? estimateCost(genResult.modelId, request.imageSize).estimatedCost ?? 0;
-        const costSource: 'actual' | 'estimated' = actualCost > 0 ? 'actual' : 'estimated';
+        const costSource: 'actual' | 'estimated' = actualCost !== null ? 'actual' : 'estimated';
 
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
         db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, item.id);
@@ -262,7 +261,7 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
           costSource,
         });
 
-        if (actualCost > 0) {
+        if (actualCost !== null) {
           sendToRenderer('cost:updated', { cost, generationId: genResult.generationId });
         }
       })();

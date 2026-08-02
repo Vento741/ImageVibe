@@ -463,19 +463,23 @@ export async function fetchCredits(): Promise<{ totalCredits: number; totalUsage
   };
 }
 
-/** Fetch actual cost of a specific generation */
-export async function fetchGenerationCost(generationId: string): Promise<number> {
+/**
+ * Fetch actual cost of a specific generation.
+ * null means the cost could not be determined (network failure, non-ok response, no
+ * usage field yet) — it is not the same as a genuine zero reported by the API.
+ */
+export async function fetchGenerationCost(generationId: string): Promise<number | null> {
   try {
     const response = await fetch(`${BASE_URL}/generation?id=${generationId}`, {
       headers: getHeaders(),
     });
-    if (!response.ok) return 0;
+    if (!response.ok) return null;
     const raw = await response.json();
     // API may return object directly or wrapped in { data: ... }
     const info = raw.data ?? raw;
-    return typeof info.usage === 'number' ? info.usage : 0;
+    return typeof info.usage === 'number' ? info.usage : null;
   } catch {
-    return 0;
+    return null;
   }
 }
 
@@ -505,17 +509,21 @@ export async function fetchGenerationInfo(generationId: string): Promise<OpenRou
   }
 }
 
-/** Fetch generation cost with retry (cost may not be immediately available) */
+/**
+ * Fetch generation cost with retry (cost may not be immediately available).
+ * Retries only while the cost is undetermined (null); a genuine value — including a
+ * real zero — returns immediately. Returns null, not 0, if every retry stays undetermined.
+ */
 export async function fetchGenerationCostWithRetry(
   generationId: string,
   maxRetries = 3
-): Promise<number> {
+): Promise<number | null> {
   for (let i = 0; i < maxRetries; i++) {
     const cost = await fetchGenerationCost(generationId);
-    if (cost > 0) return cost;
+    if (cost !== null) return cost;
     await new Promise((resolve) => setTimeout(resolve, 1500 * (i + 1)));
   }
-  return 0;
+  return null;
 }
 
 /** Detect if text is in Russian */

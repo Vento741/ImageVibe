@@ -127,7 +127,7 @@ export function registerIpcHandlers(): void {
     if (result.generationId) {
       fetchGenerationCostWithRetry(result.generationId).then((actualCost) => {
         const cost = actualCost ?? estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
-        const costSource: 'actual' | 'estimated' = actualCost > 0 ? 'actual' : 'estimated';
+        const costSource: 'actual' | 'estimated' = actualCost !== null ? 'actual' : 'estimated';
 
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
 
