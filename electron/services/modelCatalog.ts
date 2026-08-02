@@ -271,6 +271,38 @@ async function fetchCatalog(onPricesUpdated: () => void): Promise<void> {
 }
 
 /**
+ * Run fetchCatalog and settle its failure, shared by both callers below so the recovery
+ * rule lives in one place. When preserveOnFailure is true there is already something to
+ * show (a cache just applied, or existing data from a previous fetch) — a failed refresh
+ * only logs a warning and leaves that data in place. When it is false there is nothing else
+ * to fall back to, so a failure becomes an explicit state: 'error'. Never rejects, so a
+ * caller that fires this in the background (without awaiting it) cannot produce an
+ * unhandled promise rejection.
+ */
+async function refreshFromNetwork(
+  onPricesUpdated: () => void,
+  preserveOnFailure: boolean,
+): Promise<void> {
+  try {
+    await fetchCatalog(onPricesUpdated);
+  } catch (error) {
+    lastError = String(error);
+    if (preserveOnFailure) {
+      logger.log('generation', 'warn', 'Каталог не обновлён, работаем на кеше', {
+        error: lastError,
+      });
+    } else {
+      state = 'error';
+      records = [];
+      endpointsById = {};
+      logger.log('generation', 'error', 'Каталог моделей недоступен и кеша нет', {
+        error: lastError,
+      });
+    }
+  }
+}
+
+/**
  * Load the cache, then refresh from the network.
  * When a cache exists it is good enough to serve immediately: the promise resolves right
  * after it is loaded, and the network refresh (and, through it, the price load) continues
@@ -291,30 +323,20 @@ export async function initCatalog(onPricesUpdated: () => void): Promise<void> {
     fetchedAt = cached.fetchedAt;
     state = 'ready';
 
-    catalogRefreshTask = fetchCatalog(onPricesUpdated).catch((error) => {
-      lastError = String(error);
-      logger.log('generation', 'warn', 'Каталог не обновлён, работаем на кеше', {
-        error: lastError,
-      });
-    });
+    catalogRefreshTask = refreshFromNetwork(onPricesUpdated, true);
     return;
   }
 
-  try {
-    await fetchCatalog(onPricesUpdated);
-  } catch (error) {
-    lastError = String(error);
-    state = 'error';
-    records = [];
-    endpointsById = {};
-    logger.log('generation', 'error', 'Каталог моделей недоступен и кеша нет', {
-      error: lastError,
-    });
-  }
+  await refreshFromNetwork(onPricesUpdated, false);
 }
 
-/** Force a refresh, e.g. from settings. Reuses the callback initCatalog was started with. */
+/**
+ * Force a refresh, e.g. from settings. Unlike initCatalog this never takes the
+ * resolve-from-cache shortcut: the returned promise always waits for both the catalog
+ * request and the follow-up price load to finish, so a caller awaiting it can rely on the
+ * data being current once it settles — regardless of whether a cache was already applied.
+ */
 export async function refreshCatalog(): Promise<void> {
-  await initCatalog(lastOnPricesUpdated);
+  await refreshFromNetwork(lastOnPricesUpdated, records.length > 0);
   await pricesTask;
 }

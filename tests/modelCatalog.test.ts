@@ -167,6 +167,32 @@ describe('getCatalogStatus', () => {
   });
 });
 
+describe('refreshCatalog', () => {
+  it('waits for the network refresh and the price load to finish, even with a cache already applied', async () => {
+    mockFetch((url) => {
+      if (url.endsWith('/images/models')) return { ok: true, body: { data: [SEEDREAM] } };
+      return { ok: true, body: { id: 's', endpoints: SEEDREAM_ENDPOINTS } };
+    });
+
+    const mod = await loadModule();
+    await mod.initCatalog(() => {});
+    await mod.waitForPricesForTests();
+
+    // A cache is now applied and in memory. The network starts serving a different,
+    // larger catalog — refreshCatalog must not resolve until this is actually reflected.
+    mockFetch((url) => {
+      if (url.endsWith('/images/models')) return { ok: true, body: { data: [RIVERFLOW, SEEDREAM] } };
+      if (url.includes('riverflow')) return { ok: true, body: { id: 'r', endpoints: RIVERFLOW_ENDPOINTS } };
+      return { ok: true, body: { id: 's', endpoints: SEEDREAM_ENDPOINTS } };
+    });
+
+    await mod.refreshCatalog();
+
+    expect(mod.getAllModels()).toHaveLength(2);
+    expect(mod.getAllModels().every((model) => model.pricesLoaded)).toBe(true);
+  });
+});
+
 describe('getDefaultModelId', () => {
   it('picks the cheapest model with a known price, not a hardcoded id', async () => {
     mockFetch((url) => {
