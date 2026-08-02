@@ -62,6 +62,50 @@ describe('initCatalog', () => {
     releaseEndpoints();
   });
 
+  it('notifies right after the model list arrives, then again once endpoints settle', async () => {
+    let releaseEndpoints: () => void = () => {};
+    const blocked = new Promise<void>((resolve) => { releaseEndpoints = resolve; });
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).endsWith('/images/models')) {
+        return { ok: true, status: 200, json: async () => ({ data: [RIVERFLOW, SEEDREAM] }) };
+      }
+      await blocked;
+      return { ok: true, status: 200, json: async () => ({ id: 'x', endpoints: RIVERFLOW_ENDPOINTS }) };
+    }));
+
+    const notified = vi.fn();
+    const mod = await loadModule();
+    await mod.initCatalog(notified);
+
+    // The model list is already usable — notified once, before any /endpoints call settled.
+    expect(notified).toHaveBeenCalledTimes(1);
+
+    releaseEndpoints();
+    await mod.waitForPricesForTests();
+
+    expect(notified).toHaveBeenCalledTimes(2);
+  });
+
+  it('notifies once endpoint loading finishes even when every endpoint request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).endsWith('/images/models')) {
+        return { ok: true, status: 200, json: async () => ({ data: [RIVERFLOW, SEEDREAM] }) };
+      }
+      throw new Error('endpoint fetch failed');
+    }));
+
+    const notified = vi.fn();
+    const mod = await loadModule();
+    await mod.initCatalog(notified);
+    await mod.waitForPricesForTests();
+
+    // Must not be stuck at 1 (the list-arrived notification) — the renderer would otherwise
+    // sit on "loading" forever whenever every /endpoints request happens to fail.
+    expect(notified).toHaveBeenCalledTimes(2);
+    expect(mod.getAllModels().every((model) => !model.pricesLoaded)).toBe(true);
+  });
+
   it('fills pricing and notifies once endpoints arrive', async () => {
     mockFetch((url) => {
       if (url.endsWith('/images/models')) return { ok: true, body: { data: [RIVERFLOW, SEEDREAM] } };
@@ -224,5 +268,32 @@ describe('getGroupedModels', () => {
     const groups = mod.getGroupedModels();
     expect(groups.every((group) => group.models.length > 0)).toBe(true);
     expect(groups.flatMap((group) => group.models)).toHaveLength(2);
+  });
+
+  it('returns models shaped exactly like the catalog:list IPC channel exposes them', async () => {
+    // handlers.ts wires ipcMain.handle('catalog:list', () => getGroupedModels()) with no
+    // transform in between — this is the actual shape that crosses IPC as CatalogModelDTO.
+    mockFetch((url) => {
+      if (url.endsWith('/images/models')) return { ok: true, body: { data: [SEEDREAM] } };
+      return { ok: true, body: { id: 's', endpoints: SEEDREAM_ENDPOINTS } };
+    });
+
+    const mod = await loadModule();
+    await mod.initCatalog(() => {});
+    await mod.waitForPricesForTests();
+
+    const model = mod.getGroupedModels().flatMap((group) => group.models)[0];
+    expect(Object.keys(model).sort()).toEqual([
+      'category',
+      'description',
+      'id',
+      'name',
+      'outputModalities',
+      'passthrough',
+      'pricesLoaded',
+      'pricing',
+      'providerSlugs',
+      'schema',
+    ]);
   });
 });

@@ -146,8 +146,10 @@ async function loadEndpoints(onUpdated: () => void): Promise<void> {
 
   if (updated) {
     await writeCache();
-    onUpdated();
   }
+  // Notify unconditionally: the renderer is waiting on this to stop showing "loading" even
+  // when every endpoint request failed, not only when at least one succeeded.
+  onUpdated();
 }
 
 /**
@@ -267,6 +269,9 @@ async function fetchCatalog(onPricesUpdated: () => void): Promise<void> {
   lastError = undefined;
   state = 'ready';
   await writeCache();
+  // Notify right away: the model list itself (sans pricing) is already usable, and the
+  // renderer should not sit on an empty list until every /endpoints request settles.
+  onPricesUpdated();
   pricesTask = loadEndpoints(onPricesUpdated);
 }
 

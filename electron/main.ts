@@ -84,7 +84,7 @@ app.whenReady().then(() => {
 
   initCatalog(() => {
     for (const window of BrowserWindow.getAllWindows()) {
-      window.webContents.send('catalog:prices-updated');
+      window.webContents.send('catalog:updated');
     }
   });
 

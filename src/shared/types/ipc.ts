@@ -125,14 +125,9 @@ export interface IpcChannels {
     args: [];
     result: Array<{ category: ModelCategory; models: CatalogModelDTO[] }>;
   };
-  'catalog:status': {
-    args: [];
-    result: { state: 'empty' | 'loading' | 'ready' | 'error'; error?: string; fetchedAt?: number; stale: boolean };
-  };
-  'catalog:refresh': {
-    args: [];
-    result: { state: 'empty' | 'loading' | 'ready' | 'error'; error?: string; fetchedAt?: number; stale: boolean };
-  };
+  'catalog:status': { args: []; result: CatalogStatusResult };
+  'catalog:default-model': { args: []; result: string | undefined };
+  'catalog:refresh': { args: []; result: CatalogStatusResult };
 
   // ═══ Logs ═══
   'logs:get': { args: [LogCategory?]; result: LogEntry[] };
@@ -199,6 +194,14 @@ export interface SpendingSummary {
   }>;
 }
 
+/** Result of `catalog:status` / `catalog:refresh` */
+export interface CatalogStatusResult {
+  state: 'empty' | 'loading' | 'ready' | 'error';
+  error?: string;
+  fetchedAt?: number;
+  stale: boolean;
+}
+
 /** A catalog model as it crosses IPC */
 export interface CatalogModelDTO {
   id: string;
@@ -260,5 +263,5 @@ export interface IpcEvents {
   };
   'generation:progress': { stage: string; percent: number };
   'benchmark:progress': { current: number; total: number; modelName: string; modelId: string };
-  'catalog:prices-updated': undefined;
+  'catalog:updated': undefined;
 }

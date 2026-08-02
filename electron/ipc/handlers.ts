@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
-import { getConfig, updateConfig } from '../services/configManager';
+import { getConfig, updateConfig, getActiveApiKey } from '../services/configManager';
 import { getDatabase } from '../services/database';
 import { logger } from '../services/logger';
 import type { LogCategory } from '../services/logger';
@@ -20,6 +20,7 @@ import {
   getAllModels,
   getGroupedModels,
   getCatalogStatus,
+  getDefaultModelId,
   refreshCatalog,
 } from '../services/modelCatalog';
 import { saveImageTags } from '../services/autoTagger';
@@ -52,7 +53,18 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('config:get', () => getConfig());
   ipcMain.handle('config:set', (_, partial) => {
     logger.log('ipc', 'info', 'config:set', { keys: Object.keys(partial) });
-    return updateConfig(partial);
+    const previousApiKey = getActiveApiKey();
+    const updated = updateConfig(partial);
+    if (partial.apiKeys && getActiveApiKey() !== previousApiKey) {
+      // Fire and forget: the API key just became available (or changed), so the catalog —
+      // which may have failed with "no API key" on a fresh install — gets another chance.
+      refreshCatalog().catch((error) => {
+        logger.log('ipc', 'warn', 'Обновление каталога после смены ключа API не удалось', {
+          error: String(error),
+        });
+      });
+    }
+    return updated;
   });
   ipcMain.handle('config:get-images-path', () => getConfig().storage.imagesPath);
 
@@ -276,6 +288,7 @@ export function registerIpcHandlers(): void {
   // ═══ Model catalog ═══
   ipcMain.handle('catalog:list', () => getGroupedModels());
   ipcMain.handle('catalog:status', () => getCatalogStatus());
+  ipcMain.handle('catalog:default-model', () => getDefaultModelId());
   ipcMain.handle('catalog:refresh', async () => {
     await refreshCatalog();
     return getCatalogStatus();

@@ -15,7 +15,8 @@ export function BatchControls() {
   batchCountRef.current = batchCount;
 
   const currentEstimate = useCostStore((s) => s.currentEstimate);
-  const batchCost = (currentEstimate?.estimatedCost ?? 0) * batchCount;
+  const perImageCost = currentEstimate?.estimatedCost;
+  const batchCost = perImageCost !== null && perImageCost !== undefined ? perImageCost * batchCount : null;
 
   const handleBatchGenerate = () => {
     const store = useGenerateStore.getState();
@@ -123,9 +124,10 @@ export function BatchControls() {
       </motion.button>
 
       {/* Cost preview */}
-      {currentEstimate && currentEstimate.estimatedCost !== null && (
+      {batchCost !== null && (
         <span className="text-[10px] text-text-tertiary">
-          ~{formatCostDisplay(batchCost)}
+          {currentEstimate?.basis === 'upper-bound' ? '≤' : '~'}
+          {formatCostDisplay(batchCost)}
         </span>
       )}
     </div>
