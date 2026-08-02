@@ -177,4 +177,32 @@ describe('background cost fetch after a generation completes', () => {
       expect.objectContaining({ costUsd: 0, costSource: 'actual' }),
     );
   });
+
+  it('writes null to images.cost_usd, and marks generation_costs unknown — never a bare zero — when neither the actual cost nor an estimate is available', async () => {
+    const { estimateCost } = await import('../electron/services/costEstimator');
+    const { generateImage, fetchGenerationCostWithRetry } = await import(
+      '../electron/services/openRouterClient'
+    );
+    const { recordCost } = await import('../electron/services/costTracker');
+
+    vi.mocked(estimateCost).mockReturnValue({ estimatedCost: null, basis: 'unknown', pricing: [] });
+    vi.mocked(generateImage).mockResolvedValue(genResult);
+    vi.mocked(fetchGenerationCostWithRetry).mockResolvedValue(null);
+
+    pendingItem = makePendingItem();
+    const { submitGeneration } = await import('../electron/services/queueProcessor');
+    submitGeneration(request);
+
+    await vi.waitFor(() => expect(recordCost).toHaveBeenCalled());
+
+    const imagesUpdate = insertCallsFor('UPDATE images SET cost_usd').at(-1);
+    expect(imagesUpdate?.args[0]).toBeNull();
+
+    const queueUpdate = insertCallsFor('UPDATE generation_queue SET actual_cost').at(-1);
+    expect(queueUpdate?.args[0]).toBeNull();
+
+    expect(recordCost).toHaveBeenCalledWith(
+      expect.objectContaining({ costUsd: 0, costSource: 'unknown' }),
+    );
+  });
 });

@@ -112,16 +112,14 @@ export async function generateImage(
   const resolutionValues = enumValues(model.schema, 'resolution');
   if (resolutionValues && request.imageSize && resolutionValues.includes(request.imageSize)) {
     imageConfig.image_size = request.imageSize;
-  } else if (!resolutionValues && request.imageSize) {
-    // The model has no resolution parameter. Measured: a pixel-form size still works on
-    // some providers and is the only way to get above 1K there; providers that do not
-    // support it ignore it silently. The returned image must be measured, not assumed.
-    const side = /^(\d+)(k)?$/i.exec(request.imageSize.trim());
-    if (side) {
-      const pixels = side[2] ? Number(side[1]) * 1024 : Number(side[1]);
-      imageConfig.image_size = `${pixels}x${pixels}`;
-    }
   }
+  // else: the model declares no resolution parameter. The Size control is hidden for such
+  // models (ParamsPanel), so request.imageSize here is never the user's choice — it is
+  // whatever was last picked for a *different* model, stuck in the store. Sending it as a
+  // pixel form (as this branch used to) forwards that stale value, not a real intent; measured
+  // on a live model, it also overshoots the provider's megapixel cap and the call fails outright.
+  // A pixel-form size control for these models is a real, separate feature to design and
+  // surface deliberately — not a byproduct of a stuck value falling through unconditionally.
 
   if (hasParameter(model.schema, 'seed') && request.seed !== undefined) {
     body.seed = request.seed;

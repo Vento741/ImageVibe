@@ -244,17 +244,24 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
           actualCost = await fetchGenerationCostWithRetry(genResult.generationId);
         } catch { /* use estimate as fallback */ }
 
-        const cost = actualCost ?? estimateCost(genResult.modelId, request.imageSize).estimatedCost ?? 0;
-        const costSource: 'actual' | 'estimated' = actualCost !== null ? 'actual' : 'estimated';
+        const estimatedCost = estimateCost(genResult.modelId, request.imageSize).estimatedCost;
+        // cost stays null when neither the actual nor an estimate is known — images.cost_usd
+        // is nullable precisely for this, and null is written as-is, never a substitute zero.
+        const cost = actualCost ?? estimatedCost;
+        const costSource: 'actual' | 'estimated' | 'unknown' =
+          actualCost !== null ? 'actual' : estimatedCost !== null ? 'estimated' : 'unknown';
 
         db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
         db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, item.id);
 
+        // generation_costs.cost_usd is NOT NULL DEFAULT 0 — 0 is stored only when cost is
+        // truly unknown, and cost_source records that so it never reads back as a confirmed
+        // zero-cost generation.
         recordCost({
           imageId,
           generationId: genResult.generationId,
           modelId: genResult.modelId,
-          costUsd: cost,
+          costUsd: cost ?? 0,
           costType: 'image',
           tokensInput: costSource === 'actual' ? (genResult.tokensInput ?? 0) : 0,
           tokensOutput: costSource === 'actual' ? (genResult.tokensOutput ?? 0) : 0,
@@ -262,7 +269,7 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
         });
 
         if (actualCost !== null) {
-          sendToRenderer('cost:updated', { cost, generationId: genResult.generationId });
+          sendToRenderer('cost:updated', { cost: actualCost, generationId: genResult.generationId });
         }
       })();
     }

@@ -16,7 +16,8 @@ export function recordCost(params: {
   costType: 'image' | 'prompt_ai' | 'translate';
   tokensInput: number;
   tokensOutput: number;
-  costSource: 'actual' | 'estimated';
+  /** 'unknown' — costUsd is 0 only as a schema placeholder, not a confirmed zero cost */
+  costSource: 'actual' | 'estimated' | 'unknown';
 }): void {
   const db = getDatabase();
   db.prepare(`

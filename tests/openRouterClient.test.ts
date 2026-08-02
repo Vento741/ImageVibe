@@ -136,4 +136,45 @@ describe('generateImage', () => {
     expect(result.width).toBe(0);
     expect(result.height).toBe(0);
   });
+
+  it('does not send a pixel-form image_size for a model that declares no resolution parameter', async () => {
+    // The mocked model (see top of file) has an empty schema — no 'resolution' key — which
+    // is exactly the state ParamsPanel hides its Size control for. request.imageSize below
+    // stands in for a value stuck in the store from a previously selected model; it must not
+    // be forwarded as pixels (see openRouterClient.ts comment on the removed branch).
+    const unparseableBase64 = Buffer.from('not an image').toString('base64');
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        id: 'gen-no-resolution',
+        model: 'test/model',
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: '',
+              images: [
+                { type: 'image_url', image_url: { url: `data:image/png;base64,${unparseableBase64}` } },
+              ],
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { generateImage } = await import('../electron/services/openRouterClient');
+    await generateImage({
+      prompt: 'test prompt',
+      modelId: 'test/model',
+      mode: 'text2img',
+      aspectRatio: '1:1',
+      imageSize: '4K',
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, { body: string }];
+    const body = JSON.parse(init.body);
+    expect(body.image_config?.image_size).toBeUndefined();
+  });
 });

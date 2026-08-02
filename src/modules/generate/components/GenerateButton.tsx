@@ -132,11 +132,19 @@ export function GenerateButton() {
         </span>
       </motion.button>
 
-      {/* Cost estimate */}
+      {/* Cost estimate — when it's unknown, say why instead of showing nothing */}
       {currentEstimate && currentEstimate.estimatedCost !== null && (
         <div className="text-xs text-text-tertiary whitespace-nowrap">
           {currentEstimate.basis === 'upper-bound' ? '≤' : '~'}
           {formatCostDisplay(currentEstimate.estimatedCost)}
+        </div>
+      )}
+      {currentEstimate && currentEstimate.estimatedCost === null && currentEstimate.reason && (
+        <div
+          className="text-xs text-text-tertiary/70 whitespace-nowrap truncate max-w-[220px]"
+          title={currentEstimate.reason}
+        >
+          Цена неизвестна: {currentEstimate.reason}
         </div>
       )}
     </div>
