@@ -1,16 +1,6 @@
 import type { EndpointRecord, ParamSchema } from '../../src/shared/types/models';
 
-/** True when the parameter exists at all. Absence means the model has no such parameter. */
-export function hasParameter(schema: Record<string, ParamSchema>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(schema, key);
-}
-
-/** Allowed values of an enum parameter, or null when the key is absent or not an enum. */
-export function enumValues(schema: Record<string, ParamSchema>, key: string): string[] | null {
-  const entry = schema[key];
-  if (!entry || entry.type !== 'enum') return null;
-  return entry.values;
-}
+export { hasParameter, enumValues } from '../../src/shared/lib/paramSchema';
 
 /** Narrow two schemas of the same key to what both providers accept. */
 function intersectPair(a: ParamSchema, b: ParamSchema): ParamSchema | null {

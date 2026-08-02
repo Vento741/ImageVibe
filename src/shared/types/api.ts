@@ -1,5 +1,8 @@
 import type { AspectRatio, ImageSize } from './models';
 
+/** Values of normalised generation parameters, keyed by OpenRouter protocol names */
+export type GenerationParams = Record<string, string | number | boolean>;
+
 /** Request to generate an image */
 export interface GenerationRequest {
   prompt: string;
