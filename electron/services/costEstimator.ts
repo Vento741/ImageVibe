@@ -1,6 +1,7 @@
+import type { GenerationParams } from '../../src/shared/types/api';
 import type { CostEstimate } from '../../src/shared/types/ipc';
 import { enumValues } from './catalogSchema';
-import { estimateOutputImage } from './catalogPricing';
+import { estimateBillable, estimateOutputImage } from './catalogPricing';
 import { getModelById } from './modelCatalog';
 
 /** '1K' -> 1024. A step names the side of the square in thousands of pixels. */
@@ -11,18 +12,28 @@ function stepToPixels(step: string): number | null {
   return match[2] ? value * 1024 : value;
 }
 
-function megapixelsFor(step: string | undefined): number | null {
-  if (!step) return null;
+/** Megapixels of the output, from the resolution step or the pixel-form size. */
+function megapixelsFor(params: GenerationParams): number | null {
+  const size = params.size;
+  if (typeof size === 'string') {
+    const match = /^(\d+)x(\d+)$/i.exec(size.trim());
+    if (match) return (Number(match[1]) * Number(match[2])) / 1_000_000;
+  }
+  const step = params.resolution;
+  if (typeof step !== 'string') return null;
   const side = stepToPixels(step);
-  if (side === null) return null;
-  return (side * side) / 1_000_000;
+  return side === null ? null : (side * side) / 1_000_000;
 }
 
 /**
  * Estimate what a generation will cost, from the pricing rows of the live catalog.
- * Always approximate: the exact figure arrives in usage.cost after the generation.
+ * Always approximate: the exact figure arrives in usage.cost of the generation itself.
  */
-export function estimateCost(modelId: string, imageSize?: string): CostEstimate {
+export function estimateCost(
+  modelId: string,
+  params: GenerationParams,
+  referenceCount = 0,
+): CostEstimate {
   const model = getModelById(modelId);
   if (!model) {
     return {
@@ -34,30 +45,54 @@ export function estimateCost(modelId: string, imageSize?: string): CostEstimate 
   }
 
   const declaredSteps = enumValues(model.schema, 'resolution') ?? [];
-  const step = imageSize && declaredSteps.length > 0 ? imageSize : null;
+  const step = typeof params.resolution === 'string' && declaredSteps.length > 0
+    ? params.resolution
+    : null;
 
-  const estimate = estimateOutputImage({
+  const output = estimateOutputImage({
     pricing: model.pricing,
     step,
     declaredSteps,
-    megapixels: megapixelsFor(imageSize),
+    megapixels: megapixelsFor(params),
   });
 
+  if (output.amountUsd === null || referenceCount === 0) {
+    return {
+      estimatedCost: output.amountUsd,
+      basis: output.basis,
+      reason: output.reason,
+      pricing: output.rows,
+    };
+  }
+
+  const perReference = estimateBillable(model.pricing, 'input_reference');
+  if (perReference === null) {
+    // The model declares references but not their price — the total is not knowable,
+    // and an output-only figure would understate it.
+    return {
+      estimatedCost: null,
+      basis: 'unknown',
+      reason: 'цена референсных изображений не объявлена',
+      pricing: output.rows,
+    };
+  }
+
   return {
-    estimatedCost: estimate.amountUsd,
-    basis: estimate.basis,
-    reason: estimate.reason,
-    pricing: estimate.rows,
+    estimatedCost: output.amountUsd + perReference * referenceCount,
+    basis: output.basis,
+    reason: output.reason,
+    pricing: output.rows,
   };
 }
 
 /** Estimate a batch of N images. Unknown stays unknown — it does not collapse to zero. */
 export function estimateBatchCost(
   modelId: string,
-  imageSize: string | undefined,
+  params: GenerationParams,
   count: number,
+  referenceCount = 0,
 ): { totalCost: number | null; perImage: number | null; basis: CostEstimate['basis'] } {
-  const estimate = estimateCost(modelId, imageSize);
+  const estimate = estimateCost(modelId, params, referenceCount);
   if (estimate.estimatedCost === null) {
     return { totalCost: null, perImage: null, basis: estimate.basis };
   }

@@ -30,6 +30,14 @@ function canProcessMore(): boolean {
   return activeGenerations.size < MAX_CONCURRENT;
 }
 
+/** Reference images this request will send: the source, plus the mask when inpainting. */
+function referenceCount(request: GenerationRequest): number {
+  let count = 0;
+  if (request.mode !== 'text2img' && request.sourceImageBase64) count += 1;
+  if (request.mode === 'inpaint' && request.maskBase64) count += 1;
+  return count;
+}
+
 function sendToRenderer(channel: string, data: unknown): void {
   const win = BrowserWindow.getAllWindows()[0];
   if (win && !win.isDestroyed()) {
@@ -40,10 +48,7 @@ function sendToRenderer(channel: string, data: unknown): void {
 /** Add a generation request to the DB queue and start processing */
 export function submitGeneration(request: GenerationRequest & { clientId: string }): number {
   const db = getDatabase();
-  // Bridge until task 3 gives the estimator the parameter record: the current signature
-  // takes a resolution step, and the record is where that step now lives.
-  const step = typeof request.params.resolution === 'string' ? request.params.resolution : undefined;
-  const estimate = estimateCost(request.modelId, step);
+  const estimate = estimateCost(request.modelId, request.params, referenceCount(request));
 
   const result = db.prepare(
     'INSERT INTO generation_queue (prompt, translated_prompt, model_id, params, negative_prompt, batch_group_id, estimated_cost, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -175,11 +180,7 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
     // lands in images.cost_usd, generation_queue.actual_cost and generation_costs — a
     // null actual cost must not leave images.cost_usd null while the estimate elsewhere
     // shows a number, or the gallery and cost summary would disagree about one generation.
-    // Bridge until task 3 gives the estimator the parameter record: the current signature
-    // takes a resolution step, and the record is where that step now lives.
-    const resolutionStep =
-      typeof genResult.params.resolution === 'string' ? genResult.params.resolution : undefined;
-    const estimated = estimateCost(genResult.modelId, resolutionStep).estimatedCost;
+    const estimated = estimateCost(genResult.modelId, genResult.params, referenceCount(request)).estimatedCost;
     const cost = genResult.costUsd ?? estimated;
     const costSource: 'actual' | 'estimated' | 'unknown' =
       genResult.costUsd !== null ? 'actual' : estimated !== null ? 'estimated' : 'unknown';

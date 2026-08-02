@@ -6,6 +6,7 @@ import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, generateId } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
+import type { GenerationParams } from '@/shared/types/api';
 
 export function GenerateButton() {
   const prompt = useGenerateStore((s) => s.prompt);
@@ -16,22 +17,36 @@ export function GenerateButton() {
   const seed = useGenerateStore((s) => s.seed);
   const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const styleTags = useGenerateStore((s) => s.styleTags);
+  const hasSourceImage = useGenerateStore((s) => !!s.sourceImageData);
+  const hasMask = useGenerateStore((s) => !!s.maskData);
   const pushPromptHistory = useGenerateStore((s) => s.pushPromptHistory);
   const addCanvasCard = useGenerateStore((s) => s.addCanvasCard);
   const currentEstimate = useCostStore((s) => s.currentEstimate);
   const setCurrentEstimate = useCostStore((s) => s.setCurrentEstimate);
   const addToast = useToastStore((s) => s.addToast);
 
-  // Fetch cost estimate when model/size changes, and again once catalog prices arrive —
+  // Same shape queue:submit sends (bridge from task 2; task 4 replaces it with the
+  // params record from the store, and this call site does not change then).
+  const params: GenerationParams = {
+    ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+    ...(imageSize ? { resolution: imageSize } : {}),
+    ...(seed !== null ? { seed } : {}),
+  };
+  // Reference images this request will send: the source, plus the mask when inpainting.
+  const referenceCount =
+    mode !== 'text2img' && hasSourceImage ? (mode === 'inpaint' && hasMask ? 2 : 1) : 0;
+
+  // Fetch cost estimate when model/params change, and again once catalog prices arrive —
   // a cold cache can have models but no endpoints yet, in which case the first estimate
   // comes back unknown and nothing else would ever re-trigger it.
   useEffect(() => {
     const fetchEstimate = () => {
-      ipc.invoke('cost:estimate', selectedModelId, imageSize).then(setCurrentEstimate).catch(() => {});
+      ipc.invoke('cost:estimate', selectedModelId, params, referenceCount)
+        .then(setCurrentEstimate).catch(() => {});
     };
     fetchEstimate();
     return ipc.on('catalog:updated', fetchEstimate);
-  }, [selectedModelId, imageSize, setCurrentEstimate]);
+  }, [selectedModelId, JSON.stringify(params), referenceCount, setCurrentEstimate]);
 
   const handleGenerate = useCallback(() => {
     if (!prompt.trim()) return;

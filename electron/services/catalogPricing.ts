@@ -111,6 +111,19 @@ export function estimateOutputImage(input: {
   };
 }
 
+/**
+ * Price of one unit of a billable other than the output image — a reference image, a
+ * font input. Different billables sum; they do not compete for the same row.
+ * null when the endpoint declares no such billable, or declares it in a unit that
+ * cannot be resolved before the generation.
+ */
+export function estimateBillable(pricing: PricingRow[], billable: string): number | null {
+  const rows = rowsFor(pricing, billable);
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  return row.unit === 'image' ? row.cost_usd : null;
+}
+
 function quantile(sorted: number[], q: number): number {
   return sorted[Math.floor((sorted.length - 1) * q)];
 }

@@ -1,4 +1,4 @@
-import type { GenerationRequest, GenerationResult } from './api';
+import type { GenerationParams, GenerationRequest, GenerationResult } from './api';
 import type { AppConfig } from './config';
 import type {
   DBBudgetConfig,
@@ -55,7 +55,7 @@ export interface IpcChannels {
   'cost:get-balance': { args: []; result: CreditBalance };
   'cost:get-summary': { args: [CostPeriod?]; result: SpendingSummary };
   'cost:estimate': {
-    args: [string, string?];
+    args: [string, GenerationParams, number?];
     result: CostEstimate;
   };
   'cost:check-budget': { args: []; result: BudgetStatus };

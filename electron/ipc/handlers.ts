@@ -163,7 +163,7 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('cost:get-summary', (_, period) => getSpendingSummary(period));
-  ipcMain.handle('cost:estimate', (_, modelId, imageSize) => estimateCost(modelId, imageSize));
+  ipcMain.handle('cost:estimate', (_, modelId, params, referenceCount) => estimateCost(modelId, params, referenceCount));
   ipcMain.handle('cost:check-budget', () => checkBudget());
   ipcMain.handle('cost:set-budget', (_, limits: Partial<DBBudgetConfig>) => setBudget(limits));
 
