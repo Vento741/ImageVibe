@@ -67,7 +67,7 @@ export interface IpcChannels {
   };
 
   // ═══ Presets ═══
-  'presets:list': { args: []; result: DBPreset[] };
+  'presets:list': { args: []; result: PresetWithAvailability[] };
   'presets:create': { args: [Omit<DBPreset, 'id' | 'created_at'>]; result: DBPreset };
   'presets:update': { args: [number, Partial<DBPreset>]; result: void };
   'presets:delete': { args: [number]; result: void };
@@ -200,6 +200,17 @@ export interface CatalogStatusResult {
   error?: string;
   fetchedAt?: number;
   stale: boolean;
+}
+
+/**
+ * A preset row with its model checked against the live catalog.
+ * `modelAvailable` is `true`/`false` only once the catalog has actually loaded
+ * (state 'ready'); while it is 'empty' | 'loading' | 'error', or the preset has
+ * no `model_id`, availability is unknown and this is `null` — never `false` —
+ * so a catalog that hasn't arrived yet cannot make a valid preset look broken.
+ */
+export interface PresetWithAvailability extends DBPreset {
+  modelAvailable: boolean | null;
 }
 
 /** A catalog model as it crosses IPC */

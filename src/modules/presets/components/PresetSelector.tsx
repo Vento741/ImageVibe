@@ -50,6 +50,9 @@ export function PresetSelector() {
   const setSelectedModelId = useGenerateStore((s) => s.setSelectedModelId);
   const setStyleTags = useGenerateStore((s) => s.setStyleTags);
   const setNegativePrompt = useGenerateStore((s) => s.setNegativePrompt);
+  // Keyed separately from the store (which is typed DBPreset[]) so the extra
+  // availability field from presets:list doesn't have to leak into that type.
+  const [availability, setAvailability] = useState<Record<number, boolean | null>>({});
 
   // Load presets on mount
   useEffect(() => {
@@ -69,13 +72,18 @@ export function PresetSelector() {
 
     ipc.invoke('presets:list').then((loaded) => {
       setPresets(loaded.length > 0 ? loaded : builtinFallback());
+      setAvailability(Object.fromEntries(loaded.map((p) => [p.id, p.modelAvailable])));
     }).catch(() => {
       setPresets(builtinFallback());
+      setAvailability({});
     });
   }, [setPresets]);
 
   const applyPreset = useCallback((preset: typeof presets[0]) => {
-    if (preset.model_id) setSelectedModelId(preset.model_id);
+    // A preset whose model is confirmed gone from the catalog (modelAvailable === false)
+    // must not silently send a generation request to a model id that no longer exists.
+    const isUnavailable = availability[preset.id] === false;
+    if (preset.model_id && !isUnavailable) setSelectedModelId(preset.model_id);
 
     try {
       const tags = JSON.parse(preset.style_tags || '[]') as string[];
@@ -97,7 +105,7 @@ export function PresetSelector() {
     } catch {
       // ignore parse errors
     }
-  }, [setSelectedModelId, setStyleTags, setNegativePrompt]);
+  }, [setSelectedModelId, setStyleTags, setNegativePrompt, availability]);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [activePresetId, setActivePresetId] = useState<number | null>(null);
@@ -127,12 +135,18 @@ export function PresetSelector() {
             <div className="flex flex-wrap gap-1.5 pt-1">
               {presets.map((preset) => {
                 const tags = (() => { try { return JSON.parse(preset.style_tags || '[]') as string[]; } catch { return []; } })();
+                const isUnavailable = availability[preset.id] === false;
                 return (
                   <Tooltip
                     key={preset.id}
                     content={
                       <div className="flex flex-col gap-1">
                         <div className="text-text-primary font-medium">{preset.name}</div>
+                        {isUnavailable && (
+                          <div className="text-red-400">
+                            Модель недоступна: её больше нет в каталоге OpenRouter
+                          </div>
+                        )}
                         {preset.model_id && (
                           <div className="text-text-tertiary">
                             Модель: <span className="text-text-secondary">{getModelShortName(preset.model_id)}</span>
@@ -155,13 +169,16 @@ export function PresetSelector() {
                       onClick={() => { applyPreset(preset); setActivePresetId(preset.id); }}
                       whileTap={{ scale: 0.97 }}
                       className={`px-2.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer flex items-center gap-1.5 border ${
-                        activePresetId === preset.id
-                          ? 'bg-aurora-blue/15 text-aurora-blue border-aurora-blue/30'
-                          : 'text-text-secondary hover:bg-glass-hover hover:text-text-primary border-transparent hover:border-glass-border'
+                        isUnavailable
+                          ? 'text-text-tertiary/60 border-transparent opacity-60'
+                          : activePresetId === preset.id
+                            ? 'bg-aurora-blue/15 text-aurora-blue border-aurora-blue/30'
+                            : 'text-text-secondary hover:bg-glass-hover hover:text-text-primary border-transparent hover:border-glass-border'
                       }`}
                     >
                       <span className="flex items-center">{renderPresetIcon(preset.icon)}</span>
                       <span>{preset.name}</span>
+                      {isUnavailable && <span className="text-red-400">⚠</span>}
                     </motion.button>
                   </Tooltip>
                 );

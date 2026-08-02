@@ -22,6 +22,7 @@ import {
   getCatalogStatus,
   getDefaultModelId,
   refreshCatalog,
+  getModelById,
 } from '../services/modelCatalog';
 import { saveImageTags } from '../services/autoTagger';
 import { saveImage, deleteImage, getFileSize, exportImage } from '../services/fileStorage';
@@ -37,7 +38,7 @@ import {
 import { submitGeneration, cancelGeneration } from '../services/queueProcessor';
 import type { GenerationRequest } from '../../src/shared/types/api';
 import type { GalleryQuery, ExportOptions } from '../../src/shared/types/ipc';
-import type { DBBudgetConfig, DBImage } from '../../src/shared/types/database';
+import type { DBBudgetConfig, DBImage, DBPreset } from '../../src/shared/types/database';
 
 /** Allowed sort columns to prevent SQL injection */
 const ALLOWED_SORT_COLUMNS: Record<string, boolean> = {
@@ -377,7 +378,15 @@ export function registerIpcHandlers(): void {
   // ═══ Presets ═══
   ipcMain.handle('presets:list', () => {
     const db = getDatabase();
-    return db.prepare('SELECT * FROM presets ORDER BY sort_order ASC').all();
+    const rows = db.prepare('SELECT * FROM presets ORDER BY sort_order ASC').all() as DBPreset[];
+    // Only a fully loaded catalog (state 'ready') is a trustworthy source for "this model
+    // doesn't exist" — while it is empty/loading/error, absence would be a false positive.
+    const catalogReady = getCatalogStatus().state === 'ready';
+    return rows.map((preset) => ({
+      ...preset,
+      modelAvailable:
+        !catalogReady || !preset.model_id ? null : getModelById(preset.model_id) !== undefined,
+    }));
   });
 
   ipcMain.handle('presets:create', (_, preset: any) => {
