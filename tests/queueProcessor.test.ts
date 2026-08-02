@@ -42,7 +42,6 @@ vi.mock('../electron/services/openRouterClient', () => ({
   generateImage: vi.fn(),
   translatePrompt: vi.fn(),
   isRussianText: vi.fn(() => false),
-  fetchGenerationCostWithRetry: vi.fn(),
 }));
 vi.mock('../electron/services/fileStorage', () => ({
   saveImage: vi.fn(() => '/tmp/x.png'),
@@ -62,8 +61,7 @@ const request: GenerationRequest & { clientId: string } = {
   prompt: 'a cat',
   modelId: 'flux',
   mode: 'text2img',
-  aspectRatio: '1:1',
-  imageSize: '1K',
+  params: { resolution: '1K' },
   clientId: 'client-1',
 };
 
@@ -72,6 +70,7 @@ const genResult: GenerationResult = {
   generationId: 'gen-123',
   modelId: 'flux',
   prompt: 'a cat',
+  params: { resolution: '1K' },
   width: 1024,
   height: 1024,
   costUsd: 0,
@@ -85,7 +84,7 @@ function makePendingItem(): DBQueueItem {
     prompt: 'a cat',
     translated_prompt: null,
     model_id: 'flux',
-    params: JSON.stringify({ mode: 'text2img', aspectRatio: '1:1', imageSize: '1K' }),
+    params: JSON.stringify({ mode: 'text2img', params: { resolution: '1K' } }),
     negative_prompt: null,
     batch_group_id: null,
     status: 'pending',
@@ -133,17 +132,16 @@ describe('submitGeneration', () => {
   });
 });
 
-describe('background cost fetch after a generation completes', () => {
-  it('falls back to the estimate — not zero — when the actual cost cannot be determined', async () => {
+describe('cost after a generation completes', () => {
+  // usage.cost now arrives with the generation itself (finding 12) — genResult.costUsd
+  // already is the actual cost, or null when unknown. There is no second request.
+  it('falls back to the estimate — not zero — when the actual cost is unknown', async () => {
     const { estimateCost } = await import('../electron/services/costEstimator');
-    const { generateImage, fetchGenerationCostWithRetry } = await import(
-      '../electron/services/openRouterClient'
-    );
+    const { generateImage } = await import('../electron/services/openRouterClient');
     const { recordCost } = await import('../electron/services/costTracker');
 
     vi.mocked(estimateCost).mockReturnValue({ estimatedCost: 0.05, basis: 'point', pricing: [] });
-    vi.mocked(generateImage).mockResolvedValue(genResult);
-    vi.mocked(fetchGenerationCostWithRetry).mockResolvedValue(null);
+    vi.mocked(generateImage).mockResolvedValue({ ...genResult, costUsd: null, costSource: 'unknown' });
 
     pendingItem = makePendingItem();
     const { submitGeneration } = await import('../electron/services/queueProcessor');
@@ -158,14 +156,11 @@ describe('background cost fetch after a generation completes', () => {
 
   it('preserves a genuine zero actual cost instead of overwriting it with the estimate', async () => {
     const { estimateCost } = await import('../electron/services/costEstimator');
-    const { generateImage, fetchGenerationCostWithRetry } = await import(
-      '../electron/services/openRouterClient'
-    );
+    const { generateImage } = await import('../electron/services/openRouterClient');
     const { recordCost } = await import('../electron/services/costTracker');
 
     vi.mocked(estimateCost).mockReturnValue({ estimatedCost: 0.05, basis: 'point', pricing: [] });
-    vi.mocked(generateImage).mockResolvedValue(genResult);
-    vi.mocked(fetchGenerationCostWithRetry).mockResolvedValue(0);
+    vi.mocked(generateImage).mockResolvedValue({ ...genResult, costUsd: 0, costSource: 'actual' });
 
     pendingItem = makePendingItem();
     const { submitGeneration } = await import('../electron/services/queueProcessor');
@@ -180,14 +175,11 @@ describe('background cost fetch after a generation completes', () => {
 
   it('writes null to images.cost_usd, and marks generation_costs unknown — never a bare zero — when neither the actual cost nor an estimate is available', async () => {
     const { estimateCost } = await import('../electron/services/costEstimator');
-    const { generateImage, fetchGenerationCostWithRetry } = await import(
-      '../electron/services/openRouterClient'
-    );
+    const { generateImage } = await import('../electron/services/openRouterClient');
     const { recordCost } = await import('../electron/services/costTracker');
 
     vi.mocked(estimateCost).mockReturnValue({ estimatedCost: null, basis: 'unknown', pricing: [] });
-    vi.mocked(generateImage).mockResolvedValue(genResult);
-    vi.mocked(fetchGenerationCostWithRetry).mockResolvedValue(null);
+    vi.mocked(generateImage).mockResolvedValue({ ...genResult, costUsd: null, costSource: 'unknown' });
 
     pendingItem = makePendingItem();
     const { submitGeneration } = await import('../electron/services/queueProcessor');
@@ -195,8 +187,8 @@ describe('background cost fetch after a generation completes', () => {
 
     await vi.waitFor(() => expect(recordCost).toHaveBeenCalled());
 
-    const imagesUpdate = insertCallsFor('UPDATE images SET cost_usd').at(-1);
-    expect(imagesUpdate?.args[0]).toBeNull();
+    const imagesInsert = insertCallsFor('INSERT INTO images').at(-1);
+    expect(imagesInsert?.args.at(-1)).toBeNull();
 
     const queueUpdate = insertCallsFor('UPDATE generation_queue SET actual_cost').at(-1);
     expect(queueUpdate?.args[0]).toBeNull();

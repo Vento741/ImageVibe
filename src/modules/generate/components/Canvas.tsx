@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import type { CanvasCard } from '../store';
-import type { AspectRatio, ImageSize } from '@/shared/types/models';
 import { formatCostDisplay, getModelShortName, generateId } from '@/shared/lib/utils';
 
 function formatTime(ms: number): string {
@@ -62,8 +61,7 @@ export function Canvas() {
       prompt: card.prompt,
       modelId: card.modelId,
       mode: 'text2img',
-      aspectRatio: card.aspectRatio as AspectRatio,
-      imageSize: card.imageSize as ImageSize,
+      params: {},
       clientId,
     }).then((res) => {
       useGenerateStore.getState().updateCanvasCard(clientId, { queueItemId: res.queueItemId });
@@ -356,7 +354,7 @@ export function Canvas() {
         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center gap-2 z-20">
           <div className="glass-panel px-3 py-1.5 text-xs text-text-secondary shrink-0">
             {selectedResult.width}×{selectedResult.height} • {formatTime(selectedResult.generationTimeMs)}
-            {selectedResult.costUsd > 0 && ` • ${formatCostDisplay(selectedResult.costUsd)}`}
+            {selectedResult.costUsd !== null && selectedResult.costUsd > 0 && ` • ${formatCostDisplay(selectedResult.costUsd)}`}
           </div>
 
           <div className="flex gap-1">

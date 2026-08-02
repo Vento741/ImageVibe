@@ -58,12 +58,13 @@ export function BatchControls() {
     for (const card of cards) {
       ipc.invoke('queue:submit', {
         prompt: store.prompt,
-        negativePrompt: store.negativePrompt || undefined,
         modelId: store.selectedModelId,
         mode: store.mode,
-        aspectRatio: store.aspectRatio,
-        imageSize: store.imageSize,
-        seed: randomSeed(),
+        params: {
+          ...(store.aspectRatio ? { aspect_ratio: store.aspectRatio } : {}),
+          ...(store.imageSize ? { resolution: store.imageSize } : {}),
+          seed: randomSeed(),
+        },
         styleTags: store.styleTags.length > 0 ? store.styleTags : undefined,
         sourceImageBase64,
         maskBase64,

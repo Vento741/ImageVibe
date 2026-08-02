@@ -65,12 +65,13 @@ export function GenerateButton() {
     // Submit to queue — fire and forget
     ipc.invoke('queue:submit', {
       prompt,
-      negativePrompt: negativePrompt || undefined,
       modelId: selectedModelId,
       mode,
-      aspectRatio,
-      imageSize,
-      seed: seed ?? undefined,
+      params: {
+        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+        ...(imageSize ? { resolution: imageSize } : {}),
+        ...(seed !== null ? { seed } : {}),
+      },
       styleTags: styleTags.length > 0 ? styleTags : undefined,
       sourceImageBase64,
       maskBase64,

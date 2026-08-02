@@ -1,14 +1,14 @@
 import type {
   GenerationRequest,
   GenerationResult,
+  ImagesResponse,
   OpenRouterResponse,
   OpenRouterCredits,
   OpenRouterGenerationInfo,
-  OpenRouterContentPart,
 } from '../../src/shared/types/api';
 import sharp from 'sharp';
 import { getModelById } from './modelCatalog';
-import { hasParameter, enumValues } from './catalogSchema';
+import { hasParameter } from './catalogSchema';
 import { getActiveApiKey, getConfig } from './configManager';
 import { logger } from './logger';
 
@@ -34,6 +34,13 @@ function getHeaders(): Record<string, string> {
  */
 const GENERATE_TIMEOUT_MS = 600_000;
 
+/** The paragraph without which the model ignores the mask entirely (finding 6). */
+const MASK_EXPLANATION =
+  'The first image is the source. The second image is a binary mask for it: ' +
+  'edit only the areas that are white in the mask, and keep every area that is ' +
+  'black in the mask pixel for pixel identical to the source. Return the full ' +
+  'image at the same size.';
+
 /** Generate an image via OpenRouter */
 export async function generateImage(
   request: GenerationRequest,
@@ -43,96 +50,35 @@ export async function generateImage(
   const model = getModelById(request.modelId);
   if (!model) throw new Error(`Модель не найдена: ${request.modelId}`);
 
-  // Build the prompt — use translated if available
-  const effectivePrompt = request.translatedPrompt || request.prompt;
-
-  // Build messages array
-  const messages: Array<{ role: string; content: string | OpenRouterContentPart[] }> = [];
-
-  if (request.mode === 'img2img' && request.sourceImageBase64) {
-    // img2img: include source image
-    messages.push({
-      role: 'user',
-      content: [
-        { type: 'text', text: effectivePrompt },
-        {
-          type: 'image_url',
-          image_url: { url: `data:image/png;base64,${request.sourceImageBase64}` },
-        },
-      ],
-    });
-  } else if (request.mode === 'inpaint' && request.sourceImageBase64 && request.maskBase64) {
-    // Inpaint: source + mask. Without an explicit explanation the model ignores the mask
-    // entirely and edits the wrong region — measured, the result came out inverted.
-    messages.push({
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text:
-            `${effectivePrompt}\n\n` +
-            'The first image is the source. The second image is a binary mask for it: ' +
-            'edit only the areas that are white in the mask, and keep every area that is ' +
-            'black in the mask pixel for pixel identical to the source. Return the full ' +
-            'image at the same size.',
-        },
-        {
-          type: 'image_url',
-          image_url: { url: `data:image/png;base64,${request.sourceImageBase64}` },
-        },
-        {
-          type: 'image_url',
-          image_url: { url: `data:image/png;base64,${request.maskBase64}` },
-        },
-      ],
-    });
-  } else {
-    // text2img
-    messages.push({ role: 'user', content: effectivePrompt });
+  const references: string[] = [];
+  if (request.mode !== 'text2img' && request.sourceImageBase64) {
+    references.push(request.sourceImageBase64);
+  }
+  if (request.mode === 'inpaint' && request.maskBase64) {
+    references.push(request.maskBase64);
   }
 
-  // Build request body
-  const body: Record<string, unknown> = {
-    model: request.modelId,
-    messages,
-  };
+  const basePrompt = request.translatedPrompt || request.prompt;
+  const prompt = references.length === 2 ? `${basePrompt}\n\n${MASK_EXPLANATION}` : basePrompt;
 
-  // Text alongside the image only when the catalog record says the model outputs text
-  const outputsText = model.outputModalities.includes('text');
-  body.modalities = outputsText ? ['image', 'text'] : ['image'];
+  const body: Record<string, unknown> = { model: request.modelId, prompt };
 
-  // Parameters the model actually declares — nothing is sent on a guess
-  const imageConfig: Record<string, unknown> = {};
-
-  const aspectValues = enumValues(model.schema, 'aspect_ratio');
-  if (aspectValues && request.aspectRatio && aspectValues.includes(request.aspectRatio)) {
-    imageConfig.aspect_ratio = request.aspectRatio;
+  // Only what the model declares. size is the one exception: no model declares it, but
+  // in pixel form it is the only way to exceed 1K on models without resolution (finding 3).
+  for (const [key, value] of Object.entries(request.params)) {
+    if (key === 'size' || hasParameter(model.schema, key)) body[key] = value;
   }
 
-  const resolutionValues = enumValues(model.schema, 'resolution');
-  if (resolutionValues && request.imageSize && resolutionValues.includes(request.imageSize)) {
-    imageConfig.image_size = request.imageSize;
-  }
-  // else: the model declares no resolution parameter. The Size control is hidden for such
-  // models (ParamsPanel), so request.imageSize here is never the user's choice — it is
-  // whatever was last picked for a *different* model, stuck in the store. Sending it as a
-  // pixel form (as this branch used to) forwards that stale value, not a real intent; measured
-  // on a live model, it also overshoots the provider's megapixel cap and the call fails outright.
-  // A pixel-form size control for these models is a real, separate feature to design and
-  // surface deliberately — not a byproduct of a stuck value falling through unconditionally.
-
-  if (hasParameter(model.schema, 'seed') && request.seed !== undefined) {
-    body.seed = request.seed;
-  }
-
-  if (Object.keys(imageConfig).length > 0) {
-    body.image_config = imageConfig;
+  if (references.length > 0) {
+    body.input_references = references.map((base64) => ({
+      type: 'image_url',
+      image_url: { url: `data:image/png;base64,${base64}` },
+    }));
   }
 
   logger.log('generation', 'info', `API запрос: ${request.modelId}`, {
     mode: request.mode,
-    aspectRatio: request.aspectRatio,
-    imageSize: request.imageSize,
+    params: request.params,
   });
 
   // AbortController for timeout + external cancellation
@@ -154,7 +100,7 @@ export async function generateImage(
 
   let response: Response;
   try {
-    response = await fetch(`${BASE_URL}/chat/completions`, {
+    response = await fetch(`${BASE_URL}/images`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(body),
@@ -182,28 +128,18 @@ export async function generateImage(
     throw new Error(`Ошибка API: ${message}`);
   }
 
-  const data = (await response.json()) as OpenRouterResponse;
-  const generationId = data.id;
+  const data = (await response.json()) as ImagesResponse;
 
-  // Extract image from response
-  const imageBase64 = await extractImageFromResponse(data);
-  if (!imageBase64) {
-    throw new Error('Не удалось извлечь изображение из ответа API');
-  }
+  // The body carries no id at all — it arrives as a header (finding 12). An absent
+  // header means unknown, and unknown is null: an empty string would collide with
+  // every other unknown id in setCurrentResult's de-duplication.
+  const generationId = response.headers.get('x-generation-id');
+
+  const imageBase64 = data.data?.[0]?.b64_json;
+  if (!imageBase64) throw new Error('Ответ API не содержит изображение');
 
   const generationTimeMs = Date.now() - startTime;
 
-  logger.log('generation', 'info', `Готово за ${generationTimeMs}мс`, {
-    modelId: request.modelId,
-    generationId,
-    generationTimeMs,
-  });
-
-  // Actual size of the result — a size parameter is not proof of what came back, and there
-  // is no per-model size table left to guess from (see catalog schema for why). Parsing can
-  // fail on an unsupported/truncated/corrupt image; by the time we get here the generation
-  // already succeeded and, per the all-or-nothing billing rule, is already paid for — a
-  // parse failure must not throw away that result, only leave its size unknown.
   let width: number | undefined;
   let height: number | undefined;
   try {
@@ -218,121 +154,23 @@ export async function generateImage(
     });
   }
 
+  const cost = typeof data.usage?.cost === 'number' ? data.usage.cost : null;
+
   return {
     imageBase64,
     generationId,
     modelId: request.modelId,
     prompt: request.prompt,
     translatedPrompt: request.translatedPrompt,
-    negativePrompt: request.negativePrompt,
-    seed: request.seed,
+    params: request.params,
     width: width ?? 0,
     height: height ?? 0,
-    costUsd: 0, // Will be filled by cost tracker
-    costSource: 'estimated',
+    costUsd: cost,
+    costSource: cost !== null ? 'actual' : 'unknown',
     generationTimeMs,
     tokensInput: data.usage?.prompt_tokens,
     tokensOutput: data.usage?.completion_tokens,
   };
-}
-
-/** Extract base64 image data from OpenRouter response */
-async function extractImageFromResponse(response: OpenRouterResponse): Promise<string | null> {
-  const choice = response.choices?.[0];
-  if (!choice) return null;
-
-  // Check message.images array FIRST (OpenRouter image generation format)
-  const images = choice.message.images;
-  if (images && Array.isArray(images) && images.length > 0) {
-    for (const img of images) {
-      if (img.type === 'image_url' && 'image_url' in img) {
-        const url = img.image_url.url;
-        if (url.startsWith('data:image/')) {
-          const base64 = url.split(',')[1];
-          if (base64) return base64.replace(/\s/g, '');
-        }
-        if (url.startsWith('http')) {
-          return await fetchImageAsBase64(url);
-        }
-        if (/^[A-Za-z0-9+/=]{100,}$/.test(url)) {
-          return url;
-        }
-      }
-    }
-  }
-
-  // Fallback: check content field
-  const content = choice.message.content;
-
-  // String content
-  if (typeof content === 'string') {
-    // data URI
-    const dataUriMatch = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=\s]+)/);
-    if (dataUriMatch) return dataUriMatch[1].replace(/\s/g, '');
-
-    // Raw base64 (long string of base64 chars)
-    const trimmed = content.trim();
-    if (/^[A-Za-z0-9+/=\s]{100,}$/.test(trimmed)) {
-      return trimmed.replace(/\s/g, '');
-    }
-
-    // URL to an image
-    if (trimmed.startsWith('http') && /\.(png|jpg|jpeg|webp)/i.test(trimmed)) {
-      return await fetchImageAsBase64(trimmed);
-    }
-
-    // Might contain a URL embedded in text
-    const urlMatch = trimmed.match(/https?:\/\/[^\s"']+\.(png|jpg|jpeg|webp)[^\s"']*/i);
-    if (urlMatch) {
-      return await fetchImageAsBase64(urlMatch[0]);
-    }
-
-    return null;
-  }
-
-  // Array content — look for image_url or image parts
-  if (Array.isArray(content)) {
-    for (const part of content) {
-      // Standard image_url format
-      if (part.type === 'image_url' && 'image_url' in part) {
-        const url = part.image_url.url;
-        if (url.startsWith('data:image/')) {
-          const base64 = url.split(',')[1];
-          if (base64) return base64.replace(/\s/g, '');
-        }
-        if (url.startsWith('http')) {
-          return await fetchImageAsBase64(url);
-        }
-        // Might be raw base64 without data: prefix
-        if (/^[A-Za-z0-9+/=]{100,}$/.test(url)) {
-          return url;
-        }
-      }
-
-      // Some models use type: "image" with base64 directly
-      if ((part as Record<string, unknown>).type === 'image' && 'source' in part) {
-        const src = (part as Record<string, unknown>).source as Record<string, unknown>;
-        if (src?.type === 'base64' && typeof src.data === 'string') {
-          return src.data as string;
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-/** Fetch an image URL and convert to base64 */
-async function fetchImageAsBase64(url: string): Promise<string | null> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const buffer = Buffer.from(await response.arrayBuffer());
-    return buffer.toString('base64');
-  } catch (err) {
-    console.error('[OpenRouter] Failed to fetch image:', err);
-    return null;
-  }
 }
 
 /** Translate text RU→EN using Gemini Flash Lite */

@@ -12,8 +12,6 @@ import {
   promptAssist,
   promptFromImage,
   fetchCredits,
-  fetchGenerationCostWithRetry,
-  isRussianText,
 } from '../services/openRouterClient';
 import { estimateCost } from '../services/costEstimator';
 import {
@@ -24,15 +22,13 @@ import {
   refreshCatalog,
   getModelById,
 } from '../services/modelCatalog';
-import { saveImageTags } from '../services/autoTagger';
-import { saveImage, deleteImage, getFileSize, exportImage } from '../services/fileStorage';
+import { deleteImage, exportImage } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
 import {
   recordCost,
   getSpendingSummary,
   checkBudget,
   setBudget,
-  TRANSLATE_ESTIMATED_COST_USD,
   PROMPT_ASSIST_ESTIMATED_COST_USD,
 } from '../services/costTracker';
 import { submitGeneration, cancelGeneration } from '../services/queueProcessor';
@@ -70,121 +66,6 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('config:get-images-path', () => getConfig().storage.imagesPath);
 
   // ═══ Generation ═══
-  ipcMain.handle('generate:image', async (_event, request: GenerationRequest) => {
-    logger.log('ipc', 'info', 'generate:image', { modelId: request.modelId, mode: request.mode });
-    const config = getConfig();
-
-    // Auto-translate if Russian
-    if (config.promptAssistant.autoTranslate && isRussianText(request.prompt)) {
-      try {
-        request.translatedPrompt = await translatePrompt(request.prompt);
-
-        recordCost({
-          imageId: null,
-          generationId: null,
-          modelId: config.promptAssistant.model,
-          costUsd: TRANSLATE_ESTIMATED_COST_USD,
-          costType: 'translate',
-          tokensInput: request.prompt.length,
-          tokensOutput: request.translatedPrompt.length,
-          costSource: 'estimated',
-        });
-      } catch {
-        request.translatedPrompt = request.prompt;
-      }
-    }
-
-    // Generate image
-    const result = await generateImage(request);
-
-    // Build metadata for PNG embedding
-    const metadata: Record<string, string> = {
-      prompt: result.prompt,
-      original_prompt: request.prompt,
-      model: result.modelId,
-      seed: result.seed?.toString() ?? '',
-      aspect_ratio: request.aspectRatio,
-      image_size: request.imageSize,
-      style_tags: request.styleTags?.join(',') ?? '',
-      app_version: app.getVersion(),
-      created_at: new Date().toISOString(),
-    };
-    if (result.translatedPrompt) metadata.translated_prompt = result.translatedPrompt;
-    if (result.negativePrompt) metadata.negative_prompt = result.negativePrompt;
-
-    // Save image to disk
-    const filePath = saveImage(result.imageBase64, metadata);
-    const fileSize = getFileSize(filePath);
-
-    // Save to database
-    const db = getDatabase();
-    const insertResult = db.prepare(`
-      INSERT INTO images (file_path, prompt, translated_prompt, negative_prompt, model_id, mode, params, width, height, file_size, generation_id, generation_time_ms, cost_usd)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      filePath,
-      request.prompt,
-      result.translatedPrompt || null,
-      result.negativePrompt || null,
-      result.modelId,
-      request.mode,
-      JSON.stringify({ aspectRatio: request.aspectRatio, imageSize: request.imageSize, seed: result.seed, styleTags: request.styleTags }),
-      result.width,
-      result.height,
-      fileSize,
-      result.generationId,
-      result.generationTimeMs,
-      0,
-    );
-    const imageId = Number(insertResult.lastInsertRowid);
-
-    // Auto-tag the image
-    const promptForTags = result.translatedPrompt || request.prompt;
-    saveImageTags(imageId, promptForTags, request.styleTags, request.mode);
-
-    // Fetch actual cost in background
-    if (result.generationId) {
-      fetchGenerationCostWithRetry(result.generationId).then((actualCost) => {
-        const cost = actualCost ?? estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
-        const costSource: 'actual' | 'estimated' = actualCost !== null ? 'actual' : 'estimated';
-
-        db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
-
-        recordCost({
-          imageId,
-          generationId: result.generationId,
-          modelId: result.modelId,
-          costUsd: cost,
-          costType: 'image',
-          tokensInput: result.tokensInput ?? 0,
-          tokensOutput: result.tokensOutput ?? 0,
-          costSource,
-        });
-
-        // Notify renderer
-        const win = BrowserWindow.getAllWindows()[0];
-        if (win && !win.isDestroyed()) {
-          win.webContents.send('cost:updated', { cost, generationId: result.generationId });
-        }
-      }).catch(() => {
-        const estimated = estimateCost(result.modelId, request.imageSize).estimatedCost ?? 0;
-        db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(estimated, imageId);
-        recordCost({
-          imageId,
-          generationId: result.generationId,
-          modelId: result.modelId,
-          costUsd: estimated,
-          costType: 'image',
-          tokensInput: 0,
-          tokensOutput: 0,
-          costSource: 'estimated',
-        });
-      });
-    }
-
-    return { ...result, filePath, imageId };
-  });
-
   ipcMain.handle('generate:translate', async (_, text: string) => {
     return translatePrompt(text);
   });
@@ -589,8 +470,7 @@ export function registerIpcHandlers(): void {
           prompt,
           modelId: model.id,
           mode: 'text2img',
-          aspectRatio: '1:1',
-          imageSize: '1K',
+          params: {},
         });
 
         // Wait for cost data to be available (OpenRouter needs time to calculate)
@@ -613,7 +493,7 @@ export function registerIpcHandlers(): void {
           provider: model.providerSlugs[0] ?? '',
           category: model.category,
           status: 'success',
-          generationId: result.generationId,
+          generationId: result.generationId ?? undefined,
           generationTimeMs: info?.generation_time,
           costUsd: info?.usage ?? 0,
           tokensPrompt: info?.tokens_prompt,

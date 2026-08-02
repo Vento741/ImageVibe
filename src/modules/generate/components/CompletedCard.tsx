@@ -131,7 +131,7 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
           <div className="flex items-center gap-2 mt-1 text-[10px] text-white/40">
             <span>{result.width}×{result.height}</span>
             <span>{formatTime(result.generationTimeMs)}</span>
-            {result.costUsd > 0 && <span>{formatCostDisplay(result.costUsd)}</span>}
+            {result.costUsd !== null && result.costUsd > 0 && <span>{formatCostDisplay(result.costUsd)}</span>}
           </div>
         </div>
       </div>

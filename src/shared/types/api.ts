@@ -1,4 +1,4 @@
-import type { AspectRatio, ImageSize } from './models';
+import type { GenerationMode } from './models';
 
 /** Values of normalised generation parameters, keyed by OpenRouter protocol names */
 export type GenerationParams = Record<string, string | number | boolean>;
@@ -7,50 +7,43 @@ export type GenerationParams = Record<string, string | number | boolean>;
 export interface GenerationRequest {
   prompt: string;
   translatedPrompt?: string;
-  negativePrompt?: string;
   modelId: string;
-  mode: 'text2img' | 'img2img' | 'inpaint' | 'upscale';
-  aspectRatio: AspectRatio;
-  imageSize: ImageSize;
-  seed?: number;
+  mode: GenerationMode;
+  /** Protocol-keyed values; only what the model declares is sent */
+  params: GenerationParams;
   sourceImageBase64?: string;
   maskBase64?: string;
   styleTags?: string[];
-  /** Riverflow-specific */
-  fontInputs?: string[];
-  superResolution?: boolean;
 }
 
 /** Result from a generation */
 export interface GenerationResult {
   imageBase64: string;
-  generationId: string;
+  /** From the x-generation-id response header; null when the header is absent */
+  generationId: string | null;
   modelId: string;
   prompt: string;
   translatedPrompt?: string;
-  negativePrompt?: string;
-  seed?: number;
+  params: GenerationParams;
   width: number;
   height: number;
-  costUsd: number;
-  costSource: 'actual' | 'estimated';
+  /** null when the cost is not known — never a substitute zero */
+  costUsd: number | null;
+  costSource: 'actual' | 'estimated' | 'unknown';
   generationTimeMs: number;
   tokensInput?: number;
   tokensOutput?: number;
 }
 
-/** OpenRouter chat completion request body */
-export interface OpenRouterRequest {
-  model: string;
-  messages: OpenRouterMessage[];
-  modalities?: string[];
-  max_tokens?: number;
-  temperature?: number;
-  seed?: number;
-  image_config?: {
-    aspect_ratio?: string;
-    image_size?: string;
-    num_images?: number;
+/** Response of POST /api/v1/images */
+export interface ImagesResponse {
+  created: number;
+  data: Array<{ b64_json: string; media_type: string }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    cost?: number;
   };
 }
 

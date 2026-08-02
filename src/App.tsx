@@ -56,7 +56,7 @@ export function App() {
         queueItemId: data.queueItemId,
       });
       store.setCurrentResult(data.result);
-      if (data.result.costUsd > 0) {
+      if (data.result.costUsd !== null && data.result.costUsd > 0) {
         useCostStore.getState().addSessionCost(data.result.costUsd);
       }
     });

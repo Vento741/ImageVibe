@@ -4,7 +4,6 @@ import {
   generateImage,
   translatePrompt,
   isRussianText,
-  fetchGenerationCostWithRetry,
 } from './openRouterClient';
 import { estimateCost } from './costEstimator';
 import { saveImage, getFileSize } from './fileStorage';
@@ -41,7 +40,10 @@ function sendToRenderer(channel: string, data: unknown): void {
 /** Add a generation request to the DB queue and start processing */
 export function submitGeneration(request: GenerationRequest & { clientId: string }): number {
   const db = getDatabase();
-  const estimate = estimateCost(request.modelId, request.imageSize);
+  // Bridge until task 3 gives the estimator the parameter record: the current signature
+  // takes a resolution step, and the record is where that step now lives.
+  const step = typeof request.params.resolution === 'string' ? request.params.resolution : undefined;
+  const estimate = estimateCost(request.modelId, step);
 
   const result = db.prepare(
     'INSERT INTO generation_queue (prompt, translated_prompt, model_id, params, negative_prompt, batch_group_id, estimated_cost, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -51,14 +53,12 @@ export function submitGeneration(request: GenerationRequest & { clientId: string
     request.modelId,
     JSON.stringify({
       mode: request.mode,
-      aspectRatio: request.aspectRatio,
-      imageSize: request.imageSize,
-      seed: request.seed,
+      params: request.params,
       styleTags: request.styleTags,
       sourceImageBase64: request.sourceImageBase64,
       maskBase64: request.maskBase64,
     }),
-    request.negativePrompt || null,
+    null,
     null,
     estimate.estimatedCost,
     0,
@@ -135,19 +135,16 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
     });
 
     // Parse stored params
-    const params = JSON.parse(item.params || '{}');
+    const stored = JSON.parse(item.params || '{}');
     const request: GenerationRequest = {
       prompt: item.prompt,
       translatedPrompt: item.translated_prompt || undefined,
-      negativePrompt: item.negative_prompt || undefined,
       modelId: item.model_id,
-      mode: params.mode || 'text2img',
-      aspectRatio: params.aspectRatio || '1:1',
-      imageSize: params.imageSize || '1K',
-      seed: params.seed,
-      styleTags: params.styleTags,
-      sourceImageBase64: params.sourceImageBase64,
-      maskBase64: params.maskBase64,
+      mode: stored.mode || 'text2img',
+      params: stored.params ?? {},
+      styleTags: stored.styleTags,
+      sourceImageBase64: stored.sourceImageBase64,
+      maskBase64: stored.maskBase64,
     };
 
     // Auto-translate if Russian
@@ -178,15 +175,14 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
       prompt: genResult.prompt,
       original_prompt: request.prompt,
       model: genResult.modelId,
-      seed: genResult.seed?.toString() ?? '',
-      aspect_ratio: request.aspectRatio,
-      image_size: request.imageSize,
       style_tags: request.styleTags?.join(',') ?? '',
       app_version: app.getVersion(),
       created_at: new Date().toISOString(),
     };
+    for (const [key, value] of Object.entries(genResult.params)) {
+      metadata[key] = String(value);
+    }
     if (genResult.translatedPrompt) metadata.translated_prompt = genResult.translatedPrompt;
-    if (genResult.negativePrompt) metadata.negative_prompt = genResult.negativePrompt;
 
     // Save image to disk
     const filePath = saveImage(genResult.imageBase64, metadata);
@@ -200,16 +196,16 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
       filePath,
       request.prompt,
       genResult.translatedPrompt || null,
-      genResult.negativePrompt || null,
+      null,
       genResult.modelId,
       request.mode,
-      JSON.stringify({ aspectRatio: request.aspectRatio, imageSize: request.imageSize, seed: genResult.seed, styleTags: request.styleTags }),
+      JSON.stringify(genResult.params),
       genResult.width,
       genResult.height,
       fileSize,
       genResult.generationId,
       genResult.generationTimeMs,
-      0,
+      genResult.costUsd,
     );
     const imageId = Number(insertResult.lastInsertRowid);
 
@@ -236,42 +232,32 @@ async function processItem(item: DBQueueItem, clientId: string, abortController:
       resultImageId: imageId,
     });
 
-    // Background cost fetch (fire-and-forget)
-    if (genResult.generationId) {
-      (async () => {
-        let actualCost: number | null = null;
-        try {
-          actualCost = await fetchGenerationCostWithRetry(genResult.generationId);
-        } catch { /* use estimate as fallback */ }
+    // usage.cost arrives with the generation itself (finding 12) — there is no second
+    // request to make, and no window in which the cost is a placeholder zero.
+    // Bridge until task 3 gives the estimator the parameter record: the current signature
+    // takes a resolution step, and the record is where that step now lives.
+    const resolutionStep =
+      typeof genResult.params.resolution === 'string' ? genResult.params.resolution : undefined;
+    const estimated = estimateCost(genResult.modelId, resolutionStep).estimatedCost;
+    const cost = genResult.costUsd ?? estimated;
+    const costSource: 'actual' | 'estimated' | 'unknown' =
+      genResult.costUsd !== null ? 'actual' : estimated !== null ? 'estimated' : 'unknown';
 
-        const estimatedCost = estimateCost(genResult.modelId, request.imageSize).estimatedCost;
-        // cost stays null when neither the actual nor an estimate is known — images.cost_usd
-        // is nullable precisely for this, and null is written as-is, never a substitute zero.
-        const cost = actualCost ?? estimatedCost;
-        const costSource: 'actual' | 'estimated' | 'unknown' =
-          actualCost !== null ? 'actual' : estimatedCost !== null ? 'estimated' : 'unknown';
+    db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, item.id);
 
-        db.prepare('UPDATE images SET cost_usd = ? WHERE id = ?').run(cost, imageId);
-        db.prepare('UPDATE generation_queue SET actual_cost = ? WHERE id = ?').run(cost, item.id);
+    recordCost({
+      imageId,
+      generationId: genResult.generationId,
+      modelId: genResult.modelId,
+      costUsd: cost ?? 0,
+      costType: 'image',
+      tokensInput: costSource === 'actual' ? (genResult.tokensInput ?? 0) : 0,
+      tokensOutput: costSource === 'actual' ? (genResult.tokensOutput ?? 0) : 0,
+      costSource,
+    });
 
-        // generation_costs.cost_usd is NOT NULL DEFAULT 0 — 0 is stored only when cost is
-        // truly unknown, and cost_source records that so it never reads back as a confirmed
-        // zero-cost generation.
-        recordCost({
-          imageId,
-          generationId: genResult.generationId,
-          modelId: genResult.modelId,
-          costUsd: cost ?? 0,
-          costType: 'image',
-          tokensInput: costSource === 'actual' ? (genResult.tokensInput ?? 0) : 0,
-          tokensOutput: costSource === 'actual' ? (genResult.tokensOutput ?? 0) : 0,
-          costSource,
-        });
-
-        if (actualCost !== null) {
-          sendToRenderer('cost:updated', { cost: actualCost, generationId: genResult.generationId });
-        }
-      })();
+    if (genResult.costUsd !== null && genResult.generationId) {
+      sendToRenderer('cost:updated', { cost: genResult.costUsd, generationId: genResult.generationId });
     }
   } catch (err: unknown) {
     // Distinguish intentional cancellation from real errors

@@ -35,8 +35,8 @@ export function VariationsGrid({ results, onSelect }: VariationsGridProps) {
               <div className="glass-panel px-2 py-1 text-[10px] text-text-secondary flex justify-between">
                 <span>{getModelShortName(result.modelId)}</span>
                 <span>
-                  {result.seed && `#${result.seed}`}
-                  {result.costUsd > 0 && ` • ${formatCostDisplay(result.costUsd)}`}
+                  {typeof result.params.seed === 'number' && `#${result.params.seed}`}
+                  {result.costUsd !== null && result.costUsd > 0 && ` • ${formatCostDisplay(result.costUsd)}`}
                 </span>
               </div>
             </div>

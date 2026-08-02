@@ -18,7 +18,6 @@ export interface IpcChannels {
   'config:get-images-path': { args: []; result: string };
 
   // ═══ Generation ═══
-  'generate:image': { args: [GenerationRequest]; result: GenerationResult };
   'generate:translate': { args: [string]; result: string };
   'generate:translate-to-ru': { args: [string]; result: string };
   'generate:prompt-assist': {
