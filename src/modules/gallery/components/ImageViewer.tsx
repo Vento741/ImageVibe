@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Info, Copy, Check, X, GripVertical, ZoomIn, ZoomOut, Maximize, FolderOpen, Trash2, Pencil, Download } from 'lucide-react';
 import { useGalleryStore } from '../store';
 import { useGenerateStore } from '@/modules/generate/store';
+import { LABELS } from '@/modules/generate/components/SchemaControls';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName, formatDate, localFileUrl, clamp } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
@@ -518,7 +519,7 @@ export function ImageViewer() {
                       <MetadataRow label="Режим" value={image.mode} />
                       <MetadataRow label="Размер" value={`${image.width}×${image.height}`} />
                       {Object.entries(params).map(([key, value]) => (
-                        <MetadataRow key={key} label={key} value={String(value)} />
+                        <MetadataRow key={key} label={LABELS[key] ?? key} value={String(value)} />
                       ))}
                       {image.cost_usd ? <MetadataRow label="Стоимость" value={formatCostDisplay(image.cost_usd)} /> : null}
                       {image.generation_time_ms ? <MetadataRow label="Время" value={formatTime(image.generation_time_ms)} /> : null}
