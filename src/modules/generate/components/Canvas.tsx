@@ -51,8 +51,7 @@ export function Canvas() {
       status: 'generating',
       prompt: card.prompt,
       modelId: card.modelId,
-      aspectRatio: card.aspectRatio,
-      imageSize: card.imageSize,
+      params: card.params,
       startedAt: Date.now(),
     });
 
@@ -61,7 +60,7 @@ export function Canvas() {
       prompt: card.prompt,
       modelId: card.modelId,
       mode: 'text2img',
-      params: {},
+      params: card.params,
       clientId,
     }).then((res) => {
       useGenerateStore.getState().updateCanvasCard(clientId, { queueItemId: res.queueItemId });
@@ -311,7 +310,9 @@ export function Canvas() {
                     store.setTranslatedPrompt(selectedResult.translatedPrompt);
                   }
                   store.setSelectedModelId(selectedResult.modelId);
-                  store.randomizeSeed();
+                  // A fresh seed for the repeat, same value store's old randomizeSeed() used
+                  // to write; request-building already drops it if the model has no seed key.
+                  store.setParam('seed', Math.floor(Math.random() * 2147483647));
                   addToast({ message: 'Параметры загружены — нажмите Генерировать', type: 'info' });
                 }}
               />
@@ -384,7 +385,7 @@ export function Canvas() {
                 useGenerateStore.getState().setTranslatedPrompt(selectedResult.translatedPrompt);
               }
               useGenerateStore.getState().setSelectedModelId(selectedResult.modelId);
-              useGenerateStore.getState().randomizeSeed();
+              useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647));
               addToast({ message: 'Параметры загружены — нажмите Генерировать', type: 'info' });
             }} />
             <ExpandedAction icon={<FolderOpen size={14} />} label="Папка" onClick={async () => {

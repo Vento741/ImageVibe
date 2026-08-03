@@ -6,6 +6,7 @@ import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, randomSeed } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
+import type { GenerationParams } from '@/shared/types/api';
 
 let batchIdCounter = 0;
 
@@ -25,17 +26,22 @@ export function BatchControls() {
     const count = batchCountRef.current;
     store.pushPromptHistory(store.prompt);
 
-    // Build cards with guaranteed unique IDs
+    // Build cards with guaranteed unique IDs. Each card gets its own random seed — but
+    // only when the model declares one (store.params.seed present); otherwise nothing is
+    // added that the user never chose, and every image in the batch shares the same params.
     const cards: CanvasCard[] = [];
     for (let i = 0; i < count; i++) {
       batchIdCounter++;
+      const params: GenerationParams =
+        store.params.seed !== undefined
+          ? { ...store.params, seed: randomSeed() }
+          : { ...store.params };
       cards.push({
         id: `batch-${Date.now()}-${batchIdCounter}-${i}`,
         status: 'generating',
         prompt: store.prompt,
         modelId: store.selectedModelId,
-        aspectRatio: store.aspectRatio,
-        imageSize: store.imageSize,
+        params,
         startedAt: Date.now(),
       });
     }
@@ -54,17 +60,14 @@ export function BatchControls() {
     // Get mask base64 for inpaint mode
     const maskBase64 = store.mode === 'inpaint' && store.maskData ? store.maskData : undefined;
 
-    // Submit each to the queue
+    // Submit each to the queue — each card already carries its own params (including its
+    // own random seed, when the model has one)
     for (const card of cards) {
       ipc.invoke('queue:submit', {
         prompt: store.prompt,
         modelId: store.selectedModelId,
         mode: store.mode,
-        params: {
-          ...(store.aspectRatio ? { aspect_ratio: store.aspectRatio } : {}),
-          ...(store.imageSize ? { resolution: store.imageSize } : {}),
-          seed: randomSeed(),
-        },
+        params: card.params,
         styleTags: store.styleTags.length > 0 ? store.styleTags : undefined,
         sourceImageBase64,
         maskBase64,

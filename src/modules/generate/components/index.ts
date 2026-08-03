@@ -4,6 +4,7 @@ export { PromptActions } from './PromptActions';
 export { PromptVersions } from './PromptVersions';
 export { StyleTags } from './StyleTags';
 export { ParamsPanel } from './ParamsPanel';
+export { SchemaControls } from './SchemaControls';
 export { Canvas } from './Canvas';
 export { GenerateButton } from './GenerateButton';
 export { TranslationPreview } from './TranslationPreview';

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { AspectRatio, ImageSize, GenerationMode, ModelCategory } from '@/shared/types/models';
-import type { GenerationResult } from '@/shared/types/api';
+import type { GenerationMode, ModelCategory, ParamSchema } from '@/shared/types/models';
+import type { GenerationParams, GenerationResult } from '@/shared/types/api';
+import { applySchema } from '@/shared/lib/paramSchema';
 
 /** A card on the canvas — either generating, completed, or failed */
 export interface CanvasCard {
@@ -9,8 +10,7 @@ export interface CanvasCard {
   status: 'generating' | 'completed' | 'failed';
   prompt: string;
   modelId: string;
-  aspectRatio: string;
-  imageSize: string;
+  params: GenerationParams;
   startedAt: number;
   result?: GenerationResult & { filePath?: string; imageId?: number };
   error?: string;
@@ -28,11 +28,9 @@ interface GenerateState {
   selectedCategory: ModelCategory;
   selectedModelId: string;
 
-  // Parameters
+  // Parameters — protocol-keyed, built from the model's schema, not from named fields
   mode: GenerationMode;
-  aspectRatio: AspectRatio;
-  imageSize: ImageSize;
-  seed: number | null;
+  params: GenerationParams;
   styleTags: string[];
 
   // UI state
@@ -61,10 +59,9 @@ interface GenerateState {
   setSelectedCategory: (category: ModelCategory) => void;
   setSelectedModelId: (modelId: string) => void;
   setMode: (mode: GenerationMode) => void;
-  setAspectRatio: (ratio: AspectRatio) => void;
-  setImageSize: (size: ImageSize) => void;
-  setSeed: (seed: number | null) => void;
-  randomizeSeed: () => void;
+  setParam: (key: string, value: string | number | boolean) => void;
+  clearParam: (key: string) => void;
+  syncParamsToSchema: (schema: Record<string, ParamSchema>) => void;
   setStyleTags: (tags: string[]) => void;
   toggleStyleTag: (tag: string) => void;
   setIsGenerating: (val: boolean) => void;
@@ -90,9 +87,7 @@ const initialState = {
   selectedCategory: 'fast' as ModelCategory,
   selectedModelId: '',
   mode: 'text2img' as GenerationMode,
-  aspectRatio: '1:1' as AspectRatio,
-  imageSize: '1K' as ImageSize,
-  seed: null as number | null,
+  params: {} as GenerationParams,
   styleTags: [] as string[],
   isGenerating: false,
   uiMode: 'simple' as 'simple' | 'advanced',
@@ -142,10 +137,18 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
     mode,
     maskData: mode !== 'inpaint' ? null : s.maskData,
   })),
-  setAspectRatio: (aspectRatio) => set({ aspectRatio }),
-  setImageSize: (imageSize) => set({ imageSize }),
-  setSeed: (seed) => set({ seed }),
-  randomizeSeed: () => set({ seed: Math.floor(Math.random() * 2147483647) }),
+  setParam: (key, value) => set((s) => ({ params: { ...s.params, [key]: value } })),
+
+  clearParam: (key) => set((s) => {
+    const next = { ...s.params };
+    delete next[key];
+    return { params: next };
+  }),
+
+  // Called when the selected model changes: drop what the new schema does not allow and
+  // fill 'auto' where it offers it. A value that fell out is dropped, not replaced —
+  // substituting the first allowed value would send something the user never chose.
+  syncParamsToSchema: (schema) => set((s) => ({ params: applySchema(s.params, schema) })),
 
   setStyleTags: (styleTags) => set({ styleTags }),
   toggleStyleTag: (tag) => {

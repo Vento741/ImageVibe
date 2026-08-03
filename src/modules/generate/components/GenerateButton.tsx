@@ -6,15 +6,12 @@ import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, generateId } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
-import type { GenerationParams } from '@/shared/types/api';
 
 export function GenerateButton() {
   const prompt = useGenerateStore((s) => s.prompt);
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
   const mode = useGenerateStore((s) => s.mode);
-  const aspectRatio = useGenerateStore((s) => s.aspectRatio);
-  const imageSize = useGenerateStore((s) => s.imageSize);
-  const seed = useGenerateStore((s) => s.seed);
+  const params = useGenerateStore((s) => s.params);
   const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const styleTags = useGenerateStore((s) => s.styleTags);
   // Matches exactly the condition that turns sourceImageData into sourceImageBase64 below:
@@ -27,13 +24,6 @@ export function GenerateButton() {
   const setCurrentEstimate = useCostStore((s) => s.setCurrentEstimate);
   const addToast = useToastStore((s) => s.addToast);
 
-  // Same shape queue:submit sends (bridge from task 2; task 4 replaces it with the
-  // params record from the store, and this call site does not change then).
-  const params: GenerationParams = {
-    ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-    ...(imageSize ? { resolution: imageSize } : {}),
-    ...(seed !== null ? { seed } : {}),
-  };
   // Reference images this request will send: the source, plus the mask when inpainting.
   const referenceCount =
     mode !== 'text2img' && hasSourceImage ? (mode === 'inpaint' && hasMask ? 2 : 1) : 0;
@@ -62,8 +52,7 @@ export function GenerateButton() {
       status: 'generating',
       prompt,
       modelId: selectedModelId,
-      aspectRatio,
-      imageSize,
+      params,
       startedAt: Date.now(),
     });
 
@@ -84,11 +73,7 @@ export function GenerateButton() {
       prompt,
       modelId: selectedModelId,
       mode,
-      params: {
-        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-        ...(imageSize ? { resolution: imageSize } : {}),
-        ...(seed !== null ? { seed } : {}),
-      },
+      params,
       styleTags: styleTags.length > 0 ? styleTags : undefined,
       sourceImageBase64,
       maskBase64,
@@ -104,7 +89,7 @@ export function GenerateButton() {
       });
       addToast({ message: 'Ошибка генерации', type: 'error' });
     });
-  }, [prompt, negativePrompt, selectedModelId, mode, aspectRatio, imageSize, seed, styleTags, pushPromptHistory, addCanvasCard, addToast]);
+  }, [prompt, negativePrompt, selectedModelId, mode, params, styleTags, pushPromptHistory, addCanvasCard, addToast]);
 
   // Use ref to avoid re-registering listeners on every state change
   const handleGenerateRef = useRef(handleGenerate);

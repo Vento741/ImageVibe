@@ -103,12 +103,13 @@ export function PresetSelector() {
 
     try {
       const params = JSON.parse(preset.params);
-      if (params.aspectRatio) {
-        useGenerateStore.getState().setAspectRatio(params.aspectRatio);
-      }
-      if (params.imageSize) {
-        useGenerateStore.getState().setImageSize(params.imageSize);
-      }
+      // Stored presets may still carry the pre-schema field names (aspectRatio/imageSize);
+      // builtin presets are migrated to protocol names (aspect_ratio/resolution), so both
+      // spellings are read here until every stored preset has been rewritten.
+      const aspectRatio = params.aspect_ratio ?? params.aspectRatio;
+      const resolution = params.resolution ?? params.imageSize;
+      if (aspectRatio) useGenerateStore.getState().setParam('aspect_ratio', aspectRatio);
+      if (resolution) useGenerateStore.getState().setParam('resolution', resolution);
     } catch {
       // ignore parse errors
     }

@@ -38,14 +38,14 @@ export function useKeyboardShortcuts({ onNavigate }: ShortcutConfig) {
           case 'r':
             if (!isTyping) {
               e.preventDefault();
-              useGenerateStore.getState().randomizeSeed();
+              useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647));
             }
             break;
           case 'd':
             if (!isTyping) {
               e.preventDefault();
               // Duplicate last generation (keep prompt + params, new seed)
-              useGenerateStore.getState().randomizeSeed();
+              useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647));
               document.dispatchEvent(new CustomEvent('imagevibe:generate'));
             }
             break;

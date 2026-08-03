@@ -74,7 +74,7 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
 
     // Actions
     { id: 'act-generate', icon: <Sparkles size={16} />, label: 'Генерировать', category: 'Действия', shortcut: 'Ctrl+Enter', action: () => { document.dispatchEvent(new CustomEvent('imagevibe:generate')); onClose(); } },
-    { id: 'act-random-seed', icon: <Sparkles size={16} />, label: 'Случайный seed', category: 'Действия', shortcut: 'Ctrl+R', action: () => { useGenerateStore.getState().randomizeSeed(); onClose(); } },
+    { id: 'act-random-seed', icon: <Sparkles size={16} />, label: 'Случайный seed', category: 'Действия', shortcut: 'Ctrl+R', action: () => { useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647)); onClose(); } },
     { id: 'act-toggle-mode', icon: <Zap size={16} />, label: 'Переключить режим', category: 'Действия', shortcut: 'Ctrl+Shift+M', action: () => { useGenerateStore.getState().toggleUiMode(); onClose(); } },
   ], [onNavigate, onClose]);
 

@@ -60,7 +60,7 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
       useGenerateStore.getState().setTranslatedPrompt(result.translatedPrompt);
     }
     useGenerateStore.getState().setSelectedModelId(result.modelId);
-    useGenerateStore.getState().randomizeSeed();
+    useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647));
     addToast({ message: 'Параметры загружены — нажмите Генерировать', type: 'info' });
   }, [result, addToast]);
 
