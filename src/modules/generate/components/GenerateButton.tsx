@@ -17,7 +17,9 @@ export function GenerateButton() {
   const seed = useGenerateStore((s) => s.seed);
   const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const styleTags = useGenerateStore((s) => s.styleTags);
-  const hasSourceImage = useGenerateStore((s) => !!s.sourceImageData);
+  // Matches exactly the condition that turns sourceImageData into sourceImageBase64 below:
+  // a raw file path or a local-file:// URL never leaves the renderer, only a data: URL does.
+  const hasSourceImage = useGenerateStore((s) => !!s.sourceImageData?.startsWith('data:'));
   const hasMask = useGenerateStore((s) => !!s.maskData);
   const pushPromptHistory = useGenerateStore((s) => s.pushPromptHistory);
   const addCanvasCard = useGenerateStore((s) => s.addCanvasCard);
