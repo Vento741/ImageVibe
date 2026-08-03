@@ -54,7 +54,7 @@ export function SourceImage() {
   }, [setSourceImageData]);
 
   // Only show for img2img and inpaint modes
-  if (mode === 'text2img' || mode === 'upscale') return null;
+  if (mode === 'text2img') return null;
 
   const imgSrc = sourceImageData
     ? sourceImageData.startsWith('data:') ? sourceImageData : localFileUrl(sourceImageData)

@@ -2,7 +2,7 @@
 export type ModelCategory = 'fast' | 'quality' | 'smart';
 
 /** Generation mode */
-export type GenerationMode = 'text2img' | 'img2img' | 'inpaint' | 'upscale';
+export type GenerationMode = 'text2img' | 'img2img' | 'inpaint';
 
 /** Image size presets */
 export type ImageSize = '1K' | '2K' | '4K';

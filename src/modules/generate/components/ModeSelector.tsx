@@ -1,8 +1,12 @@
+import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Pencil, Image, Layers } from 'lucide-react';
 import { useGenerateStore } from '../store';
+import { ipc } from '@/shared/lib/ipc';
+import { availableModes } from '@/shared/lib/paramSchema';
 import type { GenerationMode } from '@/shared/types/models';
+import type { CatalogModelDTO } from '@/shared/types/ipc';
 
 const MODES: Array<{ id: GenerationMode; icon: ReactNode; label: string }> = [
   { id: 'text2img', icon: <Pencil size={14} />, label: 'Текст→Фото' },
@@ -10,13 +14,40 @@ const MODES: Array<{ id: GenerationMode; icon: ReactNode; label: string }> = [
   { id: 'inpaint', icon: <Layers size={14} />, label: 'Инпейнт' },
 ];
 
+// Until prices arrive, the catalog record's schema is not the cross-provider
+// intersection and cannot be trusted to judge mode availability (see ParamsPanel).
+const TEXT_ONLY_MODES: GenerationMode[] = ['text2img'];
+
 export function ModeSelector() {
+  const [models, setModels] = useState<CatalogModelDTO[]>([]);
   const mode = useGenerateStore((s) => s.mode);
   const setMode = useGenerateStore((s) => s.setMode);
+  const selectedModelId = useGenerateStore((s) => s.selectedModelId);
+
+  const load = useCallback(() => {
+    ipc.invoke('catalog:list')
+      .then((groups) => setModels(groups.flatMap((group) => group.models)))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    load();
+    return ipc.on('catalog:updated', load);
+  }, [load]);
+
+  const selected = models.find((m) => m.id === selectedModelId);
+  const allowed = selected?.pricesLoaded ? availableModes(selected.schema) : TEXT_ONLY_MODES;
+
+  // A mode allowed for one model may not be for the next (e.g. inpaint needs two
+  // references) — leaving it selected would send a generation with a mask the
+  // model has nowhere to put.
+  useEffect(() => {
+    if (!allowed.includes(mode)) setMode('text2img');
+  }, [allowed.join('|'), mode, setMode]);
 
   return (
     <div className="flex gap-0.5">
-      {MODES.map((m) => (
+      {MODES.filter((m) => allowed.includes(m.id)).map((m) => (
         <motion.button
           key={m.id}
           onClick={() => setMode(m.id)}
