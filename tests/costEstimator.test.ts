@@ -95,6 +95,16 @@ describe('estimateCost with references', () => {
     expect(estimate.basis).toBe('upper-bound');
     expect(estimate.estimatedCost).toBeCloseTo(0.014 * 4.194304, 4);
   });
+
+  it('makes the whole sum unknown when the output price is known but the reference price is not', async () => {
+    // FLUX's fixture pricing has only an output_image row — no input_reference row at
+    // all. img2img on FLUX must not silently fall back to the text2img figure; the sum
+    // is unknown, not the output-only amount.
+    const { estimateCost } = await import('../electron/services/costEstimator');
+    const estimate = estimateCost('flux', { size: '2048x2048' }, 1);
+    expect(estimate.estimatedCost).toBeNull();
+    expect(estimate.basis).toBe('unknown');
+  });
 });
 
 describe('estimateBatchCost', () => {

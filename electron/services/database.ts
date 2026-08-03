@@ -331,10 +331,14 @@ function getMigrations(): Migration[] {
 
         -- Builtin presets stored app-side parameter names; the app now speaks protocol
         -- names. Rewritten here rather than in the v2 seed so an applied migration is
-        -- never edited after the fact.
-        UPDATE presets SET params = '{"aspect_ratio":"1:1","resolution":"1K"}'
+        -- never edited after the fact. The resolution step is dropped, not renamed: the
+        -- seed applied it to all eight presets including the FLUX family, which declares
+        -- no resolution parameter at all — a preset is not allowed to assert something
+        -- about a model's parameters without asking the API. The step is left to the
+        -- user, chosen from the model's own schema; its absence means the provider decides.
+        UPDATE presets SET params = '{"aspect_ratio":"1:1"}'
           WHERE is_builtin = 1 AND params = '{"aspectRatio":"1:1","imageSize":"1K"}';
-        UPDATE presets SET params = '{"aspect_ratio":"16:9","resolution":"1K"}'
+        UPDATE presets SET params = '{"aspect_ratio":"16:9"}'
           WHERE is_builtin = 1 AND params = '{"aspectRatio":"16:9","imageSize":"1K"}';
       `,
     },

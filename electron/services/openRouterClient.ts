@@ -8,7 +8,7 @@ import type {
 } from '../../src/shared/types/api';
 import sharp from 'sharp';
 import { getModelById } from './modelCatalog';
-import { applySchema } from '../../src/shared/lib/paramSchema';
+import { filterToSchema, hasParameter, maxReferences, sizeFor } from '../../src/shared/lib/paramSchema';
 import { getActiveApiKey, getConfig } from './configManager';
 import { logger } from './logger';
 
@@ -60,6 +60,22 @@ export async function generateImage(
     }
   }
 
+  // The mode/mask gate that keeps references within the model's declared maximum lives
+  // only in the UI (button filters, gated behind advanced mode) — a preset applied from
+  // simple mode can still switch to a model that accepts fewer references than the mask
+  // workflow just built. Silently dropping the mask would charge for a different request
+  // than the one requested, so this is the one point every path must pass through. A
+  // model that declares no input_references at all is not judged — absence of the key
+  // is not a declared limit.
+  if (hasParameter(model.schema, 'input_references')) {
+    const limit = maxReferences(model.schema);
+    if (references.length > limit) {
+      throw new Error(
+        `Модель «${request.modelId}» принимает не более ${limit} референсных изображений, а требуется ${references.length}. Выберите другую модель или отключите правку области.`,
+      );
+    }
+  }
+
   const basePrompt = request.translatedPrompt || request.prompt;
   const prompt = references.length === 2 ? `${basePrompt}\n\n${MASK_EXPLANATION}` : basePrompt;
 
@@ -69,8 +85,23 @@ export async function generateImage(
   // fell out of its enum (e.g. a stale '4K' from a previously selected model) instead of
   // forwarding it and letting the provider reject the whole call (finding 3). This also
   // keeps 'size' only while the model declares no 'resolution', so the two size controls
-  // never contradict each other (finding 11 follow-up).
-  const appliedParams = applySchema(request.params, model.schema);
+  // never contradict each other (finding 11 follow-up). Filtering only — never filling
+  // 'auto' — because the schema of a not-yet-priced catalog record is not the
+  // cross-provider intersection, and filling here could send a value nobody chose.
+  const appliedParams = filterToSchema(request.params, model.schema);
+
+  // aspect_ratio has its own control that knows nothing about size, so the two can be
+  // set independently — a preset or the command palette writes aspect_ratio without ever
+  // touching size. Reconciling here, at the single point every path funnels through
+  // before the request leaves, keeps the paid request from carrying two values that
+  // contradict each other (e.g. aspect_ratio: '1:1' next to a 16:9 size).
+  if (typeof appliedParams.size === 'string' && typeof appliedParams.aspect_ratio === 'string') {
+    const sides = appliedParams.size.split('x').map(Number);
+    if (sides.length === 2 && !sides.some(Number.isNaN)) {
+      appliedParams.size = sizeFor(Math.max(...sides), appliedParams.aspect_ratio);
+    }
+  }
+
   for (const [key, value] of Object.entries(appliedParams)) {
     body[key] = value;
   }
@@ -175,7 +206,11 @@ export async function generateImage(
     modelId: request.modelId,
     prompt: request.prompt,
     translatedPrompt: request.translatedPrompt,
-    params: request.params,
+    // The record that actually went into the request body — not the raw store record,
+    // which may still hold a value the schema just dropped (e.g. a resolution step the
+    // model does not have). Anything downstream (PNG metadata, images.params, the
+    // gallery) must describe what was sent, not what was merely selected.
+    params: appliedParams,
     width: width ?? 0,
     height: height ?? 0,
     costUsd: cost,
@@ -335,26 +370,6 @@ export async function fetchCredits(): Promise<{ totalCredits: number; totalUsage
   };
 }
 
-/**
- * Fetch actual cost of a specific generation.
- * null means the cost could not be determined (network failure, non-ok response, no
- * usage field yet) — it is not the same as a genuine zero reported by the API.
- */
-export async function fetchGenerationCost(generationId: string): Promise<number | null> {
-  try {
-    const response = await fetch(`${BASE_URL}/generation?id=${generationId}`, {
-      headers: getHeaders(),
-    });
-    if (!response.ok) return null;
-    const raw = await response.json();
-    // API may return object directly or wrapped in { data: ... }
-    const info = raw.data ?? raw;
-    return typeof info.usage === 'number' ? info.usage : null;
-  } catch {
-    return null;
-  }
-}
-
 /** Fetch full generation info for benchmarking */
 export async function fetchGenerationInfo(generationId: string): Promise<OpenRouterGenerationInfo | null> {
   try {
@@ -379,23 +394,6 @@ export async function fetchGenerationInfo(generationId: string): Promise<OpenRou
     console.log(`[benchmark] fetch error: ${err}`);
     return null;
   }
-}
-
-/**
- * Fetch generation cost with retry (cost may not be immediately available).
- * Retries only while the cost is undetermined (null); a genuine value — including a
- * real zero — returns immediately. Returns null, not 0, if every retry stays undetermined.
- */
-export async function fetchGenerationCostWithRetry(
-  generationId: string,
-  maxRetries = 3
-): Promise<number | null> {
-  for (let i = 0; i < maxRetries; i++) {
-    const cost = await fetchGenerationCost(generationId);
-    if (cost !== null) return cost;
-    await new Promise((resolve) => setTimeout(resolve, 1500 * (i + 1)));
-  }
-  return null;
 }
 
 /** Detect if text is in Russian */

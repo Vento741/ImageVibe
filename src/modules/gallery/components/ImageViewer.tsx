@@ -19,10 +19,18 @@ function formatTime(ms: number): string {
   return `${min}м ${remainSec.toFixed(0)}с`;
 }
 
-/** PNG metadata keys already covered by the Parameters section */
+/**
+ * PNG metadata keys already covered by the Parameters section above. Besides the fixed
+ * app fields, this must match every protocol key queueProcessor.ts writes into both the
+ * PNG and images.params — 'image_size' was the pre-branch app name; the protocol speaks
+ * 'resolution' instead, and adds quality/background/output_format/output_compression/size,
+ * none of which the old list carried.
+ */
 const HIDDEN_META_KEYS = new Set([
   'prompt', 'original_prompt', 'translated_prompt', 'negative_prompt',
-  'model', 'seed', 'aspect_ratio', 'image_size', 'created_at',
+  'model', 'created_at',
+  'aspect_ratio', 'resolution', 'seed', 'quality', 'background',
+  'output_format', 'output_compression', 'size',
 ]);
 import type { DBImage } from '@/shared/types/database';
 import { AddToCollectionMenu } from '@/modules/collections/components/AddToCollectionMenu';

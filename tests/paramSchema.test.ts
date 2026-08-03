@@ -5,6 +5,7 @@ import {
   maxReferences,
   availableModes,
   applySchema,
+  filterToSchema,
   sizeFor,
 } from '../src/shared/lib/paramSchema';
 import type { ParamSchema } from '../src/shared/types/models';
@@ -125,6 +126,28 @@ describe('applySchema', () => {
     expect(applySchema({ size: '2048x2048' }, schema)).not.toHaveProperty('size');
     const noResolution: Record<string, ParamSchema> = { aspect_ratio: schema.aspect_ratio };
     expect(applySchema({ size: '2048x2048' }, noResolution).size).toBe('2048x2048');
+  });
+});
+
+describe('filterToSchema', () => {
+  const schema: Record<string, ParamSchema> = {
+    aspect_ratio: { type: 'enum', values: ['1:1', '16:9', 'auto'] },
+    resolution: { type: 'enum', values: ['1K', '2K'] },
+  };
+
+  it('drops what the schema does not allow, same as applySchema', () => {
+    expect(filterToSchema({ quality: 'high', resolution: '4K' }, schema)).toEqual({});
+  });
+
+  it('keeps a value that is still allowed', () => {
+    expect(filterToSchema({ resolution: '2K' }, schema).resolution).toBe('2K');
+  });
+
+  it('never fills auto on its own — dropping is all it does', () => {
+    // applySchema fills 'auto' for aspect_ratio here; filterToSchema must not, since
+    // it is the step trusted before a request is sent, while the schema may still be
+    // an untrusted catalog-record schema rather than the cross-provider intersection.
+    expect(filterToSchema({}, schema)).toEqual({});
   });
 });
 

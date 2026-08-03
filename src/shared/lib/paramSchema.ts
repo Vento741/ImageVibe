@@ -77,14 +77,18 @@ function valueFits(entry: ParamSchema, value: GenerationParams[string]): boolean
 }
 
 /**
- * Bring a parameter record to a model's schema: drop what the schema does not allow,
- * then fill 'auto' where the schema offers it.
+ * Bring a parameter record to a model's schema: drop what it does not allow.
  *
  * A value that fell out of the schema is dropped, not replaced with the first allowed
  * one — a substituted value is an invented default, and nothing the user did not choose
  * may be sent. An unset parameter simply is not sent, and the provider decides.
+ *
+ * This is the only step trusted at the point a request is actually sent: the schema
+ * of a catalog record that has not finished loading its prices is the catalog-record
+ * schema, not the cross-provider intersection (openrouter-model-registry, section 5),
+ * so it must never be used to invent a value — only to reject one.
  */
-export function applySchema(
+export function filterToSchema(
   params: GenerationParams,
   schema: Record<string, ParamSchema>,
 ): GenerationParams {
@@ -102,6 +106,22 @@ export function applySchema(
     if (controlKindFor(entry) === 'none') continue;
     if (valueFits(entry, value)) out[key] = value;
   }
+
+  return out;
+}
+
+/**
+ * Drop what the schema does not allow, then fill 'auto' where the schema offers it.
+ *
+ * The fill step is UI work: it is only safe once the schema is trustworthy, which the
+ * caller must already have established (see filterToSchema). Used by the store to
+ * settle the record after a model switch, behind the pricesLoaded gate.
+ */
+export function applySchema(
+  params: GenerationParams,
+  schema: Record<string, ParamSchema>,
+): GenerationParams {
+  const out = filterToSchema(params, schema);
 
   for (const [key, entry] of Object.entries(schema)) {
     if (SKIPPED_KEYS.includes(key)) continue;
