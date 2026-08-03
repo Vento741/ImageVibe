@@ -88,7 +88,7 @@ function makePreset(overrides: Partial<DBPreset>): DBPreset {
     model_id: 'black-forest-labs/flux.2-pro',
     params: '{}',
     style_tags: '[]',
-    negative_prompt: '',
+    negative_prompt: null,
     is_builtin: 1,
     sort_order: 0,
     created_at: '2026-01-01T00:00:00.000Z',

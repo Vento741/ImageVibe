@@ -88,16 +88,6 @@ export interface DBPreset {
   created_at: string;
 }
 
-/** Negative prompt template */
-export interface DBNegativePromptTemplate {
-  id: number;
-  name: string;
-  prompt: string;
-  category: string | null;
-  is_builtin: number;
-  sort_order: number;
-}
-
 /** Generation queue item */
 export interface DBQueueItem {
   id: number;

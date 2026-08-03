@@ -20,7 +20,6 @@ interface GenerateState {
   // Prompt
   prompt: string;
   translatedPrompt: string;
-  negativePrompt: string;
   promptHistory: string[];
   promptHistoryIndex: number;
 
@@ -52,7 +51,6 @@ interface GenerateState {
   // Actions
   setPrompt: (prompt: string) => void;
   setTranslatedPrompt: (translated: string) => void;
-  setNegativePrompt: (neg: string) => void;
   pushPromptHistory: (prompt: string) => void;
   undoPrompt: () => void;
   redoPrompt: () => void;
@@ -81,7 +79,6 @@ interface GenerateState {
 const initialState = {
   prompt: '',
   translatedPrompt: '',
-  negativePrompt: '',
   promptHistory: [] as string[],
   promptHistoryIndex: -1,
   selectedCategory: 'fast' as ModelCategory,
@@ -104,7 +101,6 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
 
   setPrompt: (prompt) => set({ prompt }),
   setTranslatedPrompt: (translatedPrompt) => set({ translatedPrompt }),
-  setNegativePrompt: (negativePrompt) => set({ negativePrompt }),
 
   pushPromptHistory: (prompt) => {
     const { promptHistory } = get();

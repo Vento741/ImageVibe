@@ -34,14 +34,14 @@ function renderPresetIcon(iconStr: string): ReactNode {
 
 /** 8 built-in presets — used as defaults when DB is empty */
 const BUILTIN_PRESETS = [
-  { name: 'Быстрый черновик', icon: 'zap', modelId: 'black-forest-labs/flux.2-klein-4b', styleTags: [], negativePrompt: '' },
-  { name: 'Фотопортрет', icon: 'camera', modelId: 'black-forest-labs/flux.2-pro', styleTags: ['photorealistic', 'sharp focus'], negativePrompt: 'blurry, cartoon, deformed' },
-  { name: 'Аниме персонаж', icon: 'swords', modelId: 'bytedance-seed/seedream-4.5', styleTags: ['anime', 'vibrant'], negativePrompt: 'photorealistic, 3d render' },
-  { name: 'Концепт-арт', icon: 'paintbrush', modelId: 'black-forest-labs/flux.2-max', styleTags: ['concept art', 'highly detailed'], negativePrompt: 'photo, realistic' },
-  { name: 'Типографика', icon: 'type', modelId: 'black-forest-labs/flux.2-flex', styleTags: ['clean text'], negativePrompt: 'blurry text' },
-  { name: 'Продуктовое фото', icon: 'shopping-bag', modelId: 'google/gemini-3-pro-image-preview', styleTags: ['professional'], negativePrompt: 'cluttered background' },
-  { name: 'Умная генерация', icon: 'brain', modelId: 'openai/gpt-5-image-mini', styleTags: [], negativePrompt: '' },
-  { name: 'Бюджетный', icon: 'coins', modelId: 'google/gemini-3.1-flash-image-preview', styleTags: [], negativePrompt: '' },
+  { name: 'Быстрый черновик', icon: 'zap', modelId: 'black-forest-labs/flux.2-klein-4b', styleTags: [] },
+  { name: 'Фотопортрет', icon: 'camera', modelId: 'black-forest-labs/flux.2-pro', styleTags: ['photorealistic', 'sharp focus'] },
+  { name: 'Аниме персонаж', icon: 'swords', modelId: 'bytedance-seed/seedream-4.5', styleTags: ['anime', 'vibrant'] },
+  { name: 'Концепт-арт', icon: 'paintbrush', modelId: 'black-forest-labs/flux.2-max', styleTags: ['concept art', 'highly detailed'] },
+  { name: 'Типографика', icon: 'type', modelId: 'black-forest-labs/flux.2-flex', styleTags: ['clean text'] },
+  { name: 'Продуктовое фото', icon: 'shopping-bag', modelId: 'google/gemini-3-pro-image-preview', styleTags: ['professional'] },
+  { name: 'Умная генерация', icon: 'brain', modelId: 'openai/gpt-5-image-mini', styleTags: [] },
+  { name: 'Бюджетный', icon: 'coins', modelId: 'google/gemini-3.1-flash-image-preview', styleTags: [] },
 ];
 
 export function PresetSelector() {
@@ -49,7 +49,6 @@ export function PresetSelector() {
   const setPresets = usePresetsStore((s) => s.setPresets);
   const setSelectedModelId = useGenerateStore((s) => s.setSelectedModelId);
   const setStyleTags = useGenerateStore((s) => s.setStyleTags);
-  const setNegativePrompt = useGenerateStore((s) => s.setNegativePrompt);
   // Keyed separately from the store (which is typed DBPreset[]) so the extra
   // availability field from presets:list doesn't have to leak into that type.
   const [availability, setAvailability] = useState<Record<number, boolean | null>>({});
@@ -67,7 +66,7 @@ export function PresetSelector() {
         model_id: p.modelId,
         params: JSON.stringify({ aspectRatio: '1:1', imageSize: '1K' }),
         style_tags: JSON.stringify(p.styleTags),
-        negative_prompt: p.negativePrompt,
+        negative_prompt: null,
         is_builtin: 1,
         sort_order: i,
         created_at: new Date().toISOString(),
@@ -99,8 +98,6 @@ export function PresetSelector() {
       setStyleTags([]);
     }
 
-    setNegativePrompt(preset.negative_prompt || '');
-
     try {
       const params = JSON.parse(preset.params);
       // Stored presets may still carry the pre-schema field names (aspectRatio/imageSize);
@@ -113,7 +110,7 @@ export function PresetSelector() {
     } catch {
       // ignore parse errors
     }
-  }, [setSelectedModelId, setStyleTags, setNegativePrompt, availability]);
+  }, [setSelectedModelId, setStyleTags, availability]);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [activePresetId, setActivePresetId] = useState<number | null>(null);
@@ -163,11 +160,6 @@ export function PresetSelector() {
                         {tags.length > 0 && (
                           <div className="text-text-tertiary">
                             Стили: <span className="text-text-secondary">{tags.join(', ')}</span>
-                          </div>
-                        )}
-                        {preset.negative_prompt && (
-                          <div className="text-text-tertiary">
-                            Negative: <span className="text-text-secondary truncate">{preset.negative_prompt.slice(0, 50)}</span>
                           </div>
                         )}
                       </div>

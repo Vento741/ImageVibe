@@ -12,7 +12,6 @@ export function GenerateButton() {
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
   const mode = useGenerateStore((s) => s.mode);
   const params = useGenerateStore((s) => s.params);
-  const negativePrompt = useGenerateStore((s) => s.negativePrompt);
   const styleTags = useGenerateStore((s) => s.styleTags);
   // Matches exactly the condition that turns sourceImageData into sourceImageBase64 below:
   // a raw file path or a local-file:// URL never leaves the renderer, only a data: URL does.
@@ -89,7 +88,7 @@ export function GenerateButton() {
       });
       addToast({ message: 'Ошибка генерации', type: 'error' });
     });
-  }, [prompt, negativePrompt, selectedModelId, mode, params, styleTags, pushPromptHistory, addCanvasCard, addToast]);
+  }, [prompt, selectedModelId, mode, params, styleTags, pushPromptHistory, addCanvasCard, addToast]);
 
   // Use ref to avoid re-registering listeners on every state change
   const handleGenerateRef = useRef(handleGenerate);

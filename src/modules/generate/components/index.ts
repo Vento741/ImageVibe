@@ -10,5 +10,4 @@ export { GenerateButton } from './GenerateButton';
 export { TranslationPreview } from './TranslationPreview';
 export { ModeSelector } from './ModeSelector';
 export { SourceImage } from './SourceImage';
-export { NegativePromptTemplates } from './NegativePromptTemplates';
 export { BatchControls } from './BatchControls';

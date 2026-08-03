@@ -322,5 +322,21 @@ function getMigrations(): Migration[] {
         ALTER TABLE images ADD COLUMN prompt_ru TEXT;
       `,
     },
+    {
+      version: 4,
+      sql: `
+        -- The negative prompt is gone: no catalog model declares such a parameter, and
+        -- the templates table exists only for a UI that no longer has a control.
+        DROP TABLE IF EXISTS negative_prompt_templates;
+
+        -- Builtin presets stored app-side parameter names; the app now speaks protocol
+        -- names. Rewritten here rather than in the v2 seed so an applied migration is
+        -- never edited after the fact.
+        UPDATE presets SET params = '{"aspect_ratio":"1:1","resolution":"1K"}'
+          WHERE is_builtin = 1 AND params = '{"aspectRatio":"1:1","imageSize":"1K"}';
+        UPDATE presets SET params = '{"aspect_ratio":"16:9","resolution":"1K"}'
+          WHERE is_builtin = 1 AND params = '{"aspectRatio":"16:9","imageSize":"1K"}';
+      `,
+    },
   ];
 }

@@ -274,7 +274,7 @@ export function registerIpcHandlers(): void {
     const db = getDatabase();
     const result = db.prepare(
       'INSERT INTO presets (name, icon, model_id, params, style_tags, negative_prompt, is_builtin, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(preset.name, preset.icon, preset.model_id, preset.params, preset.style_tags, preset.negative_prompt, preset.is_builtin || 0, preset.sort_order || 0);
+    ).run(preset.name, preset.icon, preset.model_id, preset.params, preset.style_tags, null, preset.is_builtin || 0, preset.sort_order || 0);
     return db.prepare('SELECT * FROM presets WHERE id = ?').get(result.lastInsertRowid);
   });
 
@@ -308,7 +308,7 @@ export function registerIpcHandlers(): void {
     const db = getDatabase();
     const result = db.prepare(
       'INSERT INTO generation_queue (prompt, translated_prompt, model_id, params, negative_prompt, batch_group_id, estimated_cost, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(item.prompt, item.translated_prompt, item.model_id, item.params, item.negative_prompt, item.batch_group_id, item.estimated_cost, item.priority || 0);
+    ).run(item.prompt, item.translated_prompt, item.model_id, item.params, null, item.batch_group_id, item.estimated_cost, item.priority || 0);
     return db.prepare('SELECT * FROM generation_queue WHERE id = ?').get(result.lastInsertRowid);
   });
 
