@@ -4,37 +4,6 @@ export type ModelCategory = 'fast' | 'quality' | 'smart';
 /** Generation mode */
 export type GenerationMode = 'text2img' | 'img2img' | 'inpaint';
 
-/** Image size presets */
-export type ImageSize = '1K' | '2K' | '4K';
-
-/** Aspect ratio options */
-export type AspectRatio =
-  | '1:1'
-  | '16:9'
-  | '9:16'
-  | '4:3'
-  | '3:4'
-  | '3:2'
-  | '2:3'
-  | '21:9';
-
-/** What a model supports */
-export interface ModelSupports {
-  textToImage: boolean;
-  imageToImage: boolean;
-  inpainting: boolean;
-  seed: boolean;
-  aspectRatio: boolean;
-  imageSize: boolean;
-  negativePrompt: boolean;
-  fontInputs: boolean;
-  superResolution: boolean;
-  extendedAspectRatios: boolean;
-  textOutput: boolean;
-  reasoning: boolean;
-  multiImageComposition: boolean;
-}
-
 /** One entry of supported_parameters, as returned by the API */
 export type ParamSchema =
   | { type: 'enum'; values: string[] }

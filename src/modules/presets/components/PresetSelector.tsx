@@ -32,18 +32,6 @@ function renderPresetIcon(iconStr: string): ReactNode {
   return iconMap[iconStr] ?? <span>{iconStr}</span>;
 }
 
-/** 8 built-in presets — used as defaults when DB is empty */
-const BUILTIN_PRESETS = [
-  { name: 'Быстрый черновик', icon: 'zap', modelId: 'black-forest-labs/flux.2-klein-4b', styleTags: [] },
-  { name: 'Фотопортрет', icon: 'camera', modelId: 'black-forest-labs/flux.2-pro', styleTags: ['photorealistic', 'sharp focus'] },
-  { name: 'Аниме персонаж', icon: 'swords', modelId: 'bytedance-seed/seedream-4.5', styleTags: ['anime', 'vibrant'] },
-  { name: 'Концепт-арт', icon: 'paintbrush', modelId: 'black-forest-labs/flux.2-max', styleTags: ['concept art', 'highly detailed'] },
-  { name: 'Типографика', icon: 'type', modelId: 'black-forest-labs/flux.2-flex', styleTags: ['clean text'] },
-  { name: 'Продуктовое фото', icon: 'shopping-bag', modelId: 'google/gemini-3-pro-image-preview', styleTags: ['professional'] },
-  { name: 'Умная генерация', icon: 'brain', modelId: 'openai/gpt-5-image-mini', styleTags: [] },
-  { name: 'Бюджетный', icon: 'coins', modelId: 'google/gemini-3.1-flash-image-preview', styleTags: [] },
-];
-
 export function PresetSelector() {
   const presets = usePresetsStore((s) => s.presets);
   const setPresets = usePresetsStore((s) => s.setPresets);
@@ -52,33 +40,22 @@ export function PresetSelector() {
   // Keyed separately from the store (which is typed DBPreset[]) so the extra
   // availability field from presets:list doesn't have to leak into that type.
   const [availability, setAvailability] = useState<Record<number, boolean | null>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load presets on mount, then again on every catalog:updated — the catalog is still
   // loading (or not even started) on a typical cold start, so the first load almost always
   // sees every model as unknown; without this the availability flag freezes at that
   // snapshot forever. Same pattern as ParamsPanel.tsx and GenerateButton.tsx.
   useEffect(() => {
-    const builtinFallback = () =>
-      BUILTIN_PRESETS.map((p, i) => ({
-        id: -(i + 1),
-        name: p.name,
-        icon: p.icon,
-        model_id: p.modelId,
-        params: JSON.stringify({ aspectRatio: '1:1', imageSize: '1K' }),
-        style_tags: JSON.stringify(p.styleTags),
-        negative_prompt: null,
-        is_builtin: 1,
-        sort_order: i,
-        created_at: new Date().toISOString(),
-      }));
-
     const load = () => {
       ipc.invoke('presets:list').then((loaded) => {
-        setPresets(loaded.length > 0 ? loaded : builtinFallback());
+        setPresets(loaded);
         setAvailability(Object.fromEntries(loaded.map((p) => [p.id, p.modelAvailable])));
+        setLoadError(null);
       }).catch(() => {
-        setPresets(builtinFallback());
+        setPresets([]);
         setAvailability({});
+        setLoadError('Не удалось загрузить пресеты.');
       });
     };
     load();
@@ -137,6 +114,11 @@ export function PresetSelector() {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
+            {presets.length === 0 ? (
+              <div className="text-xs text-text-tertiary rounded-lg border border-glass-border bg-bg-tertiary px-3 py-2 mt-1">
+                {loadError ?? 'Пресетов нет.'}
+              </div>
+            ) : (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {presets.map((preset) => {
                 const tags = (() => { try { return JSON.parse(preset.style_tags || '[]') as string[]; } catch { return []; } })();
@@ -184,6 +166,7 @@ export function PresetSelector() {
                 );
               })}
             </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

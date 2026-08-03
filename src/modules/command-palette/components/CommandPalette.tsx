@@ -16,6 +16,24 @@ import {
 } from 'lucide-react';
 import type { Page } from '../../../App';
 import { useGenerateStore } from '@/modules/generate/store';
+import { ipc } from '@/shared/lib/ipc';
+import type { ModelCategory } from '@/shared/types/models';
+import type { CatalogModelDTO } from '@/shared/types/ipc';
+
+// Price-bucket labels and icons, matching ParamsPanel's category selector
+const CATEGORY_LABELS: Record<ModelCategory, string> = {
+  fast: 'Дешёвые',
+  quality: 'Средние',
+  smart: 'Дорогие',
+};
+
+function categoryIcon(category: ModelCategory): ReactNode {
+  switch (category) {
+    case 'fast': return <Zap size={16} />;
+    case 'quality': return <Paintbrush size={16} />;
+    case 'smart': return <Brain size={16} />;
+  }
+}
 
 interface CommandItem {
   id: string;
@@ -36,6 +54,15 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [modelGroups, setModelGroups] = useState<Array<{ category: ModelCategory; models: CatalogModelDTO[] }>>([]);
+
+  useEffect(() => {
+    const load = () => {
+      ipc.invoke('catalog:list').then(setModelGroups).catch(() => {});
+    };
+    load();
+    return ipc.on('catalog:updated', load);
+  }, []);
 
   function applyModel(modelId: string) {
     useGenerateStore.getState().setSelectedModelId(modelId);
@@ -53,30 +80,22 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
     { id: 'nav-analytics', icon: <BarChart3 size={16} />, label: 'Аналитика', category: 'Навигация', action: () => { onNavigate('analytics'); onClose(); } },
     { id: 'nav-settings', icon: <Settings size={16} />, label: 'Настройки', category: 'Навигация', shortcut: 'Ctrl+,', action: () => { onNavigate('settings'); onClose(); } },
 
-    // Models — Fast
-    { id: 'model-klein', icon: <Zap size={16} />, label: 'FLUX.2 Klein', category: 'Быстрые', action: () => { applyModel('black-forest-labs/flux.2-klein-4b'); } },
-    { id: 'model-rv-fast', icon: <Zap size={16} />, label: 'Riverflow V2 Fast', category: 'Быстрые', action: () => { applyModel('sourceful/riverflow-v2-fast'); } },
-    { id: 'model-gemini-flash', icon: <Zap size={16} />, label: 'Gemini 3.1 Flash', category: 'Быстрые', action: () => { applyModel('google/gemini-3.1-flash-image-preview'); } },
-    { id: 'model-gemini-25', icon: <Zap size={16} />, label: 'Gemini 2.5 Flash', category: 'Быстрые', action: () => { applyModel('google/gemini-2.5-flash-image'); } },
-
-    // Models — Quality
-    { id: 'model-flux-pro', icon: <Paintbrush size={16} />, label: 'FLUX.2 Pro', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-pro'); } },
-    { id: 'model-flux-max', icon: <Paintbrush size={16} />, label: 'FLUX.2 Max', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-max'); } },
-    { id: 'model-flux-flex', icon: <Paintbrush size={16} />, label: 'FLUX.2 Flex', category: 'Качественные', action: () => { applyModel('black-forest-labs/flux.2-flex'); } },
-    { id: 'model-seedream', icon: <Paintbrush size={16} />, label: 'Seedream 4.5', category: 'Качественные', action: () => { applyModel('bytedance-seed/seedream-4.5'); } },
-    { id: 'model-rv-pro', icon: <Paintbrush size={16} />, label: 'Riverflow V2 Pro', category: 'Качественные', action: () => { applyModel('sourceful/riverflow-v2-pro'); } },
-    { id: 'model-rv-max', icon: <Paintbrush size={16} />, label: 'Riverflow V2 Max', category: 'Качественные', action: () => { applyModel('sourceful/riverflow-v2-max-preview'); } },
-
-    // Models — Smart
-    { id: 'model-gemini-pro', icon: <Brain size={16} />, label: 'Gemini 3 Pro', category: 'Умные', action: () => { applyModel('google/gemini-3-pro-image-preview'); } },
-    { id: 'model-gpt5', icon: <Brain size={16} />, label: 'GPT-5 Image', category: 'Умные', action: () => { applyModel('openai/gpt-5-image'); } },
-    { id: 'model-gpt5-mini', icon: <Brain size={16} />, label: 'GPT-5 Image Mini', category: 'Умные', action: () => { applyModel('openai/gpt-5-image-mini'); } },
+    // Models — built from the live catalog, grouped by price bucket
+    ...modelGroups.flatMap((group) =>
+      group.models.map((m) => ({
+        id: `model-${m.id}`,
+        icon: categoryIcon(group.category),
+        label: m.name,
+        category: CATEGORY_LABELS[group.category],
+        action: () => { applyModel(m.id); },
+      }))
+    ),
 
     // Actions
     { id: 'act-generate', icon: <Sparkles size={16} />, label: 'Генерировать', category: 'Действия', shortcut: 'Ctrl+Enter', action: () => { document.dispatchEvent(new CustomEvent('imagevibe:generate')); onClose(); } },
     { id: 'act-random-seed', icon: <Sparkles size={16} />, label: 'Случайный seed', category: 'Действия', shortcut: 'Ctrl+R', action: () => { useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647)); onClose(); } },
     { id: 'act-toggle-mode', icon: <Zap size={16} />, label: 'Переключить режим', category: 'Действия', shortcut: 'Ctrl+Shift+M', action: () => { useGenerateStore.getState().toggleUiMode(); onClose(); } },
-  ], [onNavigate, onClose]);
+  ], [onNavigate, onClose, modelGroups]);
 
   // Fuzzy search
   const fuse = useMemo(

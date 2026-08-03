@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
 import { useGalleryStore } from '../store';
+import { ipc } from '@/shared/lib/ipc';
 
 const SORT_OPTIONS = [
   { value: 'created_at', label: 'По дате' },
@@ -7,24 +9,19 @@ const SORT_OPTIONS = [
   { value: 'file_size', label: 'По размеру' },
 ] as const;
 
-const MODEL_FILTERS = [
-  { value: '', label: 'Все модели' },
-  { value: 'black-forest-labs/flux.2-pro', label: 'FLUX.2 Pro' },
-  { value: 'black-forest-labs/flux.2-max', label: 'FLUX.2 Max' },
-  { value: 'black-forest-labs/flux.2-klein-4b', label: 'FLUX.2 Klein' },
-  { value: 'black-forest-labs/flux.2-flex', label: 'FLUX.2 Flex' },
-  { value: 'bytedance-seed/seedream-4.5', label: 'Seedream 4.5' },
-  { value: 'google/gemini-3-pro-image-preview', label: 'Gemini 3 Pro' },
-  { value: 'google/gemini-3.1-flash-image-preview', label: 'Gemini 3.1 Flash' },
-  { value: 'google/gemini-2.5-flash-image', label: 'Gemini 2.5 Flash' },
-  { value: 'openai/gpt-5-image', label: 'GPT-5 Image' },
-  { value: 'openai/gpt-5-image-mini', label: 'GPT-5 Mini' },
-  { value: 'sourceful/riverflow-v2-pro', label: 'Riverflow Pro' },
-  { value: 'sourceful/riverflow-v2-fast', label: 'Riverflow Fast' },
-  { value: 'sourceful/riverflow-v2-max-preview', label: 'Riverflow Max' },
-];
-
 export function GalleryFilters() {
+  const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    const load = () => {
+      ipc.invoke('catalog:list')
+        .then((groups) => setModels(groups.flatMap((g) => g.models).map((m) => ({ id: m.id, name: m.name }))))
+        .catch(() => {});
+    };
+    load();
+    return ipc.on('catalog:updated', load);
+  }, []);
+
   const sortBy = useGalleryStore((s) => s.sortBy);
   const sortDir = useGalleryStore((s) => s.sortDir);
   const filterModel = useGalleryStore((s) => s.filterModel);
@@ -62,8 +59,9 @@ export function GalleryFilters() {
         onChange={(e) => setFilterModel(e.target.value || null)}
         className="bg-bg-tertiary text-text-secondary text-xs rounded-lg px-2 py-1.5 outline-none border border-glass-border cursor-pointer"
       >
-        {MODEL_FILTERS.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        <option value="">Все модели</option>
+        {models.map((m) => (
+          <option key={m.id} value={m.id}>{m.name}</option>
         ))}
       </select>
 

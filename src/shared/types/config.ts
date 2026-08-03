@@ -1,5 +1,3 @@
-import type { AspectRatio, ImageSize } from './models';
-
 /** API key entry */
 export interface ApiKeyConfig {
   id: string;
@@ -15,11 +13,6 @@ export interface AppConfig {
     model: string;
     autoTranslate: boolean;
     translateDebounceMs: number;
-  };
-  defaultParams: {
-    aspectRatio: AspectRatio;
-    imageSize: ImageSize;
-    seed: number | null;
   };
   ui: {
     mode: 'simple' | 'advanced';
@@ -51,11 +44,6 @@ export const DEFAULT_CONFIG: AppConfig = {
     model: 'google/gemini-3.1-flash-lite-preview',
     autoTranslate: true,
     translateDebounceMs: 800,
-  },
-  defaultParams: {
-    aspectRatio: '1:1',
-    imageSize: '1K',
-    seed: null,
   },
   ui: {
     mode: 'simple',
