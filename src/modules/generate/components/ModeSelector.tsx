@@ -37,13 +37,21 @@ export function ModeSelector() {
 
   const selected = models.find((m) => m.id === selectedModelId);
   const allowed = selected?.pricesLoaded ? availableModes(selected.schema) : TEXT_ONLY_MODES;
+  // True only once the catalog has actually answered for this model (found + prices
+  // loaded). Right after this component mounts, the local catalog list is still
+  // empty, so `selected` is undefined and `allowed` falls back to TEXT_ONLY_MODES —
+  // that fallback is a placeholder for "not answered yet", not a real verdict that
+  // other modes are unavailable. Resetting the store on it would wipe a mode (and,
+  // for inpaint, the drawn maskData) the catalog was about to confirm as valid.
+  const modeConfirmed = selected?.pricesLoaded === true;
 
   // A mode allowed for one model may not be for the next (e.g. inpaint needs two
   // references) — leaving it selected would send a generation with a mask the
-  // model has nowhere to put.
+  // model has nowhere to put. Only act once modeConfirmed: unknown must mean
+  // "don't touch the store", never "assume unavailable and reset".
   useEffect(() => {
-    if (!allowed.includes(mode)) setMode('text2img');
-  }, [allowed.join('|'), mode, setMode]);
+    if (modeConfirmed && !allowed.includes(mode)) setMode('text2img');
+  }, [modeConfirmed, allowed.join('|'), mode, setMode]);
 
   return (
     <div className="flex gap-0.5">
