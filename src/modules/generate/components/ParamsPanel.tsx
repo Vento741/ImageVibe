@@ -5,6 +5,7 @@ import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { ipc } from '@/shared/lib/ipc';
 import { useGenerateStore } from '../store';
 import { SchemaControls } from './SchemaControls';
+import { hasParameter, sizeFor } from '@/shared/lib/paramSchema';
 import type { ModelCategory } from '@/shared/types/models';
 import type { CatalogModelDTO, CatalogStatusResult } from '@/shared/types/ipc';
 
@@ -169,12 +170,43 @@ export function ParamsPanel() {
       )}
 
       {selected?.pricesLoaded ? (
-        <SchemaControls
-          schema={selected.schema}
-          params={params}
-          onChange={setParam}
-          onClear={clearParam}
-        />
+        <>
+          {!hasParameter(selected.schema, 'resolution') && (
+            <div>
+              <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
+                Размер
+              </label>
+              <div className="flex gap-1">
+                {[1024, 2048].map((side) => {
+                  const candidate = sizeFor(side, typeof params.aspect_ratio === 'string' ? params.aspect_ratio : undefined);
+                  return (
+                    <button
+                      key={side}
+                      onClick={() => setParam('size', candidate)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        params.size === candidate
+                          ? 'bg-aurora-blue/20 text-aurora-blue border border-aurora-blue/30'
+                          : 'text-text-secondary hover:bg-glass-hover border border-transparent'
+                      }`}
+                    >
+                      {candidate}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-[10px] text-text-tertiary/70 mt-1">
+                Модель не объявляет разрешение — провайдер может размер проигнорировать.
+                Фактический размер виден на карточке результата.
+              </div>
+            </div>
+          )}
+          <SchemaControls
+            schema={selected.schema}
+            params={params}
+            onChange={setParam}
+            onClear={clearParam}
+          />
+        </>
       ) : (
         selected && (
           <div className="text-[11px] text-text-tertiary/70">

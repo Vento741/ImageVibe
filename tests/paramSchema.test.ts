@@ -5,6 +5,7 @@ import {
   maxReferences,
   availableModes,
   applySchema,
+  sizeFor,
 } from '../src/shared/lib/paramSchema';
 import type { ParamSchema } from '../src/shared/types/models';
 
@@ -124,5 +125,24 @@ describe('applySchema', () => {
     expect(applySchema({ size: '2048x2048' }, schema)).not.toHaveProperty('size');
     const noResolution: Record<string, ParamSchema> = { aspect_ratio: schema.aspect_ratio };
     expect(applySchema({ size: '2048x2048' }, noResolution).size).toBe('2048x2048');
+  });
+});
+
+describe('sizeFor', () => {
+  it('makes a square when the aspect ratio is square', () => {
+    expect(sizeFor(2048, '1:1')).toBe('2048x2048');
+  });
+
+  it('puts the long side on the width for a landscape ratio', () => {
+    expect(sizeFor(2048, '16:9')).toBe('2048x1152');
+  });
+
+  it('puts the long side on the height for a portrait ratio', () => {
+    expect(sizeFor(2048, '9:16')).toBe('1152x2048');
+  });
+
+  it('falls back to a square when the ratio is unknown or auto', () => {
+    expect(sizeFor(1024, 'auto')).toBe('1024x1024');
+    expect(sizeFor(1024, undefined)).toBe('1024x1024');
   });
 });
