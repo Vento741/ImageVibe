@@ -145,4 +145,8 @@ describe('sizeFor', () => {
     expect(sizeFor(1024, 'auto')).toBe('1024x1024');
     expect(sizeFor(1024, undefined)).toBe('1024x1024');
   });
+
+  it('rounds the long side to a multiple of 8', () => {
+    expect(sizeFor(1010, '1:1')).toBe('1008x1008');
+  });
 });

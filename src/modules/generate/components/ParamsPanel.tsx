@@ -90,6 +90,17 @@ export function ParamsPanel() {
     if (selected?.pricesLoaded) syncParamsToSchema(selected.schema);
   }, [selected?.id, selected?.pricesLoaded, syncParamsToSchema]);
 
+  // size is derived from the aspect ratio, but the ratio has its own control that knows
+  // nothing about size. Without this, changing the ratio leaves a size computed for the
+  // previous one, and the paid request carries two values that contradict each other.
+  useEffect(() => {
+    if (typeof params.size !== 'string') return;
+    const sides = params.size.split('x').map(Number);
+    if (sides.length !== 2 || sides.some(Number.isNaN)) return;
+    const expected = sizeFor(Math.max(...sides), typeof params.aspect_ratio === 'string' ? params.aspect_ratio : undefined);
+    if (expected !== params.size) setParam('size', expected);
+  }, [params.size, params.aspect_ratio, setParam]);
+
   const handleRetry = () => {
     if (refreshing) return;
     setRefreshing(true);

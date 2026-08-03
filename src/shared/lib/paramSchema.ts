@@ -118,14 +118,15 @@ export function applySchema(
  * expect; an unknown or 'auto' ratio yields a square.
  */
 export function sizeFor(longSide: number, aspectRatio: string | undefined): string {
+  const round = (value: number) => Math.max(8, Math.round(value / 8) * 8);
+  const roundedLongSide = round(longSide);
   const match = aspectRatio ? /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(aspectRatio) : null;
-  if (!match) return `${longSide}x${longSide}`;
+  if (!match) return `${roundedLongSide}x${roundedLongSide}`;
 
   const w = Number(match[1]);
   const h = Number(match[2]);
-  const round = (value: number) => Math.max(8, Math.round(value / 8) * 8);
 
   return w >= h
-    ? `${longSide}x${round((longSide * h) / w)}`
-    : `${round((longSide * w) / h)}x${longSide}`;
+    ? `${roundedLongSide}x${round((roundedLongSide * h) / w)}`
+    : `${round((roundedLongSide * w) / h)}x${roundedLongSide}`;
 }
