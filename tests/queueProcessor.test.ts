@@ -509,6 +509,65 @@ describe('восстановление после перезапуска', () =>
   });
 });
 
+describe('повтор', () => {
+  it('стирает идентификатор прошлой задачи и создаёт новую', async () => {
+    // Без стирания повтор вернулся бы к опросу уже завершившейся задачи и выдал бы
+    // её же отказ вместо новой генерации
+    db.prepare(
+      `INSERT INTO generation_queue (prompt, model_id, params, status, task_id, error_message, media_kind)
+       VALUES (?, ?, ?, 'failed', 'старая-задача', 'content policy', 'image')`,
+    ).run(
+      'a red apple',
+      'z-image',
+      JSON.stringify({ mode: 'text2img', params: { aspect_ratio: '1:1' } }),
+    );
+
+    const { retryGeneration } = await processor();
+    retryGeneration(1);
+    await settle();
+
+    expect(kie.createTask).toHaveBeenCalledTimes(1);
+    expect(kie.getTask).not.toHaveBeenCalledWith('старая-задача', expect.anything());
+    expect(queueRow().status).toBe('completed');
+    expect(queueRow().error_message).toBeNull();
+  });
+
+  it('сам будит очередь, а не ждёт соседней отправки', async () => {
+    db.prepare(
+      `INSERT INTO generation_queue (prompt, model_id, params, status, media_kind)
+       VALUES (?, ?, ?, 'failed', 'image')`,
+    ).run(
+      'a red apple',
+      'z-image',
+      JSON.stringify({ mode: 'text2img', params: { aspect_ratio: '1:1' } }),
+    );
+
+    const { retryGeneration } = await processor();
+    retryGeneration(1);
+    await settle();
+
+    expect(queueRow().status).toBe('completed');
+  });
+
+  it('не трогает завершённую запись', async () => {
+    db.prepare(
+      `INSERT INTO generation_queue (prompt, model_id, params, status, media_kind)
+       VALUES (?, ?, ?, 'completed', 'image')`,
+    ).run(
+      'a red apple',
+      'z-image',
+      JSON.stringify({ mode: 'text2img', params: { aspect_ratio: '1:1' } }),
+    );
+
+    const { retryGeneration } = await processor();
+    retryGeneration(1);
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(queueRow().status).toBe('completed');
+    expect(kie.createTask).not.toHaveBeenCalled();
+  });
+});
+
 describe('отмена', () => {
   it('ожидающая запись отменяется бесплатно', async () => {
     const { submitGeneration, cancelGeneration } = await processor();

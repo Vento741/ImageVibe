@@ -29,7 +29,7 @@ import {
   setBudget,
   PROMPT_ASSIST_ESTIMATED_COST_USD,
 } from '../services/costTracker';
-import { submitGeneration, cancelGeneration } from '../services/queueProcessor';
+import { submitGeneration, cancelGeneration, retryGeneration } from '../services/queueProcessor';
 import type { KieQueueRequest } from '../services/queueProcessor';
 import type { KieMode } from '../../src/shared/types/kie';
 import type { GalleryQuery, ExportOptions } from '../../src/shared/types/ipc';
@@ -315,8 +315,8 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('queue:retry', (_, id: number) => {
-    const db = getDatabase();
-    db.prepare("UPDATE generation_queue SET status = 'pending', error_message = NULL WHERE id = ?").run(id);
+    logger.log('ipc', 'info', 'queue:retry', { queueItemId: id });
+    retryGeneration(id);
   });
 
   ipcMain.handle('queue:submit', (_, request: KieQueueRequest) => {

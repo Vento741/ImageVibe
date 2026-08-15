@@ -92,7 +92,7 @@ export function MaskEditor({ onClose }: MaskEditorProps) {
           ctx.putImageData(overlay, 0, 0);
           setHasMask(true);
         };
-        img.src = 'data:image/png;base64,' + savedMask;
+        img.src = savedMask;
       }
     }
 

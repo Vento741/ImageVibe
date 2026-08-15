@@ -464,6 +464,27 @@ export function resumeRunningTasks(): void {
   }
 }
 
+/**
+ * Повторить генерацию.
+ *
+ * Идентификатор прошлой задачи обязательно стирается: иначе повтор вернулся бы к опросу
+ * уже завершившейся задачи и выдал бы её же результат — или её же отказ — вместо новой
+ * генерации. И очередь надо разбудить: сама она просыпается только на отправку и на
+ * завершение соседней записи.
+ */
+export function retryGeneration(queueItemId: number): void {
+  getDatabase()
+    .prepare(
+      `UPDATE generation_queue
+       SET status = 'pending', error_message = NULL, task_id = NULL,
+           started_at = NULL, completed_at = NULL
+       WHERE id = ? AND status IN ('failed', 'cancelled')`,
+    )
+    .run(queueItemId);
+
+  processNext();
+}
+
 /** Отменить генерацию. Отправленную задачу это не останавливает и денег не возвращает. */
 export function cancelGeneration(queueItemId: number): void {
   const controller = abortControllers.get(queueItemId);

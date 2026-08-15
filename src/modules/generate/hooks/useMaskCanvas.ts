@@ -150,8 +150,9 @@ export function useMaskCanvas({ canvasRef, tool, brushSize, onStrokeEnd }: UseMa
     if (!hasAnyMask) return null;
 
     offCtx.putImageData(out, 0, 0);
-    const dataUrl = offscreen.toDataURL('image/png');
-    return dataUrl.replace(/^data:image\/png;base64,/, '');
+    // Полный data-URL, а не голый base64: загрузка файла в kie.ai требует префикса,
+    // и маска хранится в сторе в том же виде, что исходное изображение
+    return offscreen.toDataURL('image/png');
   }, [canvasRef]);
 
   return {
