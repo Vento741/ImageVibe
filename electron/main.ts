@@ -3,7 +3,7 @@ import path from 'path';
 import { initDatabase, closeDatabase } from './services/database';
 import { loadConfig } from './services/configManager';
 import { registerIpcHandlers } from './ipc/handlers';
-import { initCatalog } from './services/modelCatalog';
+import { resumeRunningTasks } from './services/queueProcessor';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -44,7 +44,7 @@ function createWindow() {
         responseHeaders: {
           ...details.responseHeaders,
           'Content-Security-Policy': [
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: local-file:; connect-src 'self' https://openrouter.ai",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: local-file:; connect-src 'self' https://openrouter.ai https://api.kie.ai",
           ],
         },
       });
@@ -82,11 +82,9 @@ app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
 
-  initCatalog(() => {
-    for (const window of BrowserWindow.getAllWindows()) {
-      window.webContents.send('catalog:updated');
-    }
-  });
+  // Задача kie.ai живёт на сервере и переживает закрытие приложения: незавершённые
+  // генерации возвращаются в опрос, иначе результат был бы оплачен и потерян
+  resumeRunningTasks();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

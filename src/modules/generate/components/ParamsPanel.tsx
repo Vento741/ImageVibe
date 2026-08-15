@@ -1,229 +1,94 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Zap, Paintbrush, Brain } from 'lucide-react';
-import type { ComponentType } from 'react';
+import { useEffect, useState } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { ipc } from '@/shared/lib/ipc';
 import { useGenerateStore } from '../store';
-import { SchemaControls } from './SchemaControls';
-import { hasParameter, sizeFor } from '@/shared/lib/paramSchema';
-import type { ModelCategory } from '@/shared/types/models';
-import type { CatalogModelDTO, CatalogStatusResult } from '@/shared/types/ipc';
+import { KieSchemaControls } from './KieSchemaControls';
+import type { KieModel } from '@/shared/types/kie';
 
-// Buckets are computed from price, so the labels name price, not temperament
-const CATEGORIES: Array<{ id: ModelCategory; name: string; icon: ComponentType<{ size?: number; className?: string }> }> = [
-  { id: 'fast', name: 'Дешёвые', icon: Zap },
-  { id: 'quality', name: 'Средние', icon: Paintbrush },
-  { id: 'smart', name: 'Дорогие', icon: Brain },
-];
-
-type Group = { category: ModelCategory; models: CatalogModelDTO[] };
-
-/** Short, user-facing reason the model list is empty. */
-function catalogMessage(status: CatalogStatusResult | null): string {
-  if (!status || status.state === 'loading' || status.state === 'empty') {
-    return 'Загрузка каталога моделей…';
+/** Модели режима, сгруппированные по семейству — иначе список из сорока имён нечитаем. */
+function byFamily(models: KieModel[]): Array<{ family: string; models: KieModel[] }> {
+  const groups = new Map<string, KieModel[]>();
+  for (const model of models) {
+    const list = groups.get(model.family);
+    if (list) list.push(model);
+    else groups.set(model.family, [model]);
   }
-  if (status.state === 'error') {
-    if (status.error?.includes('ключ не настроен')) {
-      return 'Добавьте ключ API OpenRouter в настройках, чтобы увидеть список моделей.';
-    }
-    return `Не удалось загрузить каталог моделей${status.error ? `: ${status.error}` : ''}.`;
-  }
-  return 'Каталог моделей пуст.';
+  return [...groups.entries()]
+    .map(([family, list]) => ({ family, models: list }))
+    .sort((a, b) => a.family.localeCompare(b.family));
 }
 
 export function ParamsPanel() {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [status, setStatus] = useState<CatalogStatusResult | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const selectedCategory = useGenerateStore((s) => s.selectedCategory);
+  const [models, setModels] = useState<KieModel[]>([]);
+  const mode = useGenerateStore((s) => s.mode);
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
   const params = useGenerateStore((s) => s.params);
-  const setSelectedCategory = useGenerateStore((s) => s.setSelectedCategory);
   const setSelectedModelId = useGenerateStore((s) => s.setSelectedModelId);
   const setParam = useGenerateStore((s) => s.setParam);
   const clearParam = useGenerateStore((s) => s.clearParam);
-  const syncParamsToSchema = useGenerateStore((s) => s.syncParamsToSchema);
+  const syncParamsToModel = useGenerateStore((s) => s.syncParamsToModel);
 
-  const load = useCallback(() => {
-    Promise.all([ipc.invoke('catalog:list'), ipc.invoke('catalog:status')])
-      .then(([loadedGroups, loadedStatus]) => {
-        setGroups(loadedGroups);
-        setStatus(loadedStatus);
-        if (!useGenerateStore.getState().selectedModelId) {
-          // The cheapest model with a known price, from the live catalog — never the
-          // first element of whatever category happened to be selected at mount time.
-          // Left empty (retried on the next catalog:updated) when prices are not in yet.
-          ipc.invoke('catalog:default-model').then((id) => {
-            if (id) setSelectedModelId(id);
-          }).catch(() => {});
+  // Реестр читается из файла, собранного скриптом: он готов сразу и по сети не ходит,
+  // поэтому ни состояния загрузки, ни кнопки обновления здесь больше нет
+  useEffect(() => {
+    ipc
+      .invoke('catalog:for-mode', mode)
+      .then((list) => {
+        setModels(list);
+        const chosen = useGenerateStore.getState().selectedModelId;
+        if (!list.some((m) => m.id === chosen)) {
+          setSelectedModelId(list[0]?.id ?? '');
         }
       })
-      .catch(() => {});
-  }, [setSelectedModelId]);
+      .catch(() => setModels([]));
+  }, [mode, setSelectedModelId]);
 
+  const selected = models.find((m) => m.id === selectedModelId);
+
+  // Смена модели: выбросить то, чего новая схема не допускает, и предзаполнить
+  // обязательное — без него сервис отвергает запрос
   useEffect(() => {
-    load();
-    return ipc.on('catalog:updated', load);
-  }, [load]);
+    if (selected) syncParamsToModel(selected);
+  }, [selected?.id, syncParamsToModel]);
 
-  // Before prices arrive every model can end up bucketed into a single category (see
-  // bucketByPrice), which may not be the category the store happens to hold. Fall back to
-  // the first group that actually exists, rather than leaving the model list empty — this
-  // condition goes false as soon as selectedCategory is updated, so it settles in one pass.
-  useEffect(() => {
-    if (groups.length === 0) return;
-    const hasSelectedCategory = groups.some((group) => group.category === selectedCategory);
-    if (!hasSelectedCategory) {
-      setSelectedCategory(groups[0].category);
-    }
-  }, [groups, selectedCategory, setSelectedCategory]);
-
-  const models = groups.find((group) => group.category === selectedCategory)?.models ?? [];
-  const selected = groups.flatMap((group) => group.models).find((m) => m.id === selectedModelId);
-
-  // Bring the parameter record to the newly selected model's schema: drop what it does
-  // not allow, fill 'auto' where it offers it. Until pricesLoaded, schema is the
-  // catalog-record schema — not the cross-provider intersection — and cannot be trusted
-  // to build controls (see openrouter-model-registry §5), so this waits for it.
-  useEffect(() => {
-    if (selected?.pricesLoaded) syncParamsToSchema(selected.schema);
-  }, [selected?.id, selected?.pricesLoaded, syncParamsToSchema]);
-
-  // size is derived from the aspect ratio, but the ratio has its own control that knows
-  // nothing about size. Without this, changing the ratio leaves a size computed for the
-  // previous one, and the paid request carries two values that contradict each other.
-  useEffect(() => {
-    if (typeof params.size !== 'string') return;
-    const sides = params.size.split('x').map(Number);
-    if (sides.length !== 2 || sides.some(Number.isNaN)) return;
-    const expected = sizeFor(Math.max(...sides), typeof params.aspect_ratio === 'string' ? params.aspect_ratio : undefined);
-    if (expected !== params.size) setParam('size', expected);
-  }, [params.size, params.aspect_ratio, setParam]);
-
-  const handleRetry = () => {
-    if (refreshing) return;
-    setRefreshing(true);
-    ipc.invoke('catalog:refresh').finally(() => {
-      load();
-      setRefreshing(false);
-    });
-  };
+  const groups = byFamily(models);
 
   return (
     <GlassPanel className="flex flex-col gap-3">
-      {groups.length === 0 ? (
-        <div className="text-xs text-text-tertiary rounded-lg border border-glass-border bg-bg-tertiary px-3 py-2 flex flex-col gap-2">
-          <span>{catalogMessage(status)}</span>
-          {status?.state === 'error' && (
-            <button
-              onClick={handleRetry}
-              disabled={refreshing}
-              className="self-start px-2 py-1 rounded-md text-xs bg-glass-hover text-text-secondary hover:text-text-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {refreshing ? 'Повторяем…' : 'Повторить'}
-            </button>
-          )}
+      {models.length === 0 ? (
+        <div className="text-xs text-text-tertiary rounded-lg border border-glass-border bg-bg-tertiary px-3 py-2">
+          Для этого режима моделей нет.
         </div>
       ) : (
-        <>
-          {status?.stale && (
-            <div className="text-[11px] text-text-tertiary/70">
-              Данные каталога моделей могут быть устаревшими.
-            </div>
-          )}
-
-          {/* Category selector — only categories a group actually arrived for */}
-          <div>
-            <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-2 block">
-              Категория
-            </label>
-            <div className="flex gap-1">
-              {CATEGORIES.filter((cat) => groups.some((group) => group.category === cat.id)).map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.id);
-                    const firstModel = groups.find((group) => group.category === cat.id)?.models[0];
-                    if (firstModel) setSelectedModelId(firstModel.id);
-                  }}
-                  className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex flex-col items-center gap-1 ${
-                    selectedCategory === cat.id
-                      ? 'bg-aurora-blue/20 text-aurora-blue border border-aurora-blue/30'
-                      : 'text-text-secondary hover:bg-glass-hover border border-transparent'
-                  }`}
-                >
-                  <cat.icon size={16} />
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Model selector */}
-          <div>
-            <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
-              Модель
-            </label>
-            <select
-              value={selectedModelId}
-              onChange={(e) => setSelectedModelId(e.target.value)}
-              className="w-full bg-bg-tertiary text-text-primary text-sm rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50 cursor-pointer"
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </>
+        <div>
+          <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
+            Модель
+          </label>
+          <select
+            value={selectedModelId}
+            onChange={(e) => setSelectedModelId(e.target.value)}
+            className="w-full bg-bg-tertiary text-text-primary text-sm rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50 cursor-pointer"
+          >
+            {groups.map((group) => (
+              <optgroup key={group.family} label={group.family}>
+                {group.models.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
       )}
 
-      {selected?.pricesLoaded ? (
-        <>
-          {!hasParameter(selected.schema, 'resolution') && (
-            <div>
-              <label className="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1 block">
-                Размер
-              </label>
-              <div className="flex gap-1">
-                {[1024, 2048].map((side) => {
-                  const candidate = sizeFor(side, typeof params.aspect_ratio === 'string' ? params.aspect_ratio : undefined);
-                  return (
-                    <button
-                      key={side}
-                      onClick={() => setParam('size', candidate)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        params.size === candidate
-                          ? 'bg-aurora-blue/20 text-aurora-blue border border-aurora-blue/30'
-                          : 'text-text-secondary hover:bg-glass-hover border border-transparent'
-                      }`}
-                    >
-                      {candidate}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="text-[10px] text-text-tertiary/70 mt-1">
-                Модель не объявляет разрешение — провайдер может размер проигнорировать.
-                Фактический размер виден на карточке результата.
-              </div>
-            </div>
-          )}
-          <SchemaControls
-            schema={selected.schema}
-            params={params}
-            onChange={setParam}
-            onClear={clearParam}
-          />
-        </>
-      ) : (
-        selected && (
-          <div className="text-[11px] text-text-tertiary/70">
-            Параметры модели загружаются…
-          </div>
-        )
+      {selected && (
+        <KieSchemaControls
+          model={selected}
+          params={params}
+          onChange={setParam}
+          onClear={clearParam}
+        />
       )}
     </GlassPanel>
   );

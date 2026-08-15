@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { GenerationMode, ModelCategory, ParamSchema } from '@/shared/types/models';
-import type { GenerationParams, GenerationResult } from '@/shared/types/api';
-import { applySchema } from '@/shared/lib/paramSchema';
+import type { KieMode, KieModel, KieParams } from '@/shared/types/kie';
+import type { QueueResult } from '@/shared/types/ipc';
+import { applyModel } from '@/shared/lib/kieParams';
 
 /** A card on the canvas — either generating, completed, or failed */
 export interface CanvasCard {
@@ -10,10 +10,33 @@ export interface CanvasCard {
   status: 'generating' | 'completed' | 'failed';
   prompt: string;
   modelId: string;
-  params: GenerationParams;
+  params: KieParams;
   startedAt: number;
-  result?: GenerationResult & { filePath?: string; imageId?: number };
+  result?: QueueResult;
   error?: string;
+}
+
+/**
+ * Модель, обслуживающая режим.
+ *
+ * Режим у kie.ai — свойство модели, а не параметр запроса, поэтому переключение режима
+ * меняет список моделей. Текущая модель сохраняется, если она этот режим умеет; иначе
+ * берётся первая доступная. Пусто — значит для режима моделей нет вовсе.
+ */
+export function resolveModelForMode(
+  models: KieModel[],
+  currentId: string,
+  mode: KieMode,
+): string {
+  const current = models.find((m) => m.id === currentId);
+  if (current?.modes.includes(mode)) return currentId;
+
+  return (
+    models
+      .filter((m) => m.modes.includes(mode))
+      .map((m) => m.id)
+      .sort((a, b) => a.localeCompare(b))[0] ?? ''
+  );
 }
 
 interface GenerateState {
@@ -24,12 +47,12 @@ interface GenerateState {
   promptHistoryIndex: number;
 
   // Model selection
-  selectedCategory: ModelCategory;
   selectedModelId: string;
 
-  // Parameters — protocol-keyed, built from the model's schema, not from named fields
-  mode: GenerationMode;
-  params: GenerationParams;
+  /** Режим — свойство выбранной модели и фильтр списка моделей */
+  mode: KieMode;
+  /** Параметры по именам из схемы модели */
+  params: KieParams;
   styleTags: string[];
 
   // UI state
@@ -37,15 +60,13 @@ interface GenerateState {
   uiMode: 'simple' | 'advanced';
   showTranslation: boolean;
 
-  // Source image for img2img / inpaint
+  /** Исходник: всегда data-URL — путь и ссылка на файл до API не доходят */
   sourceImageData: string | null;
-  maskData: string | null; // base64 PNG mask (white=edit, black=keep)
+  maskData: string | null;
 
-  // Result (legacy — kept for compatibility)
-  currentResult: (GenerationResult & { filePath?: string; imageId?: number }) | null;
-  resultHistory: Array<GenerationResult & { filePath?: string; imageId?: number }>;
+  currentResult: QueueResult | null;
+  resultHistory: QueueResult[];
 
-  // Canvas cards (new queue-based system)
   canvasCards: CanvasCard[];
 
   // Actions
@@ -54,19 +75,21 @@ interface GenerateState {
   pushPromptHistory: (prompt: string) => void;
   undoPrompt: () => void;
   redoPrompt: () => void;
-  setSelectedCategory: (category: ModelCategory) => void;
   setSelectedModelId: (modelId: string) => void;
-  setMode: (mode: GenerationMode) => void;
+  setMode: (mode: KieMode) => void;
+  /** Переключить режим, подобрав модель, которая его обслуживает */
+  switchMode: (mode: KieMode, models: KieModel[]) => void;
   setParam: (key: string, value: string | number | boolean) => void;
   clearParam: (key: string) => void;
-  syncParamsToSchema: (schema: Record<string, ParamSchema>) => void;
+  /** Привести параметры к схеме модели: выбросить лишнее, предзаполнить обязательное */
+  syncParamsToModel: (model: KieModel) => void;
   setStyleTags: (tags: string[]) => void;
   toggleStyleTag: (tag: string) => void;
   setIsGenerating: (val: boolean) => void;
   setUiMode: (mode: 'simple' | 'advanced') => void;
   toggleUiMode: () => void;
   setShowTranslation: (val: boolean) => void;
-  setCurrentResult: (result: GenerateState['currentResult']) => void;
+  setCurrentResult: (result: QueueResult | null) => void;
   setSourceImageData: (data: string | null) => void;
   setMaskData: (data: string | null) => void;
   addCanvasCard: (card: CanvasCard) => void;
@@ -81,18 +104,17 @@ const initialState = {
   translatedPrompt: '',
   promptHistory: [] as string[],
   promptHistoryIndex: -1,
-  selectedCategory: 'fast' as ModelCategory,
   selectedModelId: '',
-  mode: 'text2img' as GenerationMode,
-  params: {} as GenerationParams,
+  mode: 'text2img' as KieMode,
+  params: {} as KieParams,
   styleTags: [] as string[],
   isGenerating: false,
   uiMode: 'simple' as 'simple' | 'advanced',
   showTranslation: false,
   sourceImageData: null as string | null,
   maskData: null as string | null,
-  currentResult: null as GenerateState['currentResult'],
-  resultHistory: [] as Array<GenerationResult & { filePath?: string; imageId?: number }>,
+  currentResult: null as QueueResult | null,
+  resultHistory: [] as QueueResult[],
   canvasCards: [] as CanvasCard[],
 };
 
@@ -127,24 +149,31 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
     }
   },
 
-  setSelectedCategory: (selectedCategory) => set({ selectedCategory }),
   setSelectedModelId: (selectedModelId) => set({ selectedModelId }),
-  setMode: (mode) => set((s) => ({
-    mode,
-    maskData: mode !== 'inpaint' ? null : s.maskData,
-  })),
+
+  setMode: (mode) =>
+    set((s) => ({ mode, maskData: mode !== 'inpaint' ? null : s.maskData })),
+
+  switchMode: (mode, models) =>
+    set((s) => ({
+      mode,
+      selectedModelId: resolveModelForMode(models, s.selectedModelId, mode),
+      maskData: mode !== 'inpaint' ? null : s.maskData,
+    })),
+
   setParam: (key, value) => set((s) => ({ params: { ...s.params, [key]: value } })),
 
-  clearParam: (key) => set((s) => {
-    const next = { ...s.params };
-    delete next[key];
-    return { params: next };
-  }),
+  clearParam: (key) =>
+    set((s) => {
+      const next = { ...s.params };
+      delete next[key];
+      return { params: next };
+    }),
 
-  // Called when the selected model changes: drop what the new schema does not allow and
-  // fill 'auto' where it offers it. A value that fell out is dropped, not replaced —
-  // substituting the first allowed value would send something the user never chose.
-  syncParamsToSchema: (schema) => set((s) => ({ params: applySchema(s.params, schema) })),
+  // Вызывается при смене модели: значение, выпавшее из схемы, выбрасывается, а не
+  // заменяется допустимым — подстановка отправила бы то, чего пользователь не выбирал.
+  // Предзаполняются только обязательные параметры: без них сервис отвергает запрос.
+  syncParamsToModel: (model) => set((s) => ({ params: applyModel(s.params, model) })),
 
   setStyleTags: (styleTags) => set({ styleTags }),
   toggleStyleTag: (tag) => {
@@ -164,41 +193,30 @@ export const useGenerateStore = create<GenerateState>((set, get) => ({
   setMaskData: (maskData) => set({ maskData }),
 
   setCurrentResult: (result) => {
-    if (result) {
-      set((s) => {
-        // An unknown id (null) never matches anything else unknown — two paid
-        // generations without an x-generation-id header must both stay in history,
-        // not collapse into one because null === null.
-        const alreadyInHistory =
-          result.generationId !== null &&
-          s.resultHistory.some((r) => r.generationId === result.generationId);
-        return {
-          currentResult: result,
-          resultHistory: alreadyInHistory
-            ? s.resultHistory
-            : [result, ...s.resultHistory].slice(0, 50),
-        };
-      });
-    } else {
-      set({ currentResult: result });
+    if (!result) {
+      set({ currentResult: null });
+      return;
     }
+    set((s) => ({
+      currentResult: result,
+      // Номер записи в галерее уникален всегда, в отличие от идентификатора задачи,
+      // которого у восстановленной записи может не быть
+      resultHistory: s.resultHistory.some((r) => r.imageId === result.imageId)
+        ? s.resultHistory
+        : [result, ...s.resultHistory].slice(0, 50),
+    }));
   },
 
-  addCanvasCard: (card) => set((s) => ({
-    canvasCards: [card, ...s.canvasCards],
-  })),
+  addCanvasCard: (card) => set((s) => ({ canvasCards: [card, ...s.canvasCards] })),
+  addCanvasCards: (cards) => set((s) => ({ canvasCards: [...cards, ...s.canvasCards] })),
 
-  addCanvasCards: (cards) => set((s) => ({
-    canvasCards: [...cards, ...s.canvasCards],
-  })),
+  updateCanvasCard: (id, updates) =>
+    set((s) => ({
+      canvasCards: s.canvasCards.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+    })),
 
-  updateCanvasCard: (id, updates) => set((s) => ({
-    canvasCards: s.canvasCards.map((c) => c.id === id ? { ...c, ...updates } : c),
-  })),
-
-  removeCanvasCard: (id) => set((s) => ({
-    canvasCards: s.canvasCards.filter((c) => c.id !== id),
-  })),
+  removeCanvasCard: (id) =>
+    set((s) => ({ canvasCards: s.canvasCards.filter((c) => c.id !== id) })),
 
   reset: () => set(initialState),
 }));

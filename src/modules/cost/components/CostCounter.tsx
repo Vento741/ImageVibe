@@ -84,7 +84,7 @@ export function CostCounter() {
         {/* Баланс */}
         {balance && (
           <div className="text-[10px] text-text-tertiary">
-            {formatCostDisplay(balance.balance)}
+            {formatCostDisplay(balance.usd)}
           </div>
         )}
       </div>

@@ -6,16 +6,8 @@ import type { ReactNode } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
 import type { CanvasCard } from '../store';
-import { formatCostDisplay, getModelShortName, generateId } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName, generateId, localFileUrl } from '@/shared/lib/utils';
 
-function formatTime(ms: number): string {
-  if (ms < 1000) return `${ms}мс`;
-  const sec = ms / 1000;
-  if (sec < 60) return `${sec.toFixed(1)}с`;
-  const min = Math.floor(sec / 60);
-  const remainSec = sec % 60;
-  return `${min}м ${remainSec.toFixed(0)}с`;
-}
 import { ipc } from '@/shared/lib/ipc';
 import { useToastStore } from '@/shared/stores/toastStore';
 import { Tooltip } from '@/shared/components/ui/Tooltip';
@@ -222,12 +214,21 @@ export function Canvas() {
               transition: isPanning.current ? 'none' : 'transform 0.15s ease-out',
             }}
           >
-            <img
-              src={`data:image/png;base64,${selectedResult.imageBase64}`}
-              alt={selectedResult.prompt}
-              className="max-w-[90%] max-h-[85%] object-contain rounded-lg shadow-2xl select-none pointer-events-none"
-              draggable={false}
-            />
+            {selectedResult.mediaKind === 'video' ? (
+              <video
+                src={localFileUrl(selectedResult.filePath)}
+                controls
+                preload="metadata"
+                className="max-w-[90%] max-h-[85%] object-contain rounded-lg shadow-2xl bg-black"
+              />
+            ) : (
+              <img
+                src={localFileUrl(selectedResult.filePath)}
+                alt={selectedResult.prompt}
+                className="max-w-[90%] max-h-[85%] object-contain rounded-lg shadow-2xl select-none pointer-events-none"
+                draggable={false}
+              />
+            )}
           </div>
         </div>
 
@@ -250,8 +251,11 @@ export function Canvas() {
                 onClick={() => {
                   setContextMenu(null);
                   const store = useGenerateStore.getState();
-                  // Set source image as base64 data URL
-                  store.setSourceImageData(`data:image/png;base64,${selectedResult.imageBase64}`);
+                  // Файл читается в главном процессе: точки отправки принимают только
+                  // data-URL, а путь и ссылка на файл до API не доходят
+                  ipc.invoke('file:read-as-data-url', selectedResult.filePath)
+                    .then((dataUrl) => store.setSourceImageData(dataUrl))
+                    .catch(() => addToast({ message: 'Не удалось прочитать файл', type: 'error' }));
                   store.setMode('img2img');
                   store.setUiMode('advanced');
                   store.setPrompt(selectedResult.prompt);
@@ -270,7 +274,7 @@ export function Canvas() {
                 onClick={async () => {
                   setContextMenu(null);
                   try {
-                    const blob = await fetch(`data:image/png;base64,${selectedResult.imageBase64}`).then(r => r.blob());
+                    const blob = await fetch(localFileUrl(selectedResult.filePath)).then((r) => r.blob());
                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                     addToast({ message: 'Изображение скопировано', type: 'success' });
                   } catch {
@@ -354,14 +358,16 @@ export function Canvas() {
         {/* Bottom bar — info + actions */}
         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center gap-2 z-20">
           <div className="glass-panel px-3 py-1.5 text-xs text-text-secondary shrink-0">
-            {selectedResult.width}×{selectedResult.height} • {formatTime(selectedResult.generationTimeMs)}
-            {selectedResult.costUsd !== null && selectedResult.costUsd > 0 && ` • ${formatCostDisplay(selectedResult.costUsd)}`}
+            {selectedResult.width !== null && selectedResult.height !== null
+              ? `${selectedResult.width}×${selectedResult.height}`
+              : selectedResult.mediaKind === 'video' ? 'видео' : ''}
+            {selectedResult.costUsd !== null && ` • ${formatCostDisplay(selectedResult.costUsd)}`}
           </div>
 
           <div className="flex gap-1">
             <ExpandedAction icon={<Copy size={14} />} label="Копировать" onClick={async () => {
               try {
-                const blob = await fetch(`data:image/png;base64,${selectedResult.imageBase64}`).then(r => r.blob());
+                const blob = await fetch(localFileUrl(selectedResult.filePath)).then((r) => r.blob());
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                 addToast({ message: 'Изображение скопировано', type: 'success' });
               } catch {

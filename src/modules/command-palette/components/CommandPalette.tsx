@@ -10,29 +10,19 @@ import {
   BarChart3,
   Settings,
   Zap,
-  Brain,
+  Film,
   Sparkles,
   Search,
 } from 'lucide-react';
 import type { Page } from '../../../App';
 import { useGenerateStore } from '@/modules/generate/store';
 import { ipc } from '@/shared/lib/ipc';
-import type { ModelCategory } from '@/shared/types/models';
-import type { CatalogModelDTO } from '@/shared/types/ipc';
+import type { KieModel } from '@/shared/types/kie';
 
-// Price-bucket labels and icons, matching ParamsPanel's category selector
-const CATEGORY_LABELS: Record<ModelCategory, string> = {
-  fast: 'Дешёвые',
-  quality: 'Средние',
-  smart: 'Дорогие',
-};
-
-function categoryIcon(category: ModelCategory): ReactNode {
-  switch (category) {
-    case 'fast': return <Zap size={16} />;
-    case 'quality': return <Paintbrush size={16} />;
-    case 'smart': return <Brain size={16} />;
-  }
+// Ценовых корзин больше нет: цен до генерации у kie.ai не существует, поэтому модели
+// группируются по семейству — по единственному признаку, который каталог объявляет сам
+function kindIcon(kind: 'image' | 'video'): ReactNode {
+  return kind === 'video' ? <Film size={16} /> : <Paintbrush size={16} />;
 }
 
 interface CommandItem {
@@ -54,14 +44,10 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [modelGroups, setModelGroups] = useState<Array<{ category: ModelCategory; models: CatalogModelDTO[] }>>([]);
+  const [models, setModels] = useState<KieModel[]>([]);
 
   useEffect(() => {
-    const load = () => {
-      ipc.invoke('catalog:list').then(setModelGroups).catch(() => {});
-    };
-    load();
-    return ipc.on('catalog:updated', load);
+    ipc.invoke('catalog:list').then(setModels).catch(() => {});
   }, []);
 
   function applyModel(modelId: string) {
@@ -80,22 +66,20 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
     { id: 'nav-analytics', icon: <BarChart3 size={16} />, label: 'Аналитика', category: 'Навигация', action: () => { onNavigate('analytics'); onClose(); } },
     { id: 'nav-settings', icon: <Settings size={16} />, label: 'Настройки', category: 'Навигация', shortcut: 'Ctrl+,', action: () => { onNavigate('settings'); onClose(); } },
 
-    // Models — built from the live catalog, grouped by price bucket
-    ...modelGroups.flatMap((group) =>
-      group.models.map((m) => ({
-        id: `model-${m.id}`,
-        icon: categoryIcon(group.category),
-        label: m.name,
-        category: CATEGORY_LABELS[group.category],
-        action: () => { applyModel(m.id); },
-      }))
-    ),
+    // Модели из реестра, сгруппированные по семейству
+    ...models.map((m) => ({
+      id: `model-${m.id}`,
+      icon: kindIcon(m.kind),
+      label: m.name,
+      category: m.family,
+      action: () => { applyModel(m.id); },
+    })),
 
     // Actions
     { id: 'act-generate', icon: <Sparkles size={16} />, label: 'Генерировать', category: 'Действия', shortcut: 'Ctrl+Enter', action: () => { document.dispatchEvent(new CustomEvent('imagevibe:generate')); onClose(); } },
     { id: 'act-random-seed', icon: <Sparkles size={16} />, label: 'Случайный seed', category: 'Действия', shortcut: 'Ctrl+R', action: () => { useGenerateStore.getState().setParam('seed', Math.floor(Math.random() * 2147483647)); onClose(); } },
     { id: 'act-toggle-mode', icon: <Zap size={16} />, label: 'Переключить режим', category: 'Действия', shortcut: 'Ctrl+Shift+M', action: () => { useGenerateStore.getState().toggleUiMode(); onClose(); } },
-  ], [onNavigate, onClose, modelGroups]);
+  ], [onNavigate, onClose, models]);
 
   // Fuzzy search
   const fuse = useMemo(

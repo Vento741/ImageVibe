@@ -1,27 +1,25 @@
 import fs from 'fs';
 import path from 'path';
-import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
-import { getConfig, updateConfig, getActiveApiKey } from '../services/configManager';
+import { ipcMain, dialog, app, shell } from 'electron';
+import { getConfig, updateConfig } from '../services/configManager';
 import { getDatabase } from '../services/database';
 import { logger } from '../services/logger';
 import type { LogCategory } from '../services/logger';
 import {
-  generateImage,
   translatePrompt,
   translateToRussian,
   promptAssist,
   promptFromImage,
-  fetchCredits,
 } from '../services/openRouterClient';
-import { estimateCost } from '../services/costEstimator';
+import { getBalance, medianCostFor } from '../services/costHistory';
 import {
   getAllModels,
-  getGroupedModels,
-  getCatalogStatus,
+  getAvailableModes,
   getDefaultModelId,
-  refreshCatalog,
   getModelById,
-} from '../services/modelCatalog';
+  getModelsForMode,
+} from '../services/kieRegistry';
+import { readAsDataUrl } from '../services/dataUrl';
 import { deleteImage, exportImage } from '../services/fileStorage';
 import { readMetadataFromFile } from '../services/pngMetadata';
 import {
@@ -32,7 +30,8 @@ import {
   PROMPT_ASSIST_ESTIMATED_COST_USD,
 } from '../services/costTracker';
 import { submitGeneration, cancelGeneration } from '../services/queueProcessor';
-import type { GenerationRequest } from '../../src/shared/types/api';
+import type { KieQueueRequest } from '../services/queueProcessor';
+import type { KieMode } from '../../src/shared/types/kie';
 import type { GalleryQuery, ExportOptions } from '../../src/shared/types/ipc';
 import type { DBBudgetConfig, DBImage, DBPreset } from '../../src/shared/types/database';
 
@@ -50,18 +49,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('config:get', () => getConfig());
   ipcMain.handle('config:set', (_, partial) => {
     logger.log('ipc', 'info', 'config:set', { keys: Object.keys(partial) });
-    const previousApiKey = getActiveApiKey();
-    const updated = updateConfig(partial);
-    if (partial.apiKeys && getActiveApiKey() !== previousApiKey) {
-      // Fire and forget: the API key just became available (or changed), so the catalog —
-      // which may have failed with "no API key" on a fresh install — gets another chance.
-      refreshCatalog().catch((error) => {
-        logger.log('ipc', 'warn', 'Обновление каталога после смены ключа API не удалось', {
-          error: String(error),
-        });
-      });
-    }
-    return updated;
+    // Реестр моделей больше не зависит от ключа: он читается из файла, а не из API,
+    // поэтому смена ключа ничего не перезапрашивает.
+    return updateConfig(partial);
   });
   ipcMain.handle('config:get-images-path', () => getConfig().storage.imagesPath);
 
@@ -158,26 +148,30 @@ export function registerIpcHandlers(): void {
 
   // ═══ Cost ═══
   ipcMain.handle('cost:get-balance', async () => {
-    const credits = await fetchCredits();
-    return { ...credits, lastChecked: new Date().toISOString() };
+    const balance = await getBalance();
+    return { ...balance, lastChecked: new Date().toISOString() };
   });
 
   ipcMain.handle('cost:get-summary', (_, period) => getSpendingSummary(period));
-  ipcMain.handle('cost:estimate', (_, modelId, params, referenceCount) => estimateCost(modelId, params, referenceCount));
+  // Предварительной цены у kie.ai не существует — только медиана собственной истории
+  ipcMain.handle('cost:estimate', (_, modelId: string) => medianCostFor(modelId));
   ipcMain.handle('cost:check-budget', () => checkBudget());
   ipcMain.handle('cost:set-budget', (_, limits: Partial<DBBudgetConfig>) => setBudget(limits));
 
-  // ═══ Model catalog ═══
-  ipcMain.handle('catalog:list', () => getGroupedModels());
-  ipcMain.handle('catalog:status', () => getCatalogStatus());
-  ipcMain.handle('catalog:default-model', () => getDefaultModelId());
-  ipcMain.handle('catalog:refresh', async () => {
-    await refreshCatalog();
-    return getCatalogStatus();
-  });
+  // ═══ Реестр моделей ═══
+  // Реестр читается из файла, собранного скриптом из документации поставщика: обновлять
+  // его в работающем приложении нечего, поэтому канала обновления больше нет.
+  ipcMain.handle('catalog:list', () => getAllModels());
+  ipcMain.handle('catalog:modes', () => getAvailableModes());
+  ipcMain.handle('catalog:for-mode', (_, mode: KieMode) => getModelsForMode(mode));
+  ipcMain.handle('catalog:default-model', (_, mode: KieMode) => getDefaultModelId(mode) ?? null);
 
   // ═══ File operations ═══
   ipcMain.handle('file:read-metadata', (_, filePath: string) => readMetadataFromFile(filePath));
+
+  // Исходник, выбранный кнопкой «Обзор» или отправленный из галереи, доходит до API
+  // только пройдя здесь: точки отправки принимают лишь data-URL
+  ipcMain.handle('file:read-as-data-url', (_, ref: string) => readAsDataUrl(ref));
   ipcMain.handle('file:select-image', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile'],
@@ -260,13 +254,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('presets:list', () => {
     const db = getDatabase();
     const rows = db.prepare('SELECT * FROM presets ORDER BY sort_order ASC').all() as DBPreset[];
-    // Only a fully loaded catalog (state 'ready') is a trustworthy source for "this model
-    // doesn't exist" — while it is empty/loading/error, absence would be a false positive.
-    const catalogReady = getCatalogStatus().state === 'ready';
+    // Реестр всегда готов — он читается из файла, а не догружается по сети, поэтому
+    // отсутствие модели теперь однозначно означает отсутствие, а не незавершённую загрузку.
     return rows.map((preset) => ({
       ...preset,
-      modelAvailable:
-        !catalogReady || !preset.model_id ? null : getModelById(preset.model_id) !== undefined,
+      modelAvailable: preset.model_id ? getModelById(preset.model_id) !== undefined : null,
     }));
   });
 
@@ -327,7 +319,7 @@ export function registerIpcHandlers(): void {
     db.prepare("UPDATE generation_queue SET status = 'pending', error_message = NULL WHERE id = ?").run(id);
   });
 
-  ipcMain.handle('queue:submit', (_, request: GenerationRequest & { clientId: string }) => {
+  ipcMain.handle('queue:submit', (_, request: KieQueueRequest) => {
     logger.log('ipc', 'info', 'queue:submit', { modelId: request.modelId, mode: request.mode });
     const queueItemId = submitGeneration(request);
     return { queueItemId };
@@ -425,119 +417,6 @@ export function registerIpcHandlers(): void {
     db.prepare('UPDATE images SET cost_usd = 0').run();
     db.prepare('DELETE FROM budget_config').run();
     return { success: true };
-  });
-
-  // ═══ Benchmark: run prompt across all models ═══
-  ipcMain.handle('benchmark:run', async (_, prompt: string) => {
-    const { fetchGenerationInfo } = await import('../services/openRouterClient');
-    const fs = await import('fs');
-    const path = await import('path');
-
-    const models = getAllModels();
-    const results: Array<{
-      modelId: string;
-      modelName: string;
-      provider: string;
-      category: string;
-      status: 'success' | 'error';
-      generationId?: string;
-      generationTimeMs?: number;
-      costUsd?: number;
-      tokensPrompt?: number;
-      tokensCompletion?: number;
-      nativeTokensPrompt?: number;
-      nativeTokensCompletion?: number;
-      nativeTokensImages?: number;
-      imageSize?: string;
-      error?: string;
-    }> = [];
-
-    const win = BrowserWindow.getAllWindows()[0];
-
-    for (let i = 0; i < models.length; i++) {
-      const model = models[i];
-
-      // Notify renderer of progress
-      win?.webContents.send('benchmark:progress', {
-        current: i + 1,
-        total: models.length,
-        modelName: model.name,
-        modelId: model.id,
-      });
-
-      try {
-        const result = await generateImage({
-          prompt,
-          modelId: model.id,
-          mode: 'text2img',
-          params: {},
-        });
-
-        // Wait for cost data to be available (OpenRouter needs time to calculate)
-        await new Promise((r) => setTimeout(r, 5000));
-
-        let info = null;
-        if (result.generationId) {
-          // Retry fetching generation info with increasing delays
-          for (let retry = 0; retry < 6; retry++) {
-            info = await fetchGenerationInfo(result.generationId);
-            if (info && typeof info.usage === 'number' && info.usage > 0) break;
-            info = null;
-            await new Promise((r) => setTimeout(r, 3000 * (retry + 1)));
-          }
-        }
-
-        results.push({
-          modelId: model.id,
-          modelName: model.name,
-          provider: model.providerSlugs[0] ?? '',
-          category: model.category,
-          status: 'success',
-          generationId: result.generationId ?? undefined,
-          generationTimeMs: info?.generation_time,
-          costUsd: info?.usage ?? 0,
-          tokensPrompt: info?.tokens_prompt,
-          tokensCompletion: info?.tokens_completion,
-          nativeTokensPrompt: info?.native_tokens_prompt,
-          nativeTokensCompletion: info?.native_tokens_completion,
-          nativeTokensImages: info?.native_tokens_completion_images,
-          imageSize: '1K',
-        });
-      } catch (err) {
-        results.push({
-          modelId: model.id,
-          modelName: model.name,
-          provider: model.providerSlugs[0] ?? '',
-          category: model.category,
-          status: 'error',
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-
-    // Save report to file
-    const report = {
-      timestamp: new Date().toISOString(),
-      prompt,
-      imageSize: '1K',
-      aspectRatio: '1:1',
-      results,
-      summary: {
-        total: results.length,
-        success: results.filter((r) => r.status === 'success').length,
-        failed: results.filter((r) => r.status === 'error').length,
-        totalCost: results.reduce((sum, r) => sum + (r.costUsd ?? 0), 0),
-      },
-    };
-
-    const reportPath = path.join(app.getPath('userData'), `benchmark_${Date.now()}.json`);
-    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
-
-    // Also save to desktop for easy access
-    const desktopPath = path.join(app.getPath('desktop'), 'ImageVibe_Benchmark.json');
-    fs.writeFileSync(desktopPath, JSON.stringify(report, null, 2), 'utf-8');
-
-    return { report, reportPath: desktopPath };
   });
 
   // ═══ Logs ═══

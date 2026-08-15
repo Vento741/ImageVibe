@@ -42,10 +42,8 @@ export function PresetSelector() {
   const [availability, setAvailability] = useState<Record<number, boolean | null>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Load presets on mount, then again on every catalog:updated — the catalog is still
-  // loading (or not even started) on a typical cold start, so the first load almost always
-  // sees every model as unknown; without this the availability flag freezes at that
-  // snapshot forever. Same pattern as ParamsPanel.tsx and GenerateButton.tsx.
+  // Реестр читается из файла и готов сразу, поэтому доступность модели определяется с
+  // первой же загрузки — перезапрашивать по событию каталога больше нечего.
   useEffect(() => {
     const load = () => {
       ipc.invoke('presets:list').then((loaded) => {
@@ -59,7 +57,6 @@ export function PresetSelector() {
       });
     };
     load();
-    return ipc.on('catalog:updated', load);
   }, [setPresets]);
 
   const applyPreset = useCallback((preset: typeof presets[0]) => {

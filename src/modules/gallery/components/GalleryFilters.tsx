@@ -13,13 +13,9 @@ export function GalleryFilters() {
   const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
-    const load = () => {
-      ipc.invoke('catalog:list')
-        .then((groups) => setModels(groups.flatMap((g) => g.models).map((m) => ({ id: m.id, name: m.name }))))
-        .catch(() => {});
-    };
-    load();
-    return ipc.on('catalog:updated', load);
+    ipc.invoke('catalog:list')
+      .then((list) => setModels(list.map((m) => ({ id: m.id, name: m.name }))))
+      .catch(() => {});
   }, []);
 
   const sortBy = useGalleryStore((s) => s.sortBy);

@@ -475,7 +475,8 @@ function GalleryPickerModal({ onSelect, onClose }: GalleryPickerModalProps) {
         limit: PAGE_SIZE,
         search: searchQuery || undefined,
       });
-      setImages(result.images);
+      // Конвертация работает с изображениями: видео в этот список не попадает
+      setImages(result.images.filter((image) => image.media_kind !== 'video'));
       setTotal(result.total);
       setOffset(newOffset);
     } catch {

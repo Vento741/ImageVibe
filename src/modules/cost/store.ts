@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CreditBalance, CostEstimate, BudgetStatus, SpendingSummary } from '@/shared/types/ipc';
+import type { CreditBalance, BudgetStatus, SpendingSummary } from '@/shared/types/ipc';
 
 interface CostState {
   // Real-time
@@ -10,14 +10,18 @@ interface CostState {
   // Cached summaries
   summary: SpendingSummary | null;
   budgetStatus: BudgetStatus | null;
-  currentEstimate: CostEstimate | null;
+  /**
+   * Ожидаемая стоимость по медиане собственной истории; null — истории нет.
+   * Предварительной цены у kie.ai не существует, поэтому это не цена поставщика.
+   */
+  currentEstimate: number | null;
 
   // Actions
   addSessionCost: (cost: number) => void;
   setBalance: (balance: CreditBalance) => void;
   setSummary: (summary: SpendingSummary) => void;
   setBudgetStatus: (status: BudgetStatus) => void;
-  setCurrentEstimate: (estimate: CostEstimate | null) => void;
+  setCurrentEstimate: (estimate: number | null) => void;
   resetSession: () => void;
 }
 

@@ -13,31 +13,21 @@ export function GenerateButton() {
   const mode = useGenerateStore((s) => s.mode);
   const params = useGenerateStore((s) => s.params);
   const styleTags = useGenerateStore((s) => s.styleTags);
-  // Matches exactly the condition that turns sourceImageData into sourceImageBase64 below:
-  // a raw file path or a local-file:// URL never leaves the renderer, only a data: URL does.
-  const hasSourceImage = useGenerateStore((s) => !!s.sourceImageData?.startsWith('data:'));
-  const hasMask = useGenerateStore((s) => !!s.maskData);
   const pushPromptHistory = useGenerateStore((s) => s.pushPromptHistory);
   const addCanvasCard = useGenerateStore((s) => s.addCanvasCard);
   const currentEstimate = useCostStore((s) => s.currentEstimate);
   const setCurrentEstimate = useCostStore((s) => s.setCurrentEstimate);
   const addToast = useToastStore((s) => s.addToast);
 
-  // Reference images this request will send: the source, plus the mask when inpainting.
-  const referenceCount =
-    mode !== 'text2img' && hasSourceImage ? (mode === 'inpaint' && hasMask ? 2 : 1) : 0;
-
-  // Fetch cost estimate when model/params change, and again once catalog prices arrive —
-  // a cold cache can have models but no endpoints yet, in which case the first estimate
-  // comes back unknown and nothing else would ever re-trigger it.
+  // Предварительной цены у kie.ai не существует: показывается медиана собственных
+  // прошлых генераций этой моделью, и только она
   useEffect(() => {
-    const fetchEstimate = () => {
-      ipc.invoke('cost:estimate', selectedModelId, params, referenceCount)
-        .then(setCurrentEstimate).catch(() => {});
-    };
-    fetchEstimate();
-    return ipc.on('catalog:updated', fetchEstimate);
-  }, [selectedModelId, JSON.stringify(params), referenceCount, setCurrentEstimate]);
+    if (!selectedModelId) {
+      setCurrentEstimate(null);
+      return;
+    }
+    ipc.invoke('cost:estimate', selectedModelId).then(setCurrentEstimate).catch(() => {});
+  }, [selectedModelId, setCurrentEstimate]);
 
   const handleGenerate = useCallback(() => {
     if (!prompt.trim()) return;
@@ -55,27 +45,18 @@ export function GenerateButton() {
       startedAt: Date.now(),
     });
 
-    // Get source image base64 if in img2img/inpaint mode
-    const { sourceImageData, maskData } = useGenerateStore.getState();
-    let sourceImageBase64: string | undefined;
-    if (sourceImageData && mode !== 'text2img') {
-      sourceImageBase64 = sourceImageData.startsWith('data:')
-        ? sourceImageData.replace(/^data:image\/\w+;base64,/, '')
-        : undefined;
-    }
+    // Исходник и маска уже приведены к data-URL при выборе: путь к файлу и ссылка
+    // local-file:// до сюда не доходят
+    const current = useGenerateStore.getState();
 
-    // Get mask base64 for inpaint mode
-    const maskBase64 = mode === 'inpaint' && maskData ? maskData : undefined;
-
-    // Submit to queue — fire and forget
     ipc.invoke('queue:submit', {
       prompt,
       modelId: selectedModelId,
       mode,
       params,
       styleTags: styleTags.length > 0 ? styleTags : undefined,
-      sourceImageBase64,
-      maskBase64,
+      sourceImageDataUrl: current.sourceImageData ?? undefined,
+      maskDataUrl: mode === 'inpaint' ? (current.maskData ?? undefined) : undefined,
       clientId,
     }).then((res) => {
       // Store the queue item ID on the card
@@ -134,20 +115,20 @@ export function GenerateButton() {
         </span>
       </motion.button>
 
-      {/* Cost estimate — when it's unknown, say why instead of showing nothing */}
-      {currentEstimate && currentEstimate.estimatedCost !== null && (
-        <div className="text-xs text-text-tertiary whitespace-nowrap">
-          {currentEstimate.basis === 'upper-bound' ? '≤' : '~'}
-          {formatCostDisplay(currentEstimate.estimatedCost)}
-        </div>
-      )}
-      {currentEstimate && currentEstimate.estimatedCost === null && currentEstimate.reason && (
+      {/* Цена поставщика неизвестна в принципе — показывается только своя история */}
+      {currentEstimate !== null ? (
         <div
-          className="text-xs text-text-tertiary/70 whitespace-nowrap truncate max-w-[220px]"
-          title={currentEstimate.reason}
+          className="text-xs text-text-tertiary whitespace-nowrap"
+          title="Медиана ваших прошлых генераций этой моделью"
         >
-          Цена неизвестна: {currentEstimate.reason}
+          ≈{formatCostDisplay(currentEstimate)}
         </div>
+      ) : (
+        selectedModelId && (
+          <div className="text-xs text-text-tertiary/70 whitespace-nowrap">
+            Цена — после первой генерации
+          </div>
+        )
       )}
     </div>
   );

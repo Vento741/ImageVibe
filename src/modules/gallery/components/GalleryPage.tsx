@@ -135,12 +135,22 @@ export function GalleryPage() {
                     : 'border-transparent hover:border-glass-border'
                 }`}
               >
-                <img
-                  src={localFileUrl(image.file_path)}
-                  alt={image.prompt}
-                  className="w-full aspect-square object-cover"
-                  loading="lazy"
-                />
+                {/* Видео живёт в той же таблице и отличается только видом записи */}
+                {image.media_kind === 'video' ? (
+                  <video
+                    src={localFileUrl(image.file_path)}
+                    preload="metadata"
+                    muted
+                    className="w-full aspect-square object-cover bg-black"
+                  />
+                ) : (
+                  <img
+                    src={localFileUrl(image.file_path)}
+                    alt={image.prompt}
+                    className="w-full aspect-square object-cover"
+                    loading="lazy"
+                  />
+                )}
 
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex flex-col justify-between p-2 opacity-0 group-hover:opacity-100">

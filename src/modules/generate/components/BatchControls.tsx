@@ -6,7 +6,7 @@ import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, randomSeed } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
-import type { GenerationParams } from '@/shared/types/api';
+import type { KieParams } from '@/shared/types/kie';
 
 let batchIdCounter = 0;
 
@@ -15,9 +15,8 @@ export function BatchControls() {
   const batchCountRef = useRef(batchCount);
   batchCountRef.current = batchCount;
 
-  const currentEstimate = useCostStore((s) => s.currentEstimate);
-  const perImageCost = currentEstimate?.estimatedCost;
-  const batchCost = perImageCost !== null && perImageCost !== undefined ? perImageCost * batchCount : null;
+  const perImageCost = useCostStore((s) => s.currentEstimate);
+  const batchCost = perImageCost !== null ? perImageCost * batchCount : null;
 
   const handleBatchGenerate = () => {
     const store = useGenerateStore.getState();
@@ -32,7 +31,7 @@ export function BatchControls() {
     const cards: CanvasCard[] = [];
     for (let i = 0; i < count; i++) {
       batchIdCounter++;
-      const params: GenerationParams =
+      const params: KieParams =
         store.params.seed !== undefined
           ? { ...store.params, seed: randomSeed() }
           : { ...store.params };
@@ -49,16 +48,9 @@ export function BatchControls() {
     // Single atomic store update
     store.addCanvasCards(cards);
 
-    // Get source image base64 if in img2img/inpaint mode
-    let sourceImageBase64: string | undefined;
-    if (store.sourceImageData && store.mode !== 'text2img') {
-      sourceImageBase64 = store.sourceImageData.startsWith('data:')
-        ? store.sourceImageData.replace(/^data:image\/\w+;base64,/, '')
-        : undefined;
-    }
-
-    // Get mask base64 for inpaint mode
-    const maskBase64 = store.mode === 'inpaint' && store.maskData ? store.maskData : undefined;
+    // Исходник и маска уже приведены к data-URL при выборе
+    const sourceImageDataUrl = store.sourceImageData ?? undefined;
+    const maskDataUrl = store.mode === 'inpaint' ? (store.maskData ?? undefined) : undefined;
 
     // Submit each to the queue — each card already carries its own params (including its
     // own random seed, when the model has one)
@@ -69,8 +61,8 @@ export function BatchControls() {
         mode: store.mode,
         params: card.params,
         styleTags: store.styleTags.length > 0 ? store.styleTags : undefined,
-        sourceImageBase64,
-        maskBase64,
+        sourceImageDataUrl,
+        maskDataUrl,
         clientId: card.id,
       }).then((res) => {
         useGenerateStore.getState().updateCanvasCard(card.id, { queueItemId: res.queueItemId });
@@ -130,8 +122,7 @@ export function BatchControls() {
       {/* Cost preview */}
       {batchCost !== null && (
         <span className="text-[10px] text-text-tertiary">
-          {currentEstimate?.basis === 'upper-bound' ? '≤' : '~'}
-          {formatCostDisplay(batchCost)}
+          ≈{formatCostDisplay(batchCost)}
         </span>
       )}
     </div>

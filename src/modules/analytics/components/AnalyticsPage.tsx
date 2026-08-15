@@ -101,7 +101,7 @@ export function AnalyticsPage() {
         />
         <StatCard
           label="Баланс"
-          value={balance ? formatCostDisplay(balance.balance) : '—'}
+          value={balance ? formatCostDisplay(balance.usd) : '—'}
           icon={<CreditCard size={16} />}
           delay={0.3}
         />

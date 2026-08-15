@@ -2,16 +2,8 @@ import { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, MessageSquare, Star, RotateCw, FolderOpen, X } from 'lucide-react';
 import { useGenerateStore } from '../store';
-import { formatCostDisplay, getModelShortName } from '@/shared/lib/utils';
+import { formatCostDisplay, getModelShortName, localFileUrl } from '@/shared/lib/utils';
 
-function formatTime(ms: number): string {
-  if (ms < 1000) return `${ms}мс`;
-  const sec = ms / 1000;
-  if (sec < 60) return `${sec.toFixed(1)}с`;
-  const min = Math.floor(sec / 60);
-  const remainSec = sec % 60;
-  return `${min}м ${remainSec.toFixed(0)}с`;
-}
 import { ipc } from '@/shared/lib/ipc';
 import { useToastStore } from '@/shared/stores/toastStore';
 import { Tooltip } from '@/shared/components/ui/Tooltip';
@@ -31,13 +23,13 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
 
   const handleCopyImage = useCallback(async () => {
     try {
-      const blob = await fetch(`data:image/png;base64,${result.imageBase64}`).then(r => r.blob());
+      const blob = await fetch(localFileUrl(result.filePath)).then((r) => r.blob());
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       addToast({ message: 'Изображение скопировано', type: 'success' });
     } catch {
       addToast({ message: 'Не удалось скопировать', type: 'error' });
     }
-  }, [result.imageBase64, addToast]);
+  }, [result.filePath, addToast]);
 
   const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(result.prompt);
@@ -83,12 +75,22 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
       }`}
       onClick={() => onSelect(card.id)}
     >
-      {/* Image */}
-      <img
-        src={`data:image/png;base64,${result.imageBase64}`}
-        alt={result.prompt}
-        className="w-full aspect-square object-cover"
-      />
+      {/* Результат: видео играет прямо в карточке, изображение показывается картинкой */}
+      {result.mediaKind === 'video' ? (
+        <video
+          src={localFileUrl(result.filePath)}
+          controls
+          preload="metadata"
+          className="w-full aspect-square object-cover bg-black"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <img
+          src={localFileUrl(result.filePath)}
+          alt={result.prompt}
+          className="w-full aspect-square object-cover"
+        />
+      )}
 
       {/* Hover overlay with actions */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -129,8 +131,9 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
 
           {/* Stats */}
           <div className="flex items-center gap-2 mt-1 text-[10px] text-white/40">
-            <span>{result.width}×{result.height}</span>
-            <span>{formatTime(result.generationTimeMs)}</span>
+            {result.width !== null && result.height !== null && (
+              <span>{result.width}×{result.height}</span>
+            )}
             {result.costUsd !== null && result.costUsd > 0 && <span>{formatCostDisplay(result.costUsd)}</span>}
           </div>
         </div>

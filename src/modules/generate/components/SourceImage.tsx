@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Paintbrush, Check } from 'lucide-react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useGenerateStore } from '../store';
+import { useToastStore } from '@/shared/stores/toastStore';
 import { ipc } from '@/shared/lib/ipc';
-import { localFileUrl } from '@/shared/lib/utils';
 import { MaskEditor } from './MaskEditor';
 
 export function SourceImage() {
@@ -12,15 +12,21 @@ export function SourceImage() {
   const sourceImageData = useGenerateStore((s) => s.sourceImageData);
   const setSourceImageData = useGenerateStore((s) => s.setSourceImageData);
   const maskData = useGenerateStore((s) => s.maskData);
+  const addToast = useToastStore((s) => s.addToast);
   const [isDragging, setIsDragging] = useState(false);
   const [showMaskEditor, setShowMaskEditor] = useState(false);
 
   const handleSelectFile = useCallback(async () => {
     const filePath = await ipc.invoke('file:select-image');
-    if (filePath) {
-      setSourceImageData(filePath);
+    if (!filePath) return;
+    // Путь читается в главном процессе и попадает в стор уже data-URL: раньше сюда
+    // клался голый путь, точки отправки его отбрасывали, и исходник молча терялся
+    try {
+      setSourceImageData(await ipc.invoke('file:read-as-data-url', filePath));
+    } catch {
+      addToast({ message: 'Не удалось прочитать файл изображения', type: 'error' });
     }
-  }, [setSourceImageData]);
+  }, [setSourceImageData, addToast]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -53,13 +59,11 @@ export function SourceImage() {
     setSourceImageData(null);
   }, [setSourceImageData]);
 
-  // Only show for img2img and inpaint modes
-  if (mode === 'text2img') return null;
+  // Исходник нужен режимам «фото в фото», «по маске» и «фото в видео»
+  if (mode === 'text2img' || mode === 'text2video') return null;
 
-  const imgSrc = sourceImageData
-    ? sourceImageData.startsWith('data:') ? sourceImageData : localFileUrl(sourceImageData)
-    : null;
-
+  // В сторе всегда data-URL: все три пути выбора приводят исходник к нему
+  const imgSrc = sourceImageData;
   const isInpaint = mode === 'inpaint';
 
   return (

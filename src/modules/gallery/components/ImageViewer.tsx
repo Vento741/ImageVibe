@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Info, Copy, Check, X, GripVertical, ZoomIn, ZoomOut, Maximize, FolderOpen, Trash2, Pencil, Download } from 'lucide-react';
 import { useGalleryStore } from '../store';
 import { useGenerateStore } from '@/modules/generate/store';
-import { LABELS } from '@/modules/generate/components/SchemaControls';
+import { LABELS } from '@/modules/generate/components/KieSchemaControls';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, getModelShortName, formatDate, localFileUrl, clamp } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
@@ -302,17 +302,25 @@ export function ImageViewer() {
 
   const handleEditImg2Img = useCallback(() => {
     if (!image) return;
-    // Read the image file and convert to base64 data URL
-    const src = localFileUrl(image.file_path);
     const store = useGenerateStore.getState();
-    // Set the file path as source (SourceImage handles both data: and local-file:)
-    store.setSourceImageData(src);
-    store.setMode('img2img');
-    store.setUiMode('advanced');
-    store.setPrompt(image.prompt);
-    store.setSelectedModelId(image.model_id);
-    setSelectedImageId(null);
-    addToast({ message: 'Изображение загружено — измените промпт и нажмите Генерировать', type: 'info' });
+
+    // Файл читается в главном процессе и кладётся в стор уже как data-URL. Раньше сюда
+    // попадала ссылка local-file://, точки отправки её отбрасывали, и режим «фото в фото»
+    // молча вырождался в генерацию по одному тексту за полную цену.
+    ipc
+      .invoke('file:read-as-data-url', image.file_path)
+      .then((dataUrl) => {
+        store.setSourceImageData(dataUrl);
+        store.setMode('img2img');
+        store.setUiMode('advanced');
+        store.setPrompt(image.prompt);
+        setSelectedImageId(null);
+        addToast({
+          message: 'Изображение загружено — измените промпт и нажмите Генерировать',
+          type: 'info',
+        });
+      })
+      .catch(() => addToast({ message: 'Не удалось прочитать файл изображения', type: 'error' }));
   }, [image, setSelectedImageId, addToast]);
 
   if (!selectedImageId || !image) return null;
@@ -413,13 +421,23 @@ export function ImageViewer() {
                 transition: isPanning.current ? 'none' : 'transform 0.15s ease-out',
               }}
             >
-              <img
-                key={image.id}
-                src={localFileUrl(image.file_path)}
-                alt={image.prompt}
-                className="max-w-[80%] max-h-[85%] object-contain rounded-lg shadow-2xl select-none pointer-events-none"
-                draggable={false}
-              />
+              {image.media_kind === 'video' ? (
+                <video
+                  key={image.id}
+                  src={localFileUrl(image.file_path)}
+                  controls
+                  preload="metadata"
+                  className="max-w-[80%] max-h-[85%] object-contain rounded-lg shadow-2xl bg-black"
+                />
+              ) : (
+                <img
+                  key={image.id}
+                  src={localFileUrl(image.file_path)}
+                  alt={image.prompt}
+                  className="max-w-[80%] max-h-[85%] object-contain rounded-lg shadow-2xl select-none pointer-events-none"
+                  draggable={false}
+                />
+              )}
             </div>
           </div>
 

@@ -29,16 +29,15 @@ vi.mock('../electron/services/database', () => ({
   }),
 }));
 
-// Controlled per-test: what the "live catalog" currently knows.
-let catalogState: 'empty' | 'loading' | 'ready' | 'error' = 'ready';
+// Что знает реестр в конкретном тесте. Состояния загрузки у него нет: он читается из
+// файла и готов сразу, поэтому «модель не найдена» теперь однозначно значит «её нет».
 let knownModelIds: string[] = [];
 
-vi.mock('../electron/services/modelCatalog', () => ({
+vi.mock('../electron/services/kieRegistry', () => ({
   getAllModels: vi.fn(() => []),
-  getGroupedModels: vi.fn(() => []),
+  getAvailableModes: vi.fn(() => []),
+  getModelsForMode: vi.fn(() => []),
   getDefaultModelId: vi.fn(() => undefined),
-  refreshCatalog: vi.fn(),
-  getCatalogStatus: () => ({ state: catalogState, stale: false }),
   getModelById: (id: string) => (knownModelIds.includes(id) ? { id } : undefined),
 }));
 
@@ -49,19 +48,20 @@ vi.mock('../electron/services/configManager', () => ({
 }));
 vi.mock('../electron/services/logger', () => ({ logger: { log: () => {} } }));
 vi.mock('../electron/services/openRouterClient', () => ({
-  generateImage: vi.fn(),
   translatePrompt: vi.fn(),
   translateToRussian: vi.fn(),
   promptAssist: vi.fn(),
   promptFromImage: vi.fn(),
-  fetchCredits: vi.fn(),
-  fetchGenerationCostWithRetry: vi.fn(),
   isRussianText: vi.fn(),
 }));
-vi.mock('../electron/services/costEstimator', () => ({ estimateCost: vi.fn() }));
+vi.mock('../electron/services/costHistory', () => ({
+  medianCostFor: vi.fn(() => null),
+  getBalance: vi.fn(),
+}));
+vi.mock('../electron/services/dataUrl', () => ({ readAsDataUrl: vi.fn() }));
 vi.mock('../electron/services/autoTagger', () => ({ saveImageTags: vi.fn() }));
 vi.mock('../electron/services/fileStorage', () => ({
-  saveImage: vi.fn(),
+  saveMedia: vi.fn(),
   deleteImage: vi.fn(),
   getFileSize: vi.fn(),
   exportImage: vi.fn(),
@@ -78,6 +78,7 @@ vi.mock('../electron/services/costTracker', () => ({
 vi.mock('../electron/services/queueProcessor', () => ({
   submitGeneration: vi.fn(),
   cancelGeneration: vi.fn(),
+  resumeRunningTasks: vi.fn(),
 }));
 
 function makePreset(overrides: Partial<DBPreset>): DBPreset {
@@ -99,7 +100,6 @@ function makePreset(overrides: Partial<DBPreset>): DBPreset {
 beforeEach(async () => {
   ipcHandlers.clear();
   presetRows = [];
-  catalogState = 'ready';
   knownModelIds = [];
   vi.resetModules();
   const { registerIpcHandlers } = await import('../electron/ipc/handlers');
@@ -112,11 +112,12 @@ function listPresets() {
   return handler() as Array<DBPreset & { modelAvailable: boolean | null }>;
 }
 
-describe('presets:list — model availability against the live catalog', () => {
-  it('marks a preset unavailable when its model is gone from a ready catalog', () => {
+describe('presets:list — доступность модели по реестру', () => {
+  it('модель, которой в реестре нет, помечается недоступной', () => {
+    // Пресеты, переехавшие с OpenRouter, ссылаются на исчезнувшие модели — и это
+    // теперь достоверный ответ, а не следствие незагруженного каталога
     presetRows = [makePreset({ id: 1, model_id: 'black-forest-labs/flux.2-klein-4b' })];
-    catalogState = 'ready';
-    knownModelIds = ['black-forest-labs/flux.2-pro']; // klein-4b is not in it
+    knownModelIds = ['z-image'];
 
     const result = listPresets();
 
@@ -124,39 +125,18 @@ describe('presets:list — model availability against the live catalog', () => {
     expect(result[0].modelAvailable).toBe(false);
   });
 
-  it('marks a preset available when its model exists in a ready catalog', () => {
-    presetRows = [makePreset({ id: 2, model_id: 'black-forest-labs/flux.2-pro' })];
-    catalogState = 'ready';
-    knownModelIds = ['black-forest-labs/flux.2-pro'];
+  it('модель, которая в реестре есть, помечается доступной', () => {
+    presetRows = [makePreset({ id: 2, model_id: 'z-image' })];
+    knownModelIds = ['z-image'];
 
-    const result = listPresets();
-
-    expect(result[0].modelAvailable).toBe(true);
+    expect(listPresets()[0].modelAvailable).toBe(true);
   });
 
-  it.each(['empty', 'loading', 'error'] as const)(
-    'marks every preset availability as unknown (null), not unavailable, while the catalog is %s',
-    (state) => {
-      presetRows = [
-        makePreset({ id: 1, model_id: 'black-forest-labs/flux.2-klein-4b' }),
-        makePreset({ id: 2, model_id: 'black-forest-labs/flux.2-pro' }),
-      ];
-      catalogState = state;
-      knownModelIds = []; // catalog has no data at all in these states
-
-      const result = listPresets();
-
-      expect(result.every((p) => p.modelAvailable === null)).toBe(true);
-    },
-  );
-
-  it('treats a preset with no model_id as having nothing to check, not as unavailable', () => {
+  it('пресет без модели проверять нечего', () => {
+    // У встроенных пресетов модель снята миграцией v5: они несут только параметры
     presetRows = [makePreset({ id: 3, model_id: null })];
-    catalogState = 'ready';
-    knownModelIds = ['black-forest-labs/flux.2-pro'];
+    knownModelIds = ['z-image'];
 
-    const result = listPresets();
-
-    expect(result[0].modelAvailable).toBeNull();
+    expect(listPresets()[0].modelAvailable).toBeNull();
   });
 });

@@ -1,64 +1,49 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { Pencil, Image, Layers } from 'lucide-react';
+import { Pencil, Image, Layers, Film, Clapperboard } from 'lucide-react';
 import { useGenerateStore } from '../store';
 import { ipc } from '@/shared/lib/ipc';
-import { availableModes } from '@/shared/lib/paramSchema';
-import type { GenerationMode } from '@/shared/types/models';
-import type { CatalogModelDTO } from '@/shared/types/ipc';
+import type { KieMode, KieModel } from '@/shared/types/kie';
 
-const MODES: Array<{ id: GenerationMode; icon: ReactNode; label: string }> = [
+/**
+ * Режим — фильтр списка моделей, а не параметр запроса.
+ *
+ * У kie.ai режим зашит в саму модель: `flux-2/pro-text-to-image` и
+ * `flux-2/pro-image-to-image` — две отдельные записи каталога. Поэтому вкладка режима
+ * задаёт список моделей, а модель несёт свой режим. Это убирает состояние «режим
+ * выбран, а модель его не умеет», которое в блоке C дало три дефекта.
+ */
+const MODES: Array<{ id: KieMode; icon: ReactNode; label: string }> = [
   { id: 'text2img', icon: <Pencil size={14} />, label: 'Текст→Фото' },
   { id: 'img2img', icon: <Image size={14} />, label: 'Фото→Фото' },
-  { id: 'inpaint', icon: <Layers size={14} />, label: 'Инпейнт' },
+  { id: 'inpaint', icon: <Layers size={14} />, label: 'По маске' },
+  { id: 'text2video', icon: <Film size={14} />, label: 'Текст→Видео' },
+  { id: 'img2video', icon: <Clapperboard size={14} />, label: 'Фото→Видео' },
 ];
 
-// Until prices arrive, the catalog record's schema is not the cross-provider
-// intersection and cannot be trusted to judge mode availability (see ParamsPanel).
-const TEXT_ONLY_MODES: GenerationMode[] = ['text2img'];
-
 export function ModeSelector() {
-  const [models, setModels] = useState<CatalogModelDTO[]>([]);
+  const [models, setModels] = useState<KieModel[]>([]);
+  const [available, setAvailable] = useState<KieMode[]>([]);
   const mode = useGenerateStore((s) => s.mode);
-  const setMode = useGenerateStore((s) => s.setMode);
-  const selectedModelId = useGenerateStore((s) => s.selectedModelId);
+  const switchMode = useGenerateStore((s) => s.switchMode);
 
-  const load = useCallback(() => {
-    ipc.invoke('catalog:list')
-      .then((groups) => setModels(groups.flatMap((group) => group.models)))
-      .catch(() => {});
+  useEffect(() => {
+    ipc.invoke('catalog:list').then(setModels).catch(() => {});
+    ipc.invoke('catalog:modes').then(setAvailable).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    load();
-    return ipc.on('catalog:updated', load);
-  }, [load]);
-
-  const selected = models.find((m) => m.id === selectedModelId);
-  const allowed = selected?.pricesLoaded ? availableModes(selected.schema) : TEXT_ONLY_MODES;
-  // True only once the catalog has actually answered for this model (found + prices
-  // loaded). Right after this component mounts, the local catalog list is still
-  // empty, so `selected` is undefined and `allowed` falls back to TEXT_ONLY_MODES —
-  // that fallback is a placeholder for "not answered yet", not a real verdict that
-  // other modes are unavailable. Resetting the store on it would wipe a mode (and,
-  // for inpaint, the drawn maskData) the catalog was about to confirm as valid.
-  const modeConfirmed = selected?.pricesLoaded === true;
-
-  // A mode allowed for one model may not be for the next (e.g. inpaint needs two
-  // references) — leaving it selected would send a generation with a mask the
-  // model has nowhere to put. Only act once modeConfirmed: unknown must mean
-  // "don't touch the store", never "assume unavailable and reset".
-  useEffect(() => {
-    if (modeConfirmed && !allowed.includes(mode)) setMode('text2img');
-  }, [modeConfirmed, allowed.join('|'), mode, setMode]);
+  // Вкладка, для которой нет ни одной модели, не показывается: предлагать режим,
+  // который нечем обслужить, значит вести пользователя в тупик
+  const shown = MODES.filter((m) => available.includes(m.id));
+  if (shown.length === 0) return null;
 
   return (
-    <div className="flex gap-0.5">
-      {MODES.filter((m) => allowed.includes(m.id)).map((m) => (
+    <div className="flex gap-0.5 flex-wrap">
+      {shown.map((m) => (
         <motion.button
           key={m.id}
-          onClick={() => setMode(m.id)}
+          onClick={() => switchMode(m.id, models)}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className={`flex-1 py-1.5 px-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-0.5 min-w-0 ${

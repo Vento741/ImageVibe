@@ -1,4 +1,4 @@
-import type { GenerationParams, GenerationRequest, GenerationResult } from './api';
+import type { KieMode, KieModel, KieParams } from './kie';
 import type { AppConfig } from './config';
 import type {
   DBBudgetConfig,
@@ -8,7 +8,7 @@ import type {
   DBQueueItem,
 } from './database';
 import type { LogCategory, LogEntry } from './logging';
-import type { ModelCategory, ParamSchema, PricingRow } from './models';
+
 
 /** IPC channel definitions: main ↔ renderer */
 export interface IpcChannels {
@@ -54,10 +54,8 @@ export interface IpcChannels {
   // ═══ Cost ═══
   'cost:get-balance': { args: []; result: CreditBalance };
   'cost:get-summary': { args: [CostPeriod?]; result: SpendingSummary };
-  'cost:estimate': {
-    args: [string, GenerationParams, number?];
-    result: CostEstimate;
-  };
+  /** Предварительной цены у kie.ai не существует — только медиана собственной истории */
+  'cost:estimate': { args: [string]; result: number | null };
   'cost:check-budget': { args: []; result: BudgetStatus };
   'cost:set-budget': { args: [Partial<DBBudgetConfig>]; result: void };
   'cost:export': {
@@ -78,7 +76,7 @@ export interface IpcChannels {
     result: DBQueueItem;
   };
   'queue:submit': {
-    args: [GenerationRequest & { clientId: string }];
+    args: [QueueSubmitRequest];
     result: { queueItemId: number };
   };
   'queue:cancel': { args: [number]; result: void };
@@ -90,6 +88,8 @@ export interface IpcChannels {
     args: [string, Record<string, string>];
     result: string;
   };
+  /** Путь или ссылка local-file:// → data-URL. Иначе исходник до API не доходит. */
+  'file:read-as-data-url': { args: [string]; result: string };
   'file:read-metadata': {
     args: [string];
     result: Record<string, string> | null;
@@ -117,16 +117,12 @@ export interface IpcChannels {
   'analytics:reset': { args: []; result: { success: boolean } };
 
   // ═══ Benchmark ═══
-  'benchmark:run': { args: [string]; result: { report: unknown; reportPath: string } };
 
-  // ═══ Model catalog ═══
-  'catalog:list': {
-    args: [];
-    result: Array<{ category: ModelCategory; models: CatalogModelDTO[] }>;
-  };
-  'catalog:status': { args: []; result: CatalogStatusResult };
-  'catalog:default-model': { args: []; result: string | undefined };
-  'catalog:refresh': { args: []; result: CatalogStatusResult };
+  // ═══ Реестр моделей ═══
+  'catalog:list': { args: []; result: KieModel[] };
+  'catalog:modes': { args: []; result: KieMode[] };
+  'catalog:for-mode': { args: [KieMode]; result: KieModel[] };
+  'catalog:default-model': { args: [KieMode]; result: string | null };
 
   // ═══ Logs ═══
   'logs:get': { args: [LogCategory?]; result: LogEntry[] };
@@ -161,11 +157,15 @@ export interface ExportOptions {
   quality?: number;
 }
 
-/** Credit balance from OpenRouter */
+/**
+ * Остаток на счету kie.ai.
+ *
+ * `usd` — верхняя граница: при покупке пакетами даются бонусные кредиты, поэтому
+ * эффективная цена кредита ниже объявленных $0.005.
+ */
 export interface CreditBalance {
-  totalCredits: number;
-  totalUsage: number;
-  balance: number;
+  credits: number;
+  usd: number;
   lastChecked: string;
 }
 
@@ -193,49 +193,44 @@ export interface SpendingSummary {
   }>;
 }
 
-/** Result of `catalog:status` / `catalog:refresh` */
-export interface CatalogStatusResult {
-  state: 'empty' | 'loading' | 'ready' | 'error';
-  error?: string;
-  fetchedAt?: number;
-  stale: boolean;
-}
-
 /**
- * A preset row with its model checked against the live catalog.
- * `modelAvailable` is `true`/`false` only once the catalog has actually loaded
- * (state 'ready'); while it is 'empty' | 'loading' | 'error', or the preset has
- * no `model_id`, availability is unknown and this is `null` — never `false` —
- * so a catalog that hasn't arrived yet cannot make a valid preset look broken.
+ * Строка пресета с проверкой модели по реестру.
+ *
+ * Реестр читается из файла и всегда готов, поэтому `false` теперь однозначно означает
+ * «такой модели нет». `null` остаётся только у пресета без модели — у встроенных она
+ * снята миграцией, потому что они ссылались на модели OpenRouter.
  */
 export interface PresetWithAvailability extends DBPreset {
   modelAvailable: boolean | null;
 }
 
-/** A catalog model as it crosses IPC */
-export interface CatalogModelDTO {
-  id: string;
-  name: string;
-  description: string;
-  schema: Record<string, ParamSchema>;
-  passthrough: string[];
-  pricing: PricingRow[];
-  providerSlugs: string[];
-  outputModalities: string[];
-  category: ModelCategory;
-  pricesLoaded: boolean;
+/** Запрос генерации, как он пересекает границу процессов */
+export interface QueueSubmitRequest {
+  prompt: string;
+  translatedPrompt?: string;
+  modelId: string;
+  mode: KieMode;
+  params: KieParams;
+  /** Исходник только в виде data-URL: путь и ссылка на файл до API не доходят */
+  sourceImageDataUrl?: string;
+  maskDataUrl?: string;
+  styleTags?: string[];
+  clientId: string;
 }
 
-/** Pre-generation cost estimate. Always approximate — exact cost arrives in usage.cost. */
-export interface CostEstimate {
-  /** null when the price cannot be derived from the catalog */
-  estimatedCost: number | null;
-  /** 'point' — a per-image price; 'upper-bound' — a megapixel rate that overstates above ~1MP */
-  basis: 'point' | 'upper-bound' | 'unknown';
-  /** why the estimate is unavailable, shown to the user as-is */
-  reason?: string;
-  /** the pricing rows the estimate came from, exactly as the API returned them */
-  pricing: PricingRow[];
+/** Результат генерации, как он приходит в интерфейс */
+export interface QueueResult {
+  filePath: string;
+  imageId: number;
+  modelId: string;
+  prompt: string;
+  translatedPrompt?: string;
+  params: KieParams;
+  mediaKind: 'image' | 'video';
+  width: number | null;
+  height: number | null;
+  costUsd: number | null;
+  costSource: 'actual' | 'estimated' | 'unknown';
 }
 
 /** Budget status */
@@ -264,7 +259,7 @@ export interface IpcEvents {
   'queue:item-completed': {
     clientId: string;
     queueItemId: number;
-    result: GenerationResult & { filePath: string; imageId: number };
+    result: QueueResult;
   };
   'queue:item-failed': {
     clientId: string;
@@ -272,6 +267,5 @@ export interface IpcEvents {
     error: string;
   };
   'generation:progress': { stage: string; percent: number };
-  'benchmark:progress': { current: number; total: number; modelName: string; modelId: string };
   'catalog:updated': undefined;
 }
