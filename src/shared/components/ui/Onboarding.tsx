@@ -36,9 +36,10 @@ export function Onboarding() {
       if (apiKey.trim()) {
         updates.apiKeys = [{
           id: 'key_1',
-          name: 'Основной',
+          name: 'Ключ kie.ai',
           key: apiKey.trim(),
           isActive: true,
+          provider: 'kie',
         }];
       }
       if (folderPath) {
@@ -191,10 +192,10 @@ export function Onboarding() {
                   </div>
                   <div className="text-center">
                     <h2 className="text-lg font-bold text-text-primary">
-                      API ключ OpenRouter
+                      API ключ kie.ai
                     </h2>
                     <p className="text-xs text-text-tertiary mt-1.5">
-                      Нужен для генерации изображений
+                      Через него идёт генерация изображений и видео
                     </p>
                   </div>
 
@@ -203,14 +204,15 @@ export function Onboarding() {
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && apiKey.trim() && handleFinish()}
-                      placeholder="sk-or-..."
+                      placeholder="Ключ с kie.ai/api-key"
                       type="password"
                       autoFocus
                       className="w-full bg-bg-tertiary text-text-primary text-sm rounded-lg px-4 py-3 outline-none border border-glass-border focus:border-aurora-blue/50 font-mono"
                     />
                     <p className="text-[10px] text-text-tertiary">
-                      Получите ключ на{' '}
-                      <span className="text-aurora-blue">openrouter.ai/keys</span>
+                      Получите ключ на <span className="text-aurora-blue">kie.ai/api-key</span>.
+                      Ключ OpenRouter добавляется отдельно в настройках — он нужен только
+                      для перевода промпта.
                     </p>
                   </div>
 

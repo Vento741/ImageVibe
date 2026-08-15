@@ -4,13 +4,13 @@ import { ipc } from '@/shared/lib/ipc';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
 import { useToastStore } from '@shared/stores/toastStore';
 import { useDebugStore } from '@shared/stores/debugStore';
-import type { AppConfig } from '@/shared/types/config';
+import type { ApiProvider, AppConfig } from '@/shared/types/config';
 
 export function SettingsPage() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
-  const [newApiKeyName, setNewApiKeyName] = useState('');
+  const [newKieKey, setNewKieKey] = useState('');
 
   useEffect(() => {
     ipc.invoke('config:get').then(setConfig).catch(() => {});
@@ -29,35 +29,46 @@ export function SettingsPage() {
     }
   }, []);
 
-  const handleAddApiKey = useCallback(async () => {
-    if (!newApiKey.trim()) return;
+  const handleAddApiKey = useCallback(async (provider: ApiProvider) => {
+    const value = provider === 'kie' ? newKieKey : newApiKey;
+    if (!value.trim()) return;
     const key = {
       id: `key_${Date.now()}`,
-      name: newApiKeyName.trim() || 'Ключ API',
-      key: newApiKey.trim(),
+      name: provider === 'kie' ? 'Ключ kie.ai' : 'Ключ OpenRouter',
+      key: value.trim(),
       isActive: true,
+      provider,
     };
     const currentKeys = config?.apiKeys ?? [];
-    // Deactivate others
-    const updatedKeys = currentKeys.map((k) => ({ ...k, isActive: false }));
+    // Активен один ключ на поставщика: ключи другого поставщика не трогаются
+    const updatedKeys = currentKeys.map((k) =>
+      (k.provider ?? 'openrouter') === provider ? { ...k, isActive: false } : k,
+    );
     await saveConfig({ apiKeys: [...updatedKeys, key] });
-    setNewApiKey('');
-    setNewApiKeyName('');
-  }, [newApiKey, newApiKeyName, config, saveConfig]);
+    if (provider === 'kie') setNewKieKey('');
+    else setNewApiKey('');
+  }, [newApiKey, newKieKey, config, saveConfig]);
 
   const handleRemoveApiKey = useCallback(async (id: string) => {
     const currentKeys = config?.apiKeys ?? [];
+    const removed = currentKeys.find((k) => k.id === id);
     const remaining = currentKeys.filter((k) => k.id !== id);
-    // Activate first remaining if none active
-    if (remaining.length > 0 && !remaining.some((k) => k.isActive)) {
-      remaining[0].isActive = true;
+    // Активным делается оставшийся ключ того же поставщика, а не первый попавшийся
+    const provider = removed?.provider ?? 'openrouter';
+    const sameProvider = remaining.filter((k) => (k.provider ?? 'openrouter') === provider);
+    if (sameProvider.length > 0 && !sameProvider.some((k) => k.isActive)) {
+      sameProvider[0].isActive = true;
     }
     await saveConfig({ apiKeys: remaining });
   }, [config, saveConfig]);
 
   const handleSetActiveKey = useCallback(async (id: string) => {
     const currentKeys = config?.apiKeys ?? [];
-    const updated = currentKeys.map((k) => ({ ...k, isActive: k.id === id }));
+    const target = currentKeys.find((k) => k.id === id);
+    const provider = target?.provider ?? 'openrouter';
+    const updated = currentKeys.map((k) =>
+      (k.provider ?? 'openrouter') === provider ? { ...k, isActive: k.id === id } : k,
+    );
     await saveConfig({ apiKeys: updated });
   }, [config, saveConfig]);
 
@@ -73,70 +84,33 @@ export function SettingsPage() {
     <div className="flex flex-col gap-4 h-full overflow-y-auto max-w-2xl">
       <h2 className="text-lg font-medium text-text-primary">Настройки</h2>
 
-      {/* API Keys */}
-      <GlassPanel>
-        <h3 className="text-sm font-medium text-text-primary mb-3">API ключи OpenRouter</h3>
+      {/* Ключ kie.ai — им идёт вся генерация изображений и видео */}
+      <KeyPanel
+        title="Ключ kie.ai"
+        note="Через него идёт генерация изображений и видео. Без него приложение не генерирует."
+        placeholder="Ключ с kie.ai/api-key"
+        provider="kie"
+        keys={config.apiKeys.filter((k) => k.provider === 'kie')}
+        value={newKieKey}
+        onChange={setNewKieKey}
+        onAdd={handleAddApiKey}
+        onRemove={handleRemoveApiKey}
+        onActivate={handleSetActiveKey}
+      />
 
-        {/* Existing keys */}
-        <div className="flex flex-col gap-2 mb-3">
-          {config.apiKeys.map((key) => (
-            <div key={key.id} className="flex items-center gap-2 text-xs">
-              <button
-                onClick={() => handleSetActiveKey(key.id)}
-                className={`w-4 h-4 rounded-full border-2 cursor-pointer ${
-                  key.isActive
-                    ? 'border-aurora-blue bg-aurora-blue'
-                    : 'border-glass-border'
-                }`}
-              />
-              <span className="text-text-secondary flex-1">{key.name}</span>
-              <span className="text-text-tertiary font-mono">
-                {key.key.slice(0, 8)}...{key.key.slice(-4)}
-              </span>
-              <button
-                onClick={() => handleRemoveApiKey(key.id)}
-                className="text-text-tertiary hover:text-status-error cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-
-          {config.apiKeys.length === 0 && (
-            <div className="text-xs text-text-tertiary">
-              Нет добавленных ключей
-            </div>
-          )}
-        </div>
-
-        {/* Add new key */}
-        <div className="flex flex-col gap-2 border-t border-glass-border pt-3">
-          <div className="flex gap-2">
-            <input
-              value={newApiKeyName}
-              onChange={(e) => setNewApiKeyName(e.target.value)}
-              placeholder="Название (напр. Основной)"
-              className="flex-1 bg-bg-tertiary text-text-primary text-xs rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50"
-            />
-          </div>
-          <div className="flex gap-2">
-            <input
-              value={newApiKey}
-              onChange={(e) => setNewApiKey(e.target.value)}
-              placeholder="sk-or-..."
-              type="password"
-              className="flex-1 bg-bg-tertiary text-text-primary text-xs rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50 font-mono"
-            />
-            <button
-              onClick={handleAddApiKey}
-              disabled={!newApiKey.trim()}
-              className="px-3 py-2 rounded-lg bg-aurora-blue/20 text-aurora-blue text-xs font-medium cursor-pointer hover:bg-aurora-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Добавить
-            </button>
-          </div>
-        </div>
-      </GlassPanel>
+      {/* Ключ OpenRouter — только текст */}
+      <KeyPanel
+        title="Ключ OpenRouter"
+        note="Нужен только для перевода промпта и ассистента промпта. Без него генерация работает, не работают перевод и подсказки."
+        placeholder="sk-or-..."
+        provider="openrouter"
+        keys={config.apiKeys.filter((k) => (k.provider ?? 'openrouter') === 'openrouter')}
+        value={newApiKey}
+        onChange={setNewApiKey}
+        onAdd={handleAddApiKey}
+        onRemove={handleRemoveApiKey}
+        onActivate={handleSetActiveKey}
+      />
 
       {/* Budget Settings */}
       <GlassPanel>
@@ -326,3 +300,70 @@ function AppVersion() {
   );
 }
 
+
+interface KeyPanelProps {
+  title: string;
+  note: string;
+  placeholder: string;
+  provider: ApiProvider;
+  keys: AppConfig['apiKeys'];
+  value: string;
+  onChange: (value: string) => void;
+  onAdd: (provider: ApiProvider) => void;
+  onRemove: (id: string) => void;
+  onActivate: (id: string) => void;
+}
+
+/** Панель ключей одного поставщика. Два поставщика — две панели, ключи не смешиваются. */
+function KeyPanel({
+  title, note, placeholder, provider, keys, value, onChange, onAdd, onRemove, onActivate,
+}: KeyPanelProps) {
+  return (
+    <GlassPanel>
+      <h3 className="text-sm font-medium text-text-primary mb-1">{title}</h3>
+      <p className="text-[11px] text-text-tertiary mb-3">{note}</p>
+
+      <div className="flex flex-col gap-2 mb-3">
+        {keys.map((key) => (
+          <div key={key.id} className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => onActivate(key.id)}
+              className={`w-4 h-4 rounded-full border-2 cursor-pointer ${
+                key.isActive ? 'border-aurora-blue bg-aurora-blue' : 'border-glass-border'
+              }`}
+            />
+            <span className="text-text-secondary flex-1">{key.name}</span>
+            <span className="text-text-tertiary font-mono">
+              {key.key.slice(0, 8)}...{key.key.slice(-4)}
+            </span>
+            <button
+              onClick={() => onRemove(key.id)}
+              className="text-text-tertiary hover:text-status-error cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+
+        {keys.length === 0 && <div className="text-xs text-text-tertiary">Ключ не задан</div>}
+      </div>
+
+      <div className="flex gap-2 border-t border-glass-border pt-3">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          type="password"
+          className="flex-1 bg-bg-tertiary text-text-primary text-xs rounded-lg px-3 py-2 outline-none border border-glass-border focus:border-aurora-blue/50 font-mono"
+        />
+        <button
+          onClick={() => onAdd(provider)}
+          disabled={!value.trim()}
+          className="px-3 py-2 rounded-lg bg-aurora-blue/20 text-aurora-blue text-xs font-medium cursor-pointer hover:bg-aurora-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Добавить
+        </button>
+      </div>
+    </GlassPanel>
+  );
+}
