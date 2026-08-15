@@ -52,9 +52,15 @@ const PROMPT_KEY = 'prompt';
 
 const CREATE_TASK_PATH = '/api/v1/jobs/createTask';
 
-/** Вынуть OpenAPI из markdown-страницы документации. null, если блока нет. */
+/**
+ * Вынуть OpenAPI из markdown-страницы документации. null, если блока нет.
+ *
+ * Перевод строки допускается любой: по сети приходит `\n`, но сохранённая на диск копия
+ * на Windows получает `\r\n` при выгрузке из git, и жёсткий `\n` в шаблоне ломал разбор
+ * на свежем клоне.
+ */
 export function extractOpenApi(markdown) {
-  const match = /```yaml\n([\s\S]*?)\n```/.exec(markdown);
+  const match = /```yaml\r?\n([\s\S]*?)\r?\n```/.exec(markdown);
   if (!match) return null;
   try {
     const doc = yaml.load(match[1]);
