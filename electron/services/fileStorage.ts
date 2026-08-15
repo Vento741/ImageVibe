@@ -4,6 +4,39 @@ import { shell } from 'electron';
 import sharp from 'sharp';
 import { getConfig } from './configManager';
 import { embedMetadata } from './pngMetadata';
+import { detectMedia } from './mediaBytes';
+
+/**
+ * Сохранить результат генерации на диск.
+ *
+ * Байты, не распознанные как изображение или видео, на диск не попадают: чужой хост
+ * может вернуть страницу ошибки вместо файла, и записать её под именем картинки значит
+ * завести в галерее битую запись, которая выглядит настоящей.
+ *
+ * Метаданные внедряются только в PNG — механизм текстовых блоков к mp4 неприменим,
+ * и для видео они живут в базе.
+ */
+export function saveMedia(bytes: Buffer, metadata: Record<string, string> | null): string {
+  const media = detectMedia(bytes);
+  if (!media) {
+    throw new Error('Ответ не распознан как изображение или видео');
+  }
+
+  const dir = getImagesDir();
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10);
+  const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const random = Math.random().toString(36).substring(2, 8);
+  const filePath = path.join(dir, `${datePart}_${timePart}_${random}.${media.ext}`);
+
+  const payload =
+    media.ext === 'png' && metadata && Object.keys(metadata).length > 0
+      ? embedMetadata(bytes, metadata)
+      : bytes;
+
+  fs.writeFileSync(filePath, payload);
+  return filePath;
+}
 
 /**
  * Save a generated image to disk with embedded metadata.
