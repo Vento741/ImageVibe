@@ -25,7 +25,7 @@
     "url": "https://github.com/Vento741/ImageVibe/issues"
   },
   "homepage": "https://github.com/Vento741/ImageVibe#readme",
-  "description": "Desktop AI image generation via OpenRouter API",
+  "description": "Desktop AI image and video generation via kie.ai API",
   "build": {
     "appId": "com.imagevibe.app",
     "productName": "ImageVibe",
