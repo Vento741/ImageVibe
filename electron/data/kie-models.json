@@ -1,0 +1,5675 @@
+[
+  {
+    "id": "bytedance/seedance-1.5-pro",
+    "name": "Bytedance Seedance 1.5 Pro",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": false
+      },
+      "fixed_lens": {
+        "type": "boolean",
+        "default": false
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": false
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 2
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/seedance-1-5-pro.md"
+  },
+  {
+    "id": "bytedance/seedance-2",
+    "name": "Bytedance Seedance 2.0",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "first_frame_url": {
+        "type": "text"
+      },
+      "last_frame_url": {
+        "type": "text"
+      },
+      "return_last_frame": {
+        "type": "boolean",
+        "default": false
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p",
+          "4k"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9",
+          "adaptive"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "default": 5
+      },
+      "web_search": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 9
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/seedance-2.md"
+  },
+  {
+    "id": "bytedance/seedance-2-5",
+    "name": "Bytedance Seedance 2.5",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "first_frame_url": {
+        "type": "text"
+      },
+      "last_frame_url": {
+        "type": "text"
+      },
+      "return_last_frame": {
+        "type": "boolean",
+        "default": false
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9",
+          "adaptive"
+        ],
+        "default": "adaptive"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "default": 5
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "mp4",
+          "mov"
+        ],
+        "default": "mp4"
+      },
+      "web_search": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 30
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/seedance-2-5.md"
+  },
+  {
+    "id": "bytedance/seedance-2-fast",
+    "name": "Bytedance Seedance 2.0 Fast",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "first_frame_url": {
+        "type": "text"
+      },
+      "last_frame_url": {
+        "type": "text"
+      },
+      "return_last_frame": {
+        "type": "boolean",
+        "default": false
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9",
+          "adaptive"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "default": 5
+      },
+      "web_search": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 9
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/seedance-2-fast.md"
+  },
+  {
+    "id": "bytedance/seedance-2-mini",
+    "name": "Bytedance Seedance 2.0 Mini",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "first_frame_url": {
+        "type": "text"
+      },
+      "last_frame_url": {
+        "type": "text"
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9",
+          "adaptive"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "default": 5
+      },
+      "web_search": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 9
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/seedance-2-mini.md"
+  },
+  {
+    "id": "bytedance/seedream",
+    "name": "Seedream3.0 - Text to Image",
+    "family": "bytedance",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ],
+        "default": "square_hd"
+      },
+      "guidance_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 1,
+        "max": 10,
+        "default": 2.5
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/seedream.md"
+  },
+  {
+    "id": "bytedance/seedream-v4-edit",
+    "name": "Seedream4.0 - Edit",
+    "family": "bytedance",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_3_2",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_3_2",
+          "landscape_16_9",
+          "landscape_21_9"
+        ],
+        "default": "square_hd"
+      },
+      "image_resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "1K"
+      },
+      "max_images": {
+        "type": "number",
+        "integer": false,
+        "min": 1,
+        "max": 6,
+        "default": 1
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 10
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/seedream-v4-edit.md"
+  },
+  {
+    "id": "bytedance/seedream-v4-text-to-image",
+    "name": "Seedream4.0 - Text to Image",
+    "family": "bytedance",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_3_2",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_3_2",
+          "landscape_16_9",
+          "landscape_21_9"
+        ],
+        "default": "square_hd"
+      },
+      "image_resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "1K"
+      },
+      "max_images": {
+        "type": "number",
+        "integer": false,
+        "min": 1,
+        "max": 6,
+        "default": 1
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/seedream-v4-text-to-image.md"
+  },
+  {
+    "id": "bytedance/v1-lite-image-to-video",
+    "name": "Bytedance - V1 Lite Image to Video",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "camera_fixed": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": false,
+        "min": -1,
+        "max": 2147483647,
+        "default": -1
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "end_image_url": {
+        "type": "text"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/v1-lite-image-to-video.md"
+  },
+  {
+    "id": "bytedance/v1-lite-text-to-video",
+    "name": "Bytedance - V1 Lite Text to Video",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16",
+          "9:21"
+        ],
+        "default": "16:9"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "camera_fixed": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/v1-lite-text-to-video.md"
+  },
+  {
+    "id": "bytedance/v1-pro-fast-image-to-video",
+    "name": "Bytedance V1 Pro Fast Image to Video",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/v1-pro-fast-image-to-video.md"
+  },
+  {
+    "id": "bytedance/v1-pro-image-to-video",
+    "name": "Bytedance V1 Pro Image to Video",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "camera_fixed": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": false,
+        "min": -1,
+        "max": 2147483647,
+        "default": -1
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/v1-pro-image-to-video.md"
+  },
+  {
+    "id": "bytedance/v1-pro-text-to-video",
+    "name": "Bytedance - V1 Pro Text to Video",
+    "family": "bytedance",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "21:9",
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16"
+        ],
+        "default": "16:9"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "camera_fixed": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": false,
+        "min": -1,
+        "max": 2147483647,
+        "default": -1
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/bytedance/v1-pro-text-to-video.md"
+  },
+  {
+    "id": "flux-2/flex-image-to-image",
+    "name": "Flux-2 - Image to Image",
+    "family": "flux-2",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "3:2",
+          "2:3",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ],
+        "default": "1K"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 8
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/flux2/flex-image-to-image.md"
+  },
+  {
+    "id": "flux-2/flex-text-to-image",
+    "name": "Flux-2 - Text to Image",
+    "family": "flux-2",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "3:2",
+          "2:3"
+        ],
+        "default": "1:1"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ],
+        "default": "1K"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/flux2/flex-text-to-image.md"
+  },
+  {
+    "id": "flux-2/pro-image-to-image",
+    "name": "Flux-2 - Pro Image to Image",
+    "family": "flux-2",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "3:2",
+          "2:3",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ],
+        "default": "1K"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 8
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/flux2/pro-image-to-image.md"
+  },
+  {
+    "id": "flux-2/pro-text-to-image",
+    "name": "Flux-2 - Pro Text to Image",
+    "family": "flux-2",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "3:2",
+          "2:3"
+        ],
+        "default": "1:1"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ],
+        "default": "1K"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/flux2/pro-text-to-image.md"
+  },
+  {
+    "id": "gemini-omni-video",
+    "name": "Gemini Omni Video",
+    "family": "gemini-omni-video",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "4",
+          "6",
+          "8",
+          "10"
+        ]
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16"
+        ]
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p",
+          "4k"
+        ],
+        "default": "720p"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/gemini-omni-video.md"
+  },
+  {
+    "id": "google/imagen4",
+    "name": "Google - imagen4",
+    "family": "google",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "9:16",
+          "3:4",
+          "4:3",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "seed": {
+        "type": "text",
+        "maxLength": 500
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/google/imagen4.md"
+  },
+  {
+    "id": "google/imagen4-fast",
+    "name": "Google - imagen4-fast",
+    "family": "google",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "9:16",
+          "3:4",
+          "4:3",
+          "auto"
+        ],
+        "default": "16:9"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/google/imagen4-fast.md"
+  },
+  {
+    "id": "google/imagen4-ultra",
+    "name": "Google - imagen4-ultra",
+    "family": "google",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "9:16",
+          "3:4",
+          "4:3",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "seed": {
+        "type": "text",
+        "maxLength": 500
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/google/imagen4-ultra.md"
+  },
+  {
+    "id": "google/nano-banana",
+    "name": "Google - Nano Banana",
+    "family": "google",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "9:16",
+          "16:9",
+          "3:4",
+          "4:3",
+          "3:2",
+          "2:3",
+          "5:4",
+          "4:5",
+          "21:9",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "9:16",
+          "16:9",
+          "3:4",
+          "4:3",
+          "3:2",
+          "2:3",
+          "5:4",
+          "4:5",
+          "21:9",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/google/nano-banana.md"
+  },
+  {
+    "id": "google/nano-banana-edit",
+    "name": "Google - Nano Banana Edit",
+    "family": "google",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "9:16",
+          "16:9",
+          "3:4",
+          "4:3",
+          "3:2",
+          "2:3",
+          "5:4",
+          "4:5",
+          "21:9",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "9:16",
+          "16:9",
+          "3:4",
+          "4:3",
+          "3:2",
+          "2:3",
+          "5:4",
+          "4:5",
+          "21:9",
+          "auto"
+        ],
+        "default": "1:1"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 10
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/google/nano-banana-edit.md"
+  },
+  {
+    "id": "gpt-image-2-image-to-image",
+    "name": "GPT Image 2 - Image To Image",
+    "family": "gpt-image-2-image-to-image",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "auto",
+          "1:1",
+          "3:2",
+          "2:3",
+          "4:3",
+          "3:4",
+          "5:4",
+          "4:5",
+          "16:9",
+          "9:16",
+          "2:1",
+          "1:2",
+          "3:1",
+          "1:3",
+          "21:9",
+          "9:21"
+        ]
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ]
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 16
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/gpt/gpt-image-2-image-to-image.md"
+  },
+  {
+    "id": "gpt-image-2-text-to-image",
+    "name": "GPT Image-2 - Text to Image",
+    "family": "gpt-image-2-text-to-image",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "auto",
+          "1:1",
+          "3:2",
+          "2:3",
+          "4:3",
+          "3:4",
+          "5:4",
+          "4:5",
+          "16:9",
+          "9:16",
+          "2:1",
+          "1:2",
+          "3:1",
+          "1:3",
+          "21:9",
+          "9:21"
+        ]
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ]
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/gpt/gpt-image-2-text-to-image.md"
+  },
+  {
+    "id": "gpt-image/1.5-image-to-image",
+    "name": "GPT Image-1.5 - Image to Image",
+    "family": "gpt-image",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "2:3",
+          "3:2"
+        ],
+        "default": "3:2"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "medium",
+          "high"
+        ],
+        "default": "medium"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 16
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/gpt-image/1-5-image-to-image.md"
+  },
+  {
+    "id": "gpt-image/1.5-text-to-image",
+    "name": "GPT Image-1.5 - Text to Image",
+    "family": "gpt-image",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "2:3",
+          "3:2"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "medium",
+          "high"
+        ],
+        "default": "medium"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/gpt-image/1-5-text-to-image.md"
+  },
+  {
+    "id": "grok-imagine-video-1-5-preview",
+    "name": "Grok Imagine Video 1.5 Preview",
+    "family": "grok-imagine-video-1-5-preview",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "9:16",
+          "3:2",
+          "2:3",
+          "auto"
+        ],
+        "default": "auto"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "480p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 1,
+        "max": 15,
+        "default": 8
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 7
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/grok-imagine/1-5-preview.md"
+  },
+  {
+    "id": "grok-imagine/extend",
+    "name": "Grok Imagine - Video Extend",
+    "family": "grok-imagine",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "task_id": {
+        "type": "text",
+        "maxLength": 100
+      },
+      "extend_at": {
+        "type": "number",
+        "integer": false,
+        "min": 2,
+        "default": 2
+      },
+      "extend_times": {
+        "type": "number",
+        "integer": false
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/grok-imagine/extend.md"
+  },
+  {
+    "id": "grok-imagine/image-to-image",
+    "name": "Grok Imagine - image to image",
+    "family": "grok-imagine",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 5
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/grok-imagine/image-to-image.md"
+  },
+  {
+    "id": "grok-imagine/image-to-video",
+    "name": "Grok Imagine Image to Video",
+    "family": "grok-imagine",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "task_id": {
+        "type": "text",
+        "maxLength": 100
+      },
+      "index": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 5,
+        "default": 0
+      },
+      "mode": {
+        "type": "enum",
+        "values": [
+          "fun",
+          "normal",
+          "spicy"
+        ],
+        "default": "normal"
+      },
+      "duration": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "480p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "2:3",
+          "3:2",
+          "1:1",
+          "16:9",
+          "9:16"
+        ],
+        "default": "16:9"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 7
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/grok-imagine/image-to-video.md"
+  },
+  {
+    "id": "grok-imagine/text-to-image",
+    "name": "Grok Imagine - Text to Image",
+    "family": "grok-imagine",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "2:3",
+          "3:2",
+          "1:1",
+          "16:9",
+          "9:16"
+        ]
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      },
+      "enable_pro": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/grok-imagine/text-to-image.md"
+  },
+  {
+    "id": "grok-imagine/text-to-video",
+    "name": "Grok Imagine Text to Video",
+    "family": "grok-imagine",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "2:3",
+          "3:2",
+          "1:1",
+          "16:9",
+          "9:16"
+        ],
+        "default": "2:3"
+      },
+      "mode": {
+        "type": "enum",
+        "values": [
+          "fun",
+          "normal",
+          "spicy"
+        ],
+        "default": "normal"
+      },
+      "duration": {
+        "type": "number",
+        "integer": false
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p",
+          "1080p"
+        ],
+        "default": "480p"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/grok-imagine/text-to-video.md"
+  },
+  {
+    "id": "hailuo/02-image-to-video-pro",
+    "name": " Hailuo Pro Image to Video",
+    "family": "hailuo",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "end_image_url": {
+        "type": "text"
+      },
+      "prompt_optimizer": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/hailuo/02-image-to-video-pro.md"
+  },
+  {
+    "id": "hailuo/02-image-to-video-standard",
+    "name": "Hailuo Standard Image to Video",
+    "family": "hailuo",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "end_image_url": {
+        "type": "text"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "6",
+          "10"
+        ],
+        "default": "10"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "512P",
+          "768P"
+        ],
+        "default": "768P"
+      },
+      "prompt_optimizer": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/hailuo/02-image-to-video-standard.md"
+  },
+  {
+    "id": "hailuo/02-text-to-video-pro",
+    "name": "Hailuo Pro Text to Video",
+    "family": "hailuo",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "prompt_optimizer": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/hailuo/02-text-to-video-pro.md"
+  },
+  {
+    "id": "hailuo/02-text-to-video-standard",
+    "name": "Hailuo Standard Text to Video",
+    "family": "hailuo",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "6",
+          "10"
+        ],
+        "default": "6"
+      },
+      "prompt_optimizer": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/hailuo/02-text-to-video-standard.md"
+  },
+  {
+    "id": "hailuo/2-3-image-to-video-pro",
+    "name": "Hailuo 2.3 Pro Image to Video",
+    "family": "hailuo",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "6",
+          "10"
+        ],
+        "default": "6"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "768P",
+          "1080P"
+        ],
+        "default": "768P"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/hailuo/2-3-image-to-video-pro.md"
+  },
+  {
+    "id": "hailuo/2-3-image-to-video-standard",
+    "name": "Hailuo 2.3 Standard Image to Video",
+    "family": "hailuo",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "6",
+          "10"
+        ],
+        "default": "6"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "768P",
+          "1080P"
+        ],
+        "default": "768P"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/hailuo/2-3-image-to-video-standard.md"
+  },
+  {
+    "id": "happyhorse-1-1/image-to-video",
+    "name": "HappyHorse-1-1 image-to-video",
+    "family": "happyhorse-1-1",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": false,
+        "min": 3,
+        "max": 15,
+        "default": 5
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse-1-1/image-to-video.md"
+  },
+  {
+    "id": "happyhorse-1-1/reference-to-video",
+    "name": "HappyHorse-1-1 reference-to-video",
+    "family": "happyhorse-1-1",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "1:1",
+          "9:21",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": false,
+        "min": 3,
+        "max": 15,
+        "default": 5
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse-1-1/reference-to-video.md"
+  },
+  {
+    "id": "happyhorse-1-1/text-to-video",
+    "name": "HappyHorse-1-1 text-to-video",
+    "family": "happyhorse-1-1",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "4:3",
+          "3:4",
+          "4:5",
+          "5:4",
+          "9:21",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": false,
+        "min": 3,
+        "max": 15,
+        "default": 5
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse-1-1/text-to-video.md"
+  },
+  {
+    "id": "happyhorse/image-to-video",
+    "name": "HappyHorse - image-to-video",
+    "family": "happyhorse",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 3,
+        "max": 15,
+        "default": 5
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse/image-to-video.md"
+  },
+  {
+    "id": "happyhorse/reference-to-video",
+    "name": "HappyHorse - reference-to-video",
+    "family": "happyhorse",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "4:3",
+          "3:4"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 3,
+        "max": 15,
+        "default": 5
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse/reference-to-video.md"
+  },
+  {
+    "id": "happyhorse/text-to-video",
+    "name": "HappyHorse - text-to-video",
+    "family": "happyhorse",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "4:3",
+          "3:4"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 3,
+        "max": 15,
+        "default": 5
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse/text-to-video.md"
+  },
+  {
+    "id": "happyhorse/video-edit",
+    "name": "HappyHorse - video-edit",
+    "family": "happyhorse",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "video_url": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "audio_setting": {
+        "type": "enum",
+        "values": [
+          "auto",
+          "origin"
+        ],
+        "default": "auto"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/happyhorse/video-edit.md"
+  },
+  {
+    "id": "ideogram/character",
+    "name": "Ideogram - Character",
+    "family": "ideogram",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "rendering_speed": {
+        "type": "enum",
+        "values": [
+          "TURBO",
+          "BALANCED",
+          "QUALITY"
+        ],
+        "default": "BALANCED"
+      },
+      "style": {
+        "type": "enum",
+        "values": [
+          "AUTO",
+          "REALISTIC",
+          "FICTION"
+        ],
+        "default": "AUTO"
+      },
+      "expand_prompt": {
+        "type": "boolean"
+      },
+      "num_images": {
+        "type": "enum",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "default": "1"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ],
+        "default": "square_hd"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/ideogram/character.md"
+  },
+  {
+    "id": "ideogram/character-edit",
+    "name": "Ideogram - Character Edit",
+    "family": "ideogram",
+    "kind": "image",
+    "modes": [
+      "img2img",
+      "inpaint"
+    ],
+    "schema": {
+      "image_url": {
+        "type": "text"
+      },
+      "rendering_speed": {
+        "type": "enum",
+        "values": [
+          "TURBO",
+          "BALANCED",
+          "QUALITY"
+        ],
+        "default": "BALANCED"
+      },
+      "style": {
+        "type": "enum",
+        "values": [
+          "AUTO",
+          "REALISTIC",
+          "FICTION"
+        ],
+        "default": "AUTO"
+      },
+      "expand_prompt": {
+        "type": "boolean"
+      },
+      "num_images": {
+        "type": "enum",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "default": "1"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 1
+      },
+      "mask": {
+        "key": "mask_url",
+        "array": false
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/ideogram/character-edit.md"
+  },
+  {
+    "id": "ideogram/character-remix",
+    "name": "Ideogram - Character Remix",
+    "family": "ideogram",
+    "kind": "image",
+    "modes": [
+      "text2img",
+      "img2img",
+      "inpaint"
+    ],
+    "schema": {
+      "image_url": {
+        "type": "text"
+      },
+      "rendering_speed": {
+        "type": "enum",
+        "values": [
+          "TURBO",
+          "BALANCED",
+          "QUALITY"
+        ],
+        "default": "BALANCED"
+      },
+      "style": {
+        "type": "enum",
+        "values": [
+          "AUTO",
+          "REALISTIC",
+          "FICTION"
+        ],
+        "default": "AUTO"
+      },
+      "expand_prompt": {
+        "type": "boolean"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ],
+        "default": "square_hd"
+      },
+      "num_images": {
+        "type": "enum",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "default": "1"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "strength": {
+        "type": "number",
+        "integer": false,
+        "min": 0.1,
+        "max": 1,
+        "default": 0.8
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      },
+      "mask": {
+        "key": "reference_mask_urls",
+        "array": false
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/ideogram/character-remix.md"
+  },
+  {
+    "id": "ideogram/v3-edit",
+    "name": "Ideogram V3 Edit",
+    "family": "ideogram",
+    "kind": "image",
+    "modes": [
+      "img2img",
+      "inpaint"
+    ],
+    "schema": {
+      "rendering_speed": {
+        "type": "enum",
+        "values": [
+          "TURBO",
+          "BALANCED",
+          "QUALITY"
+        ],
+        "default": "BALANCED"
+      },
+      "expand_prompt": {
+        "type": "boolean",
+        "default": true
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      },
+      "mask": {
+        "key": "mask_url",
+        "array": false
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/ideogram/v3-edit.md"
+  },
+  {
+    "id": "ideogram/v3-remix",
+    "name": "Ideogram V3 Remix",
+    "family": "ideogram",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "rendering_speed": {
+        "type": "enum",
+        "values": [
+          "TURBO",
+          "BALANCED",
+          "QUALITY"
+        ]
+      },
+      "style": {
+        "type": "enum",
+        "values": [
+          "AUTO",
+          "GENERAL",
+          "REALISTIC",
+          "DESIGN"
+        ]
+      },
+      "expand_prompt": {
+        "type": "boolean"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ]
+      },
+      "num_images": {
+        "type": "enum",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "strength": {
+        "type": "number",
+        "integer": false,
+        "min": 0.01,
+        "max": 1
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/ideogram/v3-remix.md"
+  },
+  {
+    "id": "ideogram/v3-text-to-image",
+    "name": "Ideogram V3 Text to Image",
+    "family": "ideogram",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "rendering_speed": {
+        "type": "enum",
+        "values": [
+          "TURBO",
+          "BALANCED",
+          "QUALITY"
+        ]
+      },
+      "style": {
+        "type": "enum",
+        "values": [
+          "AUTO",
+          "GENERAL",
+          "REALISTIC",
+          "DESIGN"
+        ]
+      },
+      "expand_prompt": {
+        "type": "boolean"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ]
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/ideogram/v3-text-to-image.md"
+  },
+  {
+    "id": "infinitalk/from-audio",
+    "name": "Infinitalk - From Audio",
+    "family": "infinitalk",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "audio_url": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p"
+        ],
+        "default": "480p"
+      },
+      "seed": {
+        "type": "number",
+        "integer": false
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/infinitalk/from-audio.md"
+  },
+  {
+    "id": "kling-2.6/image-to-video",
+    "name": "Kling 2.6 Image to Video",
+    "family": "kling-2.6",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "sound": {
+        "type": "boolean"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/image-to-video.md"
+  },
+  {
+    "id": "kling-2.6/motion-control",
+    "name": "Kling 2.6 motion-control",
+    "family": "kling-2.6",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "character_orientation": {
+        "type": "enum",
+        "values": [
+          "image",
+          "video"
+        ],
+        "default": "video"
+      },
+      "mode": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/motion-control.md"
+  },
+  {
+    "id": "kling-2.6/text-to-video",
+    "name": "Kling 2.6 Text to Video",
+    "family": "kling-2.6",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "sound": {
+        "type": "boolean"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "9:16"
+        ],
+        "default": "1:1"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/text-to-video.md"
+  },
+  {
+    "id": "kling-3.0-omni/reference-to-video",
+    "name": "Kling 3.0 Omni Reference To Video",
+    "family": "kling-3.0-omni",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "valueType": "number",
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p",
+          "4k"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "auto"
+        ],
+        "default": "auto"
+      },
+      "audio": {
+        "type": "boolean"
+      },
+      "customize_multi_shots": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v3-omni-reference-to-video.md"
+  },
+  {
+    "id": "kling-3.0-omni/text-to-video",
+    "name": "Kling 3.0 Omni Text to Video",
+    "family": "kling-3.0-omni",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "customize_multi_shots": {
+        "type": "boolean",
+        "default": true
+      },
+      "prefer_multi_shots": {
+        "type": "boolean"
+      },
+      "audio": {
+        "type": "boolean",
+        "default": false
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p",
+          "4k"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "valueType": "number",
+        "default": "5"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v3-omni-text-to-video.md"
+  },
+  {
+    "id": "kling-3.0-omni/transformation",
+    "name": "Kling 3.0 Omni Transformation",
+    "family": "kling-3.0-omni",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "valueType": "number",
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p",
+          "4k"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "auto"
+        ],
+        "default": "16:9"
+      },
+      "audio": {
+        "type": "enum",
+        "values": [
+          "false",
+          "true"
+        ],
+        "valueType": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 4
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v3-omni-transformation.md"
+  },
+  {
+    "id": "kling-3.0/motion-control",
+    "name": "Kling-3.0 motion-control",
+    "family": "kling-3.0",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "mode": {
+        "type": "text"
+      },
+      "character_orientation": {
+        "type": "text"
+      },
+      "background_source": {
+        "type": "text"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/motion-control-v3.md"
+  },
+  {
+    "id": "kling-3.0/video",
+    "name": "Kling 3.0",
+    "family": "kling-3.0",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "sound": {
+        "type": "boolean",
+        "default": false
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "default": "5"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "mode": {
+        "type": "enum",
+        "values": [
+          "std",
+          "pro",
+          "4K"
+        ],
+        "default": "pro"
+      },
+      "multi_shots": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/kling-3-0.md"
+  },
+  {
+    "id": "kling/ai-avatar-pro",
+    "name": "Kling AI Avatar Pro",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "audio_url": {
+        "type": "text"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/ai-avatar-pro.md"
+  },
+  {
+    "id": "kling/ai-avatar-standard",
+    "name": "Kling AI Avatar Standard",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "audio_url": {
+        "type": "text"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/ai-avatar-standard.md"
+  },
+  {
+    "id": "kling/v2-1-master-image-to-video",
+    "name": "Kling - V2.5 Turbo Image to Video Pro",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "tail_image_url": {
+        "type": "text"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "cfg_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v25-turbo-image-to-video-pro.md"
+  },
+  {
+    "id": "kling/v2-1-master-text-to-video",
+    "name": "Kling V2.1 Master Text to Video",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "cfg_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v2-1-master-text-to-video.md"
+  },
+  {
+    "id": "kling/v2-1-pro",
+    "name": "Kling V2.1 Pro",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "cfg_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      "tail_image_url": {
+        "type": "text"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v2-1-pro.md"
+  },
+  {
+    "id": "kling/v2-1-standard",
+    "name": "Kling V2.1 Standard",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "cfg_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v2-1-standard.md"
+  },
+  {
+    "id": "kling/v2-5-turbo-text-to-video-pro",
+    "name": "Kling - V2.5 Turbo Text to Video Pro",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 2500
+      },
+      "cfg_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v25-turbo-text-to-video-pro.md"
+  },
+  {
+    "id": "kling/v3-turbo-image-to-video",
+    "name": "Kling - V3 Turbo Image to Video",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v3-turbo-image-to-video.md"
+  },
+  {
+    "id": "kling/v3-turbo-text-to-video",
+    "name": "Kling - V3 Turbo Text to Video",
+    "family": "kling",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "text"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "9:16",
+          "16:9"
+        ],
+        "default": "16:9"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/kling/v3-turbo-text-to-video.md"
+  },
+  {
+    "id": "minimax-h3/image-to-video",
+    "name": "MiniMax H3 Image-to-Video",
+    "family": "minimax-h3",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "last_frame_url": {
+        "type": "text"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "valueType": "number",
+        "default": "6"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "768P",
+          "2K"
+        ],
+        "default": "2K"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "first_frame_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/minimax-h3/image-to-video.md"
+  },
+  {
+    "id": "minimax-h3/reference-to-video",
+    "name": "MiniMax H3 Reference-to-Video",
+    "family": "minimax-h3",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "adaptive",
+          "21:9",
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16"
+        ],
+        "default": "adaptive"
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "valueType": "number",
+        "default": "6"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "768P",
+          "2K"
+        ],
+        "default": "2K"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "reference_image_urls",
+        "array": true,
+        "max": 9
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/minimax-h3/reference-to-video.md"
+  },
+  {
+    "id": "minimax-h3/text-to-video",
+    "name": "MiniMax H3 Text-to-Video",
+    "family": "minimax-h3",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "21:9",
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16"
+        ]
+      },
+      "duration": {
+        "type": "enum",
+        "values": [
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15"
+        ],
+        "valueType": "number",
+        "default": "6"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "768P",
+          "2K"
+        ],
+        "default": "2K"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/minimax-h3/text-to-video.md"
+  },
+  {
+    "id": "nano-banana-2",
+    "name": "Google - Nano Banana 2",
+    "family": "nano-banana-2",
+    "kind": "image",
+    "modes": [
+      "text2img",
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "1:4",
+          "4:1",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "1:8",
+          "8:1",
+          "9:16",
+          "16:9",
+          "21:9",
+          "auto"
+        ],
+        "default": "auto"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "1K"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpg"
+        ],
+        "default": "jpg"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_input",
+        "array": true,
+        "max": 14
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/google/nanobanana2.md"
+  },
+  {
+    "id": "nano-banana-2-lite",
+    "name": "Google - Nano Banana 2 Lite",
+    "family": "nano-banana-2-lite",
+    "kind": "image",
+    "modes": [
+      "text2img",
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "1:4",
+          "1:8",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:1",
+          "4:3",
+          "4:5",
+          "5:4",
+          "8:1",
+          "9:16",
+          "16:9",
+          "21:9",
+          "auto"
+        ],
+        "default": "auto"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 10
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/google/nano-banana-2-lite.md"
+  },
+  {
+    "id": "nano-banana-pro",
+    "name": "Google - Nano Banana Pro",
+    "family": "nano-banana-pro",
+    "kind": "image",
+    "modes": [
+      "text2img",
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9",
+          "auto"
+        ],
+        "default": "1:1"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "1K"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpg"
+        ],
+        "default": "png"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_input",
+        "array": true,
+        "max": 8
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/google/pro-image-to-image.md"
+  },
+  {
+    "id": "omnihuman-1-5",
+    "name": "Omnihuman 1.5",
+    "family": "omnihuman-1-5",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "audio_url": {
+        "type": "text"
+      },
+      "output_resolution": {
+        "type": "enum",
+        "values": [
+          "720",
+          "1080"
+        ],
+        "default": "1080"
+      },
+      "pe_fast_mode": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "default": -1
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      },
+      "mask": {
+        "key": "mask_url",
+        "array": true
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/omnihuman-1-5.md"
+  },
+  {
+    "id": "pixverse-v6/image-to-video",
+    "name": "PixVerse V6 Image-to-Video",
+    "family": "pixverse-v6",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "quality": {
+        "type": "enum",
+        "values": [
+          "360p",
+          "540p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 1,
+        "max": 15,
+        "default": 5
+      },
+      "generate_audio_switch": {
+        "type": "boolean",
+        "default": false
+      },
+      "generate_multi_clip_switch": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      },
+      "template_id": {
+        "type": "enum",
+        "values": [
+          "412736208886848",
+          "411563216524736",
+          "411316927927040",
+          "411174903569216",
+          "410999246341952",
+          "408891141511104",
+          "410317363057408",
+          "410285445698304",
+          "410133101388544",
+          "409899296377728",
+          "408897485909952",
+          "408869061406656",
+          "408661207662528",
+          "409767750265728",
+          "409766559675264",
+          "409589071559552",
+          "407804339389760",
+          "407658863287616",
+          "407474361215744",
+          "407473438360320",
+          "407467702283008",
+          "385844572217469",
+          "406428904874432",
+          "406423682060736",
+          "406411724685760",
+          "406372274350528",
+          "406218913317312",
+          "406218479198656",
+          "406064763308480",
+          "406413607395776",
+          "405662117814720",
+          "406014934000064",
+          "405658369331648",
+          "405321470423488",
+          "405175211454656",
+          "404955806201792",
+          "404820147974080",
+          "398980393937856",
+          "403916646846400",
+          "403739217192896",
+          "403560060358144",
+          "403556618212098",
+          "398965022284579",
+          "402201060373270",
+          "403085292466285",
+          "402061828030966",
+          "402888569901524",
+          "402155676592228",
+          "402047865383360",
+          "402046136040202"
+        ]
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/pixverse/image-to-video.md"
+  },
+  {
+    "id": "pixverse-v6/reference-to-video",
+    "name": "PixVerse V6 Fusion / Reference-to-Video",
+    "family": "pixverse-v6",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "360p",
+          "540p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 1,
+        "max": 15,
+        "default": 5
+      },
+      "generate_audio_switch": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/pixverse/reference-to-video.md"
+  },
+  {
+    "id": "pixverse-v6/text-to-video",
+    "name": "PixVerse V6 Text-to-Video",
+    "family": "pixverse-v6",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "360p",
+          "540p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 1,
+        "max": 15,
+        "default": 5
+      },
+      "generate_audio_switch": {
+        "type": "boolean",
+        "default": false
+      },
+      "generate_multi_clip_switch": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/pixverse/text-to-video.md"
+  },
+  {
+    "id": "pixverse-v6/transition",
+    "name": "PixVerse V6 First & Last Frame Transition",
+    "family": "pixverse-v6",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "first_frame_image_url": {
+        "type": "text"
+      },
+      "last_frame_image_url": {
+        "type": "text"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "360p",
+          "540p",
+          "720p",
+          "1080p"
+        ],
+        "default": "720p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 1,
+        "max": 15,
+        "default": 5
+      },
+      "generate_audio_switch": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/pixverse/transition.md"
+  },
+  {
+    "id": "qwen/image-edit",
+    "name": "Qwen - Image Edit",
+    "family": "qwen",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "acceleration": {
+        "type": "enum",
+        "values": [
+          "none",
+          "regular",
+          "high"
+        ],
+        "default": "none"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ],
+        "default": "landscape_4_3"
+      },
+      "num_inference_steps": {
+        "type": "number",
+        "integer": false,
+        "min": 2,
+        "max": 49,
+        "default": 25
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "guidance_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 20,
+        "default": 4
+      },
+      "sync_mode": {
+        "type": "boolean"
+      },
+      "num_images": {
+        "type": "enum",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "jpeg",
+          "png"
+        ],
+        "default": "png"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen/image-edit.md"
+  },
+  {
+    "id": "qwen/image-to-image",
+    "name": "Qwen - Image to Image",
+    "family": "qwen",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "strength": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "acceleration": {
+        "type": "enum",
+        "values": [
+          "none",
+          "regular",
+          "high"
+        ],
+        "default": "none"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "num_inference_steps": {
+        "type": "number",
+        "integer": false,
+        "min": 2,
+        "max": 250,
+        "default": 30
+      },
+      "guidance_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 20,
+        "default": 2.5
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen/image-to-image.md"
+  },
+  {
+    "id": "qwen/text-to-image",
+    "name": "Qwen - Text to Image",
+    "family": "qwen",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "square",
+          "square_hd",
+          "portrait_4_3",
+          "portrait_16_9",
+          "landscape_4_3",
+          "landscape_16_9"
+        ],
+        "default": "square_hd"
+      },
+      "num_inference_steps": {
+        "type": "number",
+        "integer": false,
+        "min": 2,
+        "max": 250,
+        "default": 30
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "guidance_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 20,
+        "default": 2.5
+      },
+      "enable_safety_checker": {
+        "type": "boolean"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "acceleration": {
+        "type": "enum",
+        "values": [
+          "none",
+          "regular",
+          "high"
+        ],
+        "default": "none"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen/text-to-image.md"
+  },
+  {
+    "id": "qwen2/image-edit",
+    "name": "Qwen2 - Image Edit",
+    "family": "qwen2",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "jpeg",
+          "png"
+        ],
+        "default": "png"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen2/image-edit.md"
+  },
+  {
+    "id": "qwen3/image-to-image",
+    "name": "Qwen3 Image to Image",
+    "family": "qwen3",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ],
+        "default": "1K"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "3:2",
+          "2:3",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "nsfw_checker": {
+        "type": "boolean",
+        "default": false
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 1
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 3
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen3/image-to-image.md"
+  },
+  {
+    "id": "qwen3/pro-image-to-image",
+    "name": "Qwen3 Pro Image to Image",
+    "family": "qwen3",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ],
+        "default": "1K"
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "3:2",
+          "2:3",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "nsfw_checker": {
+        "type": "boolean",
+        "default": false
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 1
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 3
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen3-pro/image-to-image.md"
+  },
+  {
+    "id": "qwen3/pro-text-to-image",
+    "name": "Qwen3 Pro Text to Image",
+    "family": "qwen3",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ]
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "3:2",
+          "2:3",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "nsfw_checker": {
+        "type": "boolean",
+        "default": false
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 1
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen3-pro/text-to-image.md"
+  },
+  {
+    "id": "qwen3/text-to-image",
+    "name": "Qwen3 Text to Image",
+    "family": "qwen3",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K"
+        ]
+      },
+      "image_size": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "3:2",
+          "2:3",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "21:9"
+        ],
+        "default": "16:9"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "nsfw_checker": {
+        "type": "boolean",
+        "default": false
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 5000
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 1
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/qwen3/text-to-image.md"
+  },
+  {
+    "id": "seedream/4.5-edit",
+    "name": "Seedream4.5 - Edit",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "basic",
+          "high"
+        ],
+        "default": "basic"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 14
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/4-5-edit.md"
+  },
+  {
+    "id": "seedream/4.5-text-to-image",
+    "name": "Seedream4.5 - Text to Image",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "basic",
+          "high"
+        ],
+        "default": "basic"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/4-5-text-to-image.md"
+  },
+  {
+    "id": "seedream/5-lite-image-to-image",
+    "name": "Seedream5.0 Lite - Image to Image",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "basic",
+          "high",
+          "ultra"
+        ],
+        "default": "basic"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 14
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream-5-lite-image-to-image.md"
+  },
+  {
+    "id": "seedream/5-lite-text-to-image",
+    "name": "Seedream5.0 Lite - Text to Image",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "basic",
+          "high",
+          "ultra"
+        ],
+        "default": "basic"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/5-lite-text-to-image.md"
+  },
+  {
+    "id": "seedream/5-pro-image-to-image",
+    "name": "Seedream5.0 Pro - Image to Image",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "basic",
+          "high"
+        ],
+        "default": "basic"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 10
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/5-pro-image-to-image.md"
+  },
+  {
+    "id": "seedream/5-pro-layer-decomposition",
+    "name": "Seedream 5.0 Pro -  Layer Decomposition",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "img2img"
+    ],
+    "schema": {
+      "size": {
+        "type": "enum",
+        "values": [
+          "auto",
+          "1K",
+          "1.5K",
+          "2K"
+        ],
+        "default": "auto"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "jpeg"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/5-pro-layer-decomposition.md"
+  },
+  {
+    "id": "seedream/5-pro-text-to-image",
+    "name": "Seedream5.0 Pro - Text to Image",
+    "family": "seedream",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16",
+          "2:3",
+          "3:2",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "enum",
+        "values": [
+          "basic",
+          "high"
+        ],
+        "default": "basic"
+      },
+      "output_format": {
+        "type": "enum",
+        "values": [
+          "png",
+          "jpeg"
+        ],
+        "default": "png"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/seedream/5-pro-text-to-image.md"
+  },
+  {
+    "id": "wan/2-2-a14b-image-to-video-turbo",
+    "name": "Wan - 2.2 A14B Image to Video Turbo",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p"
+        ],
+        "default": "720p"
+      },
+      "enable_prompt_expansion": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      },
+      "acceleration": {
+        "type": "enum",
+        "values": [
+          "none",
+          "regular"
+        ],
+        "default": "none"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-2-a14b-image-to-video-turbo.md"
+  },
+  {
+    "id": "wan/2-2-a14b-speech-to-video-turbo",
+    "name": "Wan - 2.2 A14B Speech to Video Turbo",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "audio_url": {
+        "type": "text"
+      },
+      "num_frames": {
+        "type": "number",
+        "integer": false,
+        "min": 40,
+        "max": 120,
+        "default": 80
+      },
+      "frames_per_second": {
+        "type": "number",
+        "integer": false,
+        "min": 4,
+        "max": 60,
+        "default": 16
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "580p",
+          "720p"
+        ],
+        "default": "480p"
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "num_inference_steps": {
+        "type": "number",
+        "integer": false,
+        "min": 2,
+        "max": 40,
+        "default": 27
+      },
+      "guidance_scale": {
+        "type": "number",
+        "integer": false,
+        "min": 1,
+        "max": 10,
+        "default": 3.5
+      },
+      "shift": {
+        "type": "number",
+        "integer": false,
+        "min": 1,
+        "max": 10,
+        "default": 5
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-2-a14b-speech-to-video-turbo.md"
+  },
+  {
+    "id": "wan/2-2-a14b-text-to-video-turbo",
+    "name": "Wan - 2.2 A14B Text to Video Turbo",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "480p",
+          "720p"
+        ],
+        "default": "720p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16"
+        ],
+        "default": "16:9"
+      },
+      "enable_prompt_expansion": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": false,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      },
+      "acceleration": {
+        "type": "enum",
+        "values": [
+          "none",
+          "regular"
+        ],
+        "default": "none"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-2-a14b-text-to-video-turbo.md"
+  },
+  {
+    "id": "wan/2-5-image-to-video",
+    "name": "Wan 2.5 - Image to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ]
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ]
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "enable_prompt_expansion": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-5-image-to-video.md"
+  },
+  {
+    "id": "wan/2-5-text-to-video",
+    "name": "Wan 2.5 - Text to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ]
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1"
+        ]
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ]
+      },
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "enable_prompt_expansion": {
+        "type": "boolean"
+      },
+      "seed": {
+        "type": "number",
+        "integer": true
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-5-text-to-video.md"
+  },
+  {
+    "id": "wan/2-6-flash-image-to-video",
+    "name": "Wan - 2.6-flash-image-to-video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10",
+          "15"
+        ],
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "audio": {
+        "type": "boolean"
+      },
+      "multi_shots": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-6-flash-image-to-video.md"
+  },
+  {
+    "id": "wan/2-6-flash-video-to-video",
+    "name": "Wan - 2-6-flash-video-to-video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "audio": {
+        "type": "boolean"
+      },
+      "multi_shots": {
+        "type": "boolean"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-6-flash-video-to-video.md"
+  },
+  {
+    "id": "wan/2-6-image-to-video",
+    "name": "Wan 2.6 - Image to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "img2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10",
+          "15"
+        ],
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "multi_shots": {
+        "type": "boolean",
+        "default": false
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "image_urls",
+        "array": true,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-6-image-to-video.md"
+  },
+  {
+    "id": "wan/2-6-text-to-video",
+    "name": "Wan 2.6 - Text to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10",
+          "15"
+        ],
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "multi_shots": {
+        "type": "boolean",
+        "default": false
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-6-text-to-video.md"
+  },
+  {
+    "id": "wan/2-6-video-to-video",
+    "name": "Wan 2.6 - Video to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "duration": {
+        "type": "enum",
+        "values": [
+          "5",
+          "10"
+        ],
+        "default": "5"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "multi_shots": {
+        "type": "boolean",
+        "default": false
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-6-video-to-video.md"
+  },
+  {
+    "id": "wan/2-7-image",
+    "name": "Wan 2.7 Image",
+    "family": "wan",
+    "kind": "image",
+    "modes": [
+      "text2img",
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "4:3",
+          "21:9",
+          "3:4",
+          "9:16",
+          "8:1",
+          "1:8"
+        ]
+      },
+      "enable_sequential": {
+        "type": "boolean",
+        "default": false
+      },
+      "n": {
+        "type": "number",
+        "integer": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "2K"
+      },
+      "thinking_mode": {
+        "type": "boolean",
+        "default": false
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 9
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-7-image.md"
+  },
+  {
+    "id": "wan/2-7-image-pro",
+    "name": "Wan 2.7 Image Pro",
+    "family": "wan",
+    "kind": "image",
+    "modes": [
+      "text2img",
+      "img2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "16:9",
+          "4:3",
+          "21:9",
+          "3:4",
+          "9:16",
+          "8:1",
+          "1:8"
+        ]
+      },
+      "enable_sequential": {
+        "type": "boolean",
+        "default": false
+      },
+      "n": {
+        "type": "number",
+        "integer": true
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "2K"
+      },
+      "thinking_mode": {
+        "type": "boolean",
+        "default": false
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647,
+        "default": 0
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "input_urls",
+        "array": true,
+        "max": 9
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-7-image-pro.md"
+  },
+  {
+    "id": "wan/2-7-image-to-video",
+    "name": "Wan 2.7 - Image to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "last_frame_url": {
+        "type": "text"
+      },
+      "first_clip_url": {
+        "type": "text"
+      },
+      "driving_audio_url": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 2,
+        "max": 15,
+        "default": 5
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt",
+      "references": {
+        "key": "first_frame_url",
+        "array": false,
+        "max": 1
+      }
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-7-image-to-video.md"
+  },
+  {
+    "id": "wan/2-7-r2v",
+    "name": "Wan 2.7 - Reference to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "first_frame": {
+        "type": "text"
+      },
+      "reference_voice": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "4:3",
+          "3:4"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 2,
+        "max": 10,
+        "default": 5
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-7-r2v.md"
+  },
+  {
+    "id": "wan/2-7-text-to-video",
+    "name": "Wan 2.7 - Text to Video",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "audio_url": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "4:3",
+          "3:4"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 2,
+        "max": 15,
+        "default": 5
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-7-text-to-video.md"
+  },
+  {
+    "id": "wan/2-7-videoedit",
+    "name": "Wan 2.7 - Video Edit",
+    "family": "wan",
+    "kind": "video",
+    "modes": [
+      "text2video"
+    ],
+    "schema": {
+      "negative_prompt": {
+        "type": "text",
+        "maxLength": 500
+      },
+      "video_url": {
+        "type": "text"
+      },
+      "reference_image": {
+        "type": "text"
+      },
+      "resolution": {
+        "type": "enum",
+        "values": [
+          "720p",
+          "1080p"
+        ],
+        "default": "1080p"
+      },
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "16:9",
+          "9:16",
+          "1:1",
+          "4:3",
+          "3:4"
+        ]
+      },
+      "duration": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 10,
+        "default": 0
+      },
+      "audio_setting": {
+        "type": "enum",
+        "values": [
+          "auto",
+          "origin"
+        ],
+        "default": "auto"
+      },
+      "prompt_extend": {
+        "type": "boolean",
+        "default": true
+      },
+      "watermark": {
+        "type": "boolean",
+        "default": false
+      },
+      "seed": {
+        "type": "number",
+        "integer": true,
+        "min": 0,
+        "max": 2147483647
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/wan/2-7-videoedit.md"
+  },
+  {
+    "id": "z-image",
+    "name": "Z-Image",
+    "family": "z-image",
+    "kind": "image",
+    "modes": [
+      "text2img"
+    ],
+    "schema": {
+      "aspect_ratio": {
+        "type": "enum",
+        "values": [
+          "1:1",
+          "4:3",
+          "3:4",
+          "16:9",
+          "9:16"
+        ],
+        "default": "1:1"
+      },
+      "nsfw_checker": {
+        "type": "boolean"
+      }
+    },
+    "roles": {
+      "prompt": "prompt"
+    },
+    "docUrl": "https://docs.kie.ai/market/z-image/z-image.md"
+  }
+]

@@ -15,7 +15,13 @@
  * настоящий переключатель, а числа и свободный текст объявляются своими формами.
  */
 export type KieParamSchema =
-  | { type: 'enum'; values: string[]; default?: string }
+  /**
+   * Значения перечисления всегда хранятся строками — так с ними работают контролы и
+   * стор. Но у шести моделей `duration` объявлен целыми числами, а у одной `audio` —
+   * булевым, поэтому исходный тип запоминается в `valueType` и восстанавливается при
+   * сборке тела запроса. Отправить "5" туда, где объявлено 5, — вероятный отказ.
+   */
+  | { type: 'enum'; values: string[]; default?: string; valueType?: 'number' | 'boolean' }
   | { type: 'number'; min?: number; max?: number; default?: number; integer: boolean }
   | { type: 'boolean'; default?: boolean }
   | { type: 'text'; maxLength?: number };

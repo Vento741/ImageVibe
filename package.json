@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "kie:registry": "node scripts/build-kie-registry.mjs"
   },
   "repository": {
     "type": "git",
@@ -79,6 +80,7 @@
     "electron-builder": "^26.8.1",
     "esbuild": "^0.27.4",
     "eslint": "^10.0.3",
+    "js-yaml": "^4.1.0",
     "jsdom": "^29.0.0",
     "png2icons": "^2.0.1",
     "postcss": "^8.5.8",
