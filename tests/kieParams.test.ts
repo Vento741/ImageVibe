@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { controlKindFor, filterToSchema, hasParameter, enumValues } from '../src/shared/lib/kieParams';
-import type { KieParamSchema } from '../src/shared/types/kie';
+import {
+  applyModel,
+  controlKindFor,
+  defaultValueFor,
+  enumValues,
+  filterToSchema,
+  hasParameter,
+  missingRequired,
+} from '../src/shared/lib/kieParams';
+import type { KieModel, KieParamSchema } from '../src/shared/types/kie';
 
 const ratio: KieParamSchema = { type: 'enum', values: ['1:1', '16:9'] };
 const seed: KieParamSchema = { type: 'number', integer: true };
@@ -100,5 +108,78 @@ describe('filterToSchema', () => {
   it('не заменяет недопустимое значение на допустимое', () => {
     const withDefault: KieParamSchema = { type: 'enum', values: ['1:1'], default: '1:1' };
     expect(filterToSchema({ aspect_ratio: '4:3' }, { aspect_ratio: withDefault })).toEqual({});
+  });
+});
+
+describe('defaultValueFor', () => {
+  it('берёт объявленное значение по умолчанию', () => {
+    expect(defaultValueFor({ type: 'enum', values: ['1K', '2K'], default: '2K' })).toBe('2K');
+    expect(defaultValueFor({ type: 'number', integer: true, default: 30 })).toBe(30);
+    expect(defaultValueFor({ type: 'boolean', default: true })).toBe(true);
+  });
+
+  it('для перечисления без умолчания берёт первое значение', () => {
+    expect(defaultValueFor({ type: 'enum', values: ['1K', '2K'] })).toBe('1K');
+  });
+
+  it('для переключателя без умолчания берёт false — состояния «не выбрано» у него нет', () => {
+    expect(defaultValueFor({ type: 'boolean' })).toBe(false);
+  });
+
+  it('для числа и текста без умолчания честного значения нет', () => {
+    expect(defaultValueFor({ type: 'number', integer: false })).toBeUndefined();
+    expect(defaultValueFor({ type: 'text' })).toBeUndefined();
+  });
+});
+
+function modelWith(
+  schema: Record<string, KieParamSchema>,
+  required: string[] = [],
+): KieModel {
+  return {
+    id: 'x/y',
+    name: 'X',
+    family: 'x',
+    kind: 'image',
+    modes: ['text2img'],
+    schema,
+    required,
+    roles: { prompt: 'prompt' },
+    docUrl: 'https://docs.kie.ai/market/x.md',
+  };
+}
+
+describe('applyModel', () => {
+  it('предзаполняет обязательный параметр — без него сервис отвергает запрос', () => {
+    const model = modelWith({ aspect_ratio: ratio }, ['aspect_ratio']);
+    expect(applyModel({}, model)).toEqual({ aspect_ratio: '1:1' });
+  });
+
+  it('не трогает необязательный параметр', () => {
+    const model = modelWith({ aspect_ratio: ratio, seed });
+    expect(applyModel({}, model)).toEqual({});
+  });
+
+  it('не перетирает выбор пользователя', () => {
+    const model = modelWith({ aspect_ratio: ratio }, ['aspect_ratio']);
+    expect(applyModel({ aspect_ratio: '16:9' }, model)).toEqual({ aspect_ratio: '16:9' });
+  });
+
+  it('сначала выбрасывает недопустимое, потом предзаполняет', () => {
+    const model = modelWith({ aspect_ratio: ratio }, ['aspect_ratio']);
+    expect(applyModel({ aspect_ratio: '7:3', bogus: 1 }, model)).toEqual({ aspect_ratio: '1:1' });
+  });
+
+  it('оставляет пустым обязательное число без умолчания', () => {
+    const model = modelWith({ duration }, ['duration']);
+    expect(applyModel({}, model)).toEqual({});
+  });
+});
+
+describe('missingRequired', () => {
+  it('называет незаполненные обязательные параметры', () => {
+    const model = modelWith({ duration, aspect_ratio: ratio }, ['duration', 'aspect_ratio']);
+    expect(missingRequired({ aspect_ratio: '1:1' }, model)).toEqual(['duration']);
+    expect(missingRequired({ aspect_ratio: '1:1', duration: 5 }, model)).toEqual([]);
   });
 });

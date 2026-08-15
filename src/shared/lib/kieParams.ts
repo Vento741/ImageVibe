@@ -1,4 +1,4 @@
-import type { KieParams, KieParamSchema } from '../types/kie';
+import type { KieModel, KieParams, KieParamSchema } from '../types/kie';
 
 /** Какой контрол требует форма записи схемы. */
 export type ControlKind = 'enum' | 'number' | 'toggle' | 'text';
@@ -65,4 +65,52 @@ export function filterToSchema(
   }
 
   return out;
+}
+
+/**
+ * Значение, которым имеет смысл предзаполнить контрол обязательного параметра.
+ *
+ * Объявленный `default`, иначе первое значение перечисления, иначе `false` для
+ * переключателя — у него всё равно нет состояния «не выбрано». Для числа без
+ * значения по умолчанию честного варианта нет: возвращается `undefined`, контрол
+ * остаётся пустым, и генерация блокируется, пока пользователь не заполнит его сам.
+ */
+export function defaultValueFor(entry: KieParamSchema): string | number | boolean | undefined {
+  switch (entry.type) {
+    case 'enum':
+      return entry.default ?? entry.values[0];
+    case 'number':
+      return entry.default;
+    case 'boolean':
+      return entry.default ?? false;
+    case 'text':
+      return undefined;
+  }
+}
+
+/**
+ * Привести набор параметров к модели: выбросить недопустимое, затем предзаполнить
+ * обязательное.
+ *
+ * Предзаполняются только обязательные параметры, и только потому, что без них сервис
+ * отвергает запрос (замер 3a). Необязательные остаются пустыми — их отсутствие честно
+ * означает «решает поставщик».
+ */
+export function applyModel(params: KieParams, model: KieModel): KieParams {
+  const out = filterToSchema(params, model.schema);
+
+  for (const key of model.required) {
+    if (key in out) continue;
+    const entry = model.schema[key];
+    if (!entry) continue;
+    const value = defaultValueFor(entry);
+    if (value !== undefined) out[key] = value;
+  }
+
+  return out;
+}
+
+/** Обязательные параметры, для которых значение так и не задано. Пусто — можно запускать. */
+export function missingRequired(params: KieParams, model: KieModel): string[] {
+  return model.required.filter((key) => !(key in params));
 }

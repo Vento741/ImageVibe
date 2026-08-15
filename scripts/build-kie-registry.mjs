@@ -118,9 +118,17 @@ function toParamSchema(prop) {
   return null;
 }
 
-/** Найти первый ключ из таблицы, присутствующий в свойствах. */
-function findRole(props, keys) {
-  return keys.find((key) => key in props);
+/**
+ * Найти ключ роли среди свойств.
+ *
+ * Обязательный кандидат побеждает необязательного, и только при равенстве решает
+ * порядок таблицы. Без этого правила у моделей Ideogram ролью исходника становился
+ * `reference_image_urls` (референс персонажа), а обязательный `image_url` — сама
+ * правящаяся картинка — оставался обычным параметром, и модель уходила в отсев.
+ */
+function findRole(props, required, keys) {
+  const present = keys.filter((key) => key in props);
+  return present.find((key) => required.includes(key)) ?? present[0];
 }
 
 /**
@@ -143,8 +151,8 @@ export function openApiToModel(doc, meta) {
   // на слои отсеиваются сами: интерфейс генерации просит промпт, а им его дать нечем.
   if (!(PROMPT_KEY in input.props)) return null;
 
-  const referenceKey = findRole(input.props, REFERENCE_KEYS);
-  const maskKey = findRole(input.props, MASK_KEYS);
+  const referenceKey = findRole(input.props, input.required, REFERENCE_KEYS);
+  const maskKey = findRole(input.props, input.required, MASK_KEYS);
 
   const roles = { prompt: PROMPT_KEY };
   if (referenceKey) {
@@ -167,6 +175,22 @@ export function openApiToModel(doc, meta) {
     if (entry) schema[key] = entry;
   }
 
+  // Обязательные параметры сервис действительно требует: запрос без них отвергается
+  // с «This field is required» (замер 3a). Значит их придётся отправлять.
+  //
+  // Перечисление, переключатель и число управляются контролами — их пользователь
+  // задаёт сам, а интерфейс не даёт запустить генерацию, пока обязательное поле пусто.
+  // А вот обязательная свободная строка — это всегда ссылка на медиафайл (аудио для
+  // говорящего портрета, видео для монтажа), которую приложению взять негде; то же
+  // касается обязательного массива без роли. Такую модель предложить нельзя: любая
+  // генерация ею была бы отказом, а поле для вставки чужой ссылки — не интерфейс.
+  const required = (input.required ?? []).filter((key) => !roleKeys.has(key));
+  for (const key of required) {
+    const entry = schema[key];
+    if (!entry) return null;
+    if (entry.type === 'text') return null;
+  }
+
   // Режим выводится из схемы, а не из имени: суффиксы идентификаторов не единообразны
   // и обратной группировке не поддаются (замер 13).
   const base = meta.kind === 'video' ? 'text2video' : 'text2img';
@@ -183,6 +207,7 @@ export function openApiToModel(doc, meta) {
     kind: meta.kind,
     modes,
     schema,
+    required,
     roles,
     docUrl: meta.docUrl,
   };
