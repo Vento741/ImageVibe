@@ -10,6 +10,7 @@ import {
   BarChart3,
   CreditCard,
   Palette,
+  Film,
   Sparkles,
   Globe,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ import type { SpendingSummary, CreditBalance, BudgetStatus } from '@/shared/type
 
 const TYPE_LABELS: Record<string, { icon: ReactNode; text: string }> = {
   image: { icon: <Palette size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Генерация' },
+  video: { icon: <Film size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Видео' },
   prompt_ai: { icon: <Sparkles size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Промпт-AI' },
   translate: { icon: <Globe size={14} className="inline-block mr-1 align-text-bottom" />, text: 'Перевод' },
 };

@@ -59,7 +59,7 @@ export interface DBGenerationCost {
   generation_id: string | null;
   model_id: string;
   cost_usd: number;
-  cost_type: 'image' | 'prompt_ai' | 'translate';
+  cost_type: 'image' | 'video' | 'prompt_ai' | 'translate';
   tokens_input: number;
   tokens_output: number;
   /** 'unknown' — cost_usd is 0 only because neither the actual nor an estimate was available */

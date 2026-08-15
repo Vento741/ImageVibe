@@ -13,7 +13,7 @@ export function recordCost(params: {
   generationId: string | null;
   modelId: string;
   costUsd: number;
-  costType: 'image' | 'prompt_ai' | 'translate';
+  costType: 'image' | 'video' | 'prompt_ai' | 'translate';
   tokensInput: number;
   tokensOutput: number;
   /** 'unknown' — costUsd is 0 only as a schema placeholder, not a confirmed zero cost */
