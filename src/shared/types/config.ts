@@ -1,9 +1,14 @@
+/** Кому принадлежит ключ. Генерация идёт через kie.ai, текст — через OpenRouter. */
+export type ApiProvider = 'kie' | 'openrouter';
+
 /** API key entry */
 export interface ApiKeyConfig {
   id: string;
   name: string;
   key: string;
   isActive: boolean;
+  /** Отсутствие означает OpenRouter: так читаются ключи, заведённые до переезда */
+  provider?: ApiProvider;
 }
 
 /** Full app configuration */

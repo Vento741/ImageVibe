@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import type { AppConfig } from '../../src/shared/types/config';
+import type { ApiProvider, AppConfig } from '../../src/shared/types/config';
 import { DEFAULT_CONFIG } from '../../src/shared/types/config';
 
 let config: AppConfig | null = null;
@@ -49,9 +49,16 @@ export function updateConfig(partial: Partial<AppConfig>): AppConfig {
   return config!;
 }
 
-export function getActiveApiKey(): string | null {
+/**
+ * Активный ключ поставщика.
+ *
+ * Ключи, заведённые до переезда на kie.ai, поля `provider` не имеют и читаются как
+ * ключи OpenRouter — их владелец не должен потерять их из-за появления второго
+ * поставщика.
+ */
+export function getActiveApiKey(provider: ApiProvider = 'openrouter'): string | null {
   const cfg = getConfig();
-  const active = cfg.apiKeys.find((k) => k.isActive);
+  const active = cfg.apiKeys.find((k) => k.isActive && (k.provider ?? 'openrouter') === provider);
   return active?.key ?? null;
 }
 
