@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { GlassPanel } from '@/shared/components/ui/GlassPanel';
-import { ipc } from '@/shared/lib/ipc';
 import { useGenerateStore } from '../store';
+import { useModelsForMode } from '../hooks/useModelsForMode';
 import { KieSchemaControls } from './KieSchemaControls';
 import type { KieModel } from '@/shared/types/kie';
 
@@ -19,37 +18,14 @@ function byFamily(models: KieModel[]): Array<{ family: string; models: KieModel[
 }
 
 export function ParamsPanel() {
-  const [models, setModels] = useState<KieModel[]>([]);
-  const mode = useGenerateStore((s) => s.mode);
+  // Список и выбор модели живут в хуке: он вызывается и из GeneratePage, которая
+  // смонтирована в обоих режимах интерфейса
+  const { models, selected } = useModelsForMode();
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
   const params = useGenerateStore((s) => s.params);
   const setSelectedModelId = useGenerateStore((s) => s.setSelectedModelId);
   const setParam = useGenerateStore((s) => s.setParam);
   const clearParam = useGenerateStore((s) => s.clearParam);
-  const syncParamsToModel = useGenerateStore((s) => s.syncParamsToModel);
-
-  // Реестр читается из файла, собранного скриптом: он готов сразу и по сети не ходит,
-  // поэтому ни состояния загрузки, ни кнопки обновления здесь больше нет
-  useEffect(() => {
-    ipc
-      .invoke('catalog:for-mode', mode)
-      .then((list) => {
-        setModels(list);
-        const chosen = useGenerateStore.getState().selectedModelId;
-        if (!list.some((m) => m.id === chosen)) {
-          setSelectedModelId(list[0]?.id ?? '');
-        }
-      })
-      .catch(() => setModels([]));
-  }, [mode, setSelectedModelId]);
-
-  const selected = models.find((m) => m.id === selectedModelId);
-
-  // Смена модели: выбросить то, чего новая схема не допускает, и предзаполнить
-  // обязательное — без него сервис отвергает запрос
-  useEffect(() => {
-    if (selected) syncParamsToModel(selected);
-  }, [selected?.id, syncParamsToModel]);
 
   const groups = byFamily(models);
 

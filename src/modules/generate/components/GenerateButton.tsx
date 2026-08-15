@@ -2,13 +2,19 @@ import { useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { useGenerateStore } from '../store';
+import { useModelsForMode } from '../hooks/useModelsForMode';
+import { missingRequired } from '@/shared/lib/kieParams';
+import { needsSource } from '@/shared/lib/kieRequest';
 import { useCostStore } from '@/modules/cost/store';
 import { ipc } from '@/shared/lib/ipc';
 import { formatCostDisplay, generateId } from '@/shared/lib/utils';
 import { useToastStore } from '@/shared/stores/toastStore';
 
 export function GenerateButton() {
+  const { selected } = useModelsForMode();
   const prompt = useGenerateStore((s) => s.prompt);
+  const sourceImageData = useGenerateStore((s) => s.sourceImageData);
+  const maskData = useGenerateStore((s) => s.maskData);
   const selectedModelId = useGenerateStore((s) => s.selectedModelId);
   const mode = useGenerateStore((s) => s.mode);
   const params = useGenerateStore((s) => s.params);
@@ -94,7 +100,19 @@ export function GenerateButton() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const canGenerate = prompt.trim().length > 0 && selectedModelId.trim().length > 0;
+  // Причина блокировки называется вслух: заблокированная кнопка без объяснения — это
+  // тупик, в который пользователь попадал на чистой установке
+  const blockedReason = (() => {
+    if (!prompt.trim()) return 'Введите промпт';
+    if (!selected) return 'Выберите модель';
+    if (needsSource(mode) && !sourceImageData) return 'Нужно исходное изображение';
+    if (mode === 'inpaint' && !maskData) return 'Нарисуйте маску';
+    const missing = missingRequired(params, selected);
+    if (missing.length > 0) return `Заполните: ${missing.join(', ')}`;
+    return null;
+  })();
+
+  const canGenerate = blockedReason === null;
 
   return (
     <div className="flex items-center gap-3">
@@ -111,7 +129,7 @@ export function GenerateButton() {
       >
         <span className="flex items-center justify-center gap-2">
           <Sparkles size={16} />
-          Генерировать
+          {blockedReason ?? 'Генерировать'}
         </span>
       </motion.button>
 

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { PromptInput } from './PromptInput';
 import { StyleTags } from './StyleTags';
 import { ParamsPanel } from './ParamsPanel';
+import { useModelsForMode } from '../hooks/useModelsForMode';
 import { Canvas } from './Canvas';
 import { GenerateButton } from './GenerateButton';
 import { BatchControls } from './BatchControls';
@@ -15,6 +16,9 @@ import { Tooltip } from '@/shared/components/ui/Tooltip';
 
 export function GeneratePage() {
   const uiMode = useGenerateStore((s) => s.uiMode);
+  // Модель и обязательные параметры согласуются в обоих режимах интерфейса, а не
+  // только в расширенном, где смонтирована панель параметров
+  useModelsForMode();
   const toggleUiMode = useGenerateStore((s) => s.toggleUiMode);
   const [panelWidth, setPanelWidth] = useState(320);
   const isDragging = useRef(false);
