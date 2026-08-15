@@ -66,12 +66,17 @@ function runMigrations(db: Database.Database): void {
   }
 }
 
-interface Migration {
+export interface Migration {
   version: number;
   sql: string;
 }
 
-function getMigrations(): Migration[] {
+/**
+ * Экспортируется ради тестов: better-sqlite3 собран под Electron и в тестовом Node не
+ * грузится, поэтому SQL миграций прогоняется через встроенный `node:sqlite`. Проверяется
+ * ровно то, что рискованно, — сами запросы.
+ */
+export function getMigrations(): Migration[] {
   return [
     {
       version: 1,
@@ -340,6 +345,29 @@ function getMigrations(): Migration[] {
           WHERE is_builtin = 1 AND params = '{"aspectRatio":"1:1","imageSize":"1K"}';
         UPDATE presets SET params = '{"aspect_ratio":"16:9"}'
           WHERE is_builtin = 1 AND params = '{"aspectRatio":"16:9","imageSize":"1K"}';
+      `,
+    },
+    {
+      version: 5,
+      sql: `
+        -- Видео живёт в той же таблице, что и изображения: галерея, коллекции, теги,
+        -- поиск, расходы и сравнение продолжают работать без изменений, а карточка
+        -- различает вид записи по media_kind. Параллельная таблица продублировала бы
+        -- шесть работающих подсистем ради одной колонки.
+        ALTER TABLE images ADD COLUMN media_kind TEXT NOT NULL DEFAULT 'image';
+        ALTER TABLE images ADD COLUMN duration_ms INTEGER;
+
+        -- Задача kie.ai живёт на сервере и не зависит от процесса, который её создал.
+        -- Идентификатор нужен, чтобы вернуться к опросу после перезапуска приложения:
+        -- без него перезапуск означал бы оплаченную и потерянную генерацию.
+        ALTER TABLE generation_queue ADD COLUMN task_id TEXT;
+        ALTER TABLE generation_queue ADD COLUMN media_kind TEXT NOT NULL DEFAULT 'image';
+
+        -- Встроенные пресеты ссылались на модели OpenRouter, которых в приложении
+        -- больше нет. Подставить им модели kie.ai значило бы вшить список моделей, а
+        -- выбор был бы произвольным: пресет остаётся набором параметров и стилевых
+        -- тегов, а модель выбирает пользователь. Пропорции в них универсальны.
+        UPDATE presets SET model_id = NULL WHERE is_builtin = 1;
       `,
     },
   ];

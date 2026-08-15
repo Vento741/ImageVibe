@@ -18,6 +18,10 @@ export interface DBImage {
   cost_usd: number | null;
   generation_time_ms: number | null;
   generation_id: string | null;
+  /** 'image' или 'video' — вид записи, а не формат файла */
+  media_kind: string;
+  /** Длительность видео; null у изображений и там, где контейнер её не отдал */
+  duration_ms: number | null;
   created_at: string;
 }
 
@@ -103,6 +107,9 @@ export interface DBQueueItem {
   estimated_cost: number | null;
   actual_cost: number | null;
   priority: number;
+  /** Идентификатор задачи kie.ai; по нему опрос возобновляется после перезапуска */
+  task_id: string | null;
+  media_kind: string;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
