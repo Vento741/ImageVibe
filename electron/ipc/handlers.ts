@@ -187,11 +187,26 @@ export function registerIpcHandlers(): void {
 
     logger.log('ipc', 'info', 'file:export', { imageId, format, quality });
     const db = getDatabase();
-    const image = db.prepare('SELECT file_path FROM images WHERE id = ?').get(imageId) as { file_path: string } | undefined;
+    const image = db.prepare('SELECT file_path, media_kind FROM images WHERE id = ?').get(imageId) as
+      | { file_path: string; media_kind: string }
+      | undefined;
     if (!image) throw new Error('Image not found');
 
     if (!fs.existsSync(image.file_path)) {
       throw new Error(`Исходный файл не найден: ${image.file_path}`);
+    }
+
+    // Видео не конвертируется: перекодировщик работает с изображениями, и запись mp4
+    // под именем .png дала бы файл, который не открывается
+    if (image.media_kind === 'video') {
+      const sourceExt = path.extname(image.file_path);
+      const saved = await dialog.showSaveDialog({
+        defaultPath: path.basename(image.file_path),
+        filters: [{ name: 'Видео', extensions: [sourceExt.replace('.', '') || 'mp4'] }],
+      });
+      if (!saved.filePath) return '';
+      fs.copyFileSync(image.file_path, saved.filePath);
+      return saved.filePath;
     }
 
     const ext = format === 'jpeg' ? 'jpg' : format;

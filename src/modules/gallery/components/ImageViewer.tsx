@@ -366,6 +366,7 @@ export function ImageViewer() {
               <AddToCollectionMenu imageId={image.id} />
               <ExportButton
                 imageId={image.id}
+                mediaKind={image.media_kind}
                 size="md"
                 className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm flex items-center gap-1.5"
               />

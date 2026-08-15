@@ -14,6 +14,8 @@ interface ExportButtonProps {
   size?: 'sm' | 'md';
   /** Additional class names for the trigger button */
   className?: string;
+  /** Видео не конвертируется — для него выбор формата не показывается */
+  mediaKind?: string;
 }
 
 const FORMAT_LABELS: Record<ExportFormat, string> = {
@@ -22,7 +24,7 @@ const FORMAT_LABELS: Record<ExportFormat, string> = {
   webp: 'WebP',
 };
 
-export function ExportButton({ imageId, size = 'sm', className = '' }: ExportButtonProps) {
+export function ExportButton({ imageId, size = 'sm', className = '', mediaKind }: ExportButtonProps) {
   const [open, setOpen] = useState(false);
   const [defaultFormat, setDefaultFormat] = useState<ExportFormat>('png');
   const addToast = useToastStore((s) => s.addToast);
@@ -96,7 +98,12 @@ export function ExportButton({ imageId, size = 'sm', className = '' }: ExportBut
     <>
       <button
         ref={triggerRef}
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          // У видео выбирать нечего: оно сохраняется как есть, без перекодирования
+          if (mediaKind === 'video') handleExport(defaultFormat);
+          else setOpen((v) => !v);
+        }}
         className={`cursor-pointer transition-colors ${className}`}
         title="Экспорт"
       >

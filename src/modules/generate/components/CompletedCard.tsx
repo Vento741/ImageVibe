@@ -118,6 +118,7 @@ export function CompletedCard({ card, onRemove, isSelected, onSelect }: Complete
               <Tooltip text="Экспорт">
                 <ExportButton
                   imageId={result.imageId}
+                  mediaKind={result.mediaKind}
                   size="sm"
                   className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
                 />
